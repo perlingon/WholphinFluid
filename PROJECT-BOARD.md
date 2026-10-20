@@ -25,6 +25,7 @@ Labels describe what an issue is about. Releases are tracked with milestones (Al
 - needs-research: investigate before building
 - accessibility
 - bug: something that is broken
+- crazy wishlist thinking: far-out ideas, not planned for any release
 
 ## Suggested workflow
 
