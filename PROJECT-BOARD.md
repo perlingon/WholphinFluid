@@ -4,6 +4,7 @@
 
 Use a lightweight project board with the following columns:
 
+- Future release wishlist: parked tickets that are not part of the current release
 - Backlog
 - Planned
 - In Progress
@@ -30,7 +31,7 @@ Suggested labels:
 
 ## Suggested workflow
 
-1. New idea or issue goes to Backlog.
+1. New idea or issue goes to Backlog. Tickets that don't belong to the current release are parked in Future release wishlist.
 2. When it is confirmed and scoped, move it to Planned.
 3. When someone starts work, move it to In Progress.
 4. When a PR is open, move it to Review.

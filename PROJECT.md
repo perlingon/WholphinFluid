@@ -44,6 +44,7 @@ WholphinFluid is a fork of Wholphin focused on a fluid, modern Android TV experi
 
 ## Suggested GitHub Project columns
 
+- Future release wishlist: parked tickets that are not part of the current release
 - Backlog
 - Planned
 - In Progress
