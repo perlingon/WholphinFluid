@@ -13,21 +13,29 @@ Use a lightweight project board with the following columns:
 
 ## Issue labels
 
-Suggested labels:
+Every issue gets one or more **area** labels and one **phase** label, so the board can be filtered on both.
 
-- bug
-- enhancement
-- feature
-- design
-- ui
-- ux
-- accessibility
-- playback
-- performance
-- maintenance
-- good first issue
-- needs-research
-- blocked
+Area:
+
+- design: layout, visuals, typography, icons
+- playback: video player, scaling, subtitles
+- widgets: home screen panels, Google TV rows, Streamystats
+- performance: speed and smoothness
+- maintenance: docs, cleanup, dependencies
+- feature: an entirely new capability
+- needs-research: investigate before building
+- bug: something that is broken
+
+Phase (the order doubles as priority):
+
+- fas-1: clean up
+- fas-2: playback
+- fas-3: home screen and backdrop
+- fas-4: identity
+- fas-5: widgets and integrations
+- next-release: not part of the current release
+
+The phase can later move to a single-select field on the project board; labels then only describe what an issue is about.
 
 ## Suggested workflow
 
@@ -39,11 +47,7 @@ Suggested labels:
 
 ## Prioritization
 
-Use a simple priority model:
-
-- P1: critical user-facing bug, blockers, or regressions
-- P2: important features and quality improvements
-- P3: nice-to-have enhancements or cleanup
+Priority follows the phase labels: finish fas-1 before fas-2, and so on. Tickets that don't belong to the current release are parked in Future release wishlist.
 
 ## Review checklist
 
