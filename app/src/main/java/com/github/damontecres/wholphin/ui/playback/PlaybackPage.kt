@@ -96,6 +96,7 @@ import com.github.damontecres.wholphin.ui.tryRequestFocus
 import com.github.damontecres.wholphin.util.ExceptionHandler
 import com.github.damontecres.wholphin.util.LoadingState
 import com.github.damontecres.wholphin.util.Media3SubtitleOverride
+import com.github.damontecres.wholphin.util.stripEmbeddedFormatting
 import io.github.peerless2012.ass.media.widget.AssSubtitleView
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -511,6 +512,13 @@ fun PlaybackPageContent(
                 }
             val subtitleImageOpacity =
                 remember(subtitleSettings) { subtitleSettings.imageSubtitleOpacity / 100f }
+            val subtitleCues =
+                remember(state.subtitleCues, subtitleSettings) {
+                    state.subtitleCues.stripEmbeddedFormatting(
+                        colors = subtitleSettings.ignoreEmbeddedColors,
+                        styles = subtitleSettings.ignoreEmbeddedStyles,
+                    )
+                }
 
             // Subtitles
             val subtitleMaxSize by animateFloatAsState(if (controllerViewState.controlsVisible) .7f else 1f)
@@ -552,7 +560,7 @@ fun PlaybackPageContent(
                         Timber.v("Switching SDR/HDR, reapplying subtitle style")
                         subtitleSettings.applyTo(subtitleView)
                     }
-                    subtitleView.setCues(state.subtitleCues)
+                    subtitleView.setCues(subtitleCues)
                     if (state.subtitleCues.size > cueCount) {
                         Timber.i("Applying subtitle style to SubtitleView")
                         // The output creates a painter for each cue, so need to apply the changes when the number of cues increases
