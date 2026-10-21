@@ -909,14 +909,24 @@ fun Backdrop(
                             // Centre of the curve, as shares of the image's width and height.
                             // Further from the edge = a wider, gentler curve
                             val edgeFadeCenterX = 0.7f
+                            // The same when the image's edge facing the screen edge is one flat
+                            // colour: closer to the edge = a much narrower fade, since the colour
+                            // base already carries that colour onwards
+                            val edgeFadeCenterXFlat = 0.92f
                             val edgeFadeCenterY = 0.35f
                             // Height of the curve relative to the image's height: lower = rounder
                             // (corners cut away more), higher = flatter (closer to a straight edge)
                             val edgeFadeHeight = 0.9f
 
+                            val outerEdge = if (isRtl) ImageEdge.LEFT else ImageEdge.RIGHT
+                            val flatOuterEdge =
+                                (if (bakeBackground) shownImageUrl.value else backdrop.imageUrl)
+                                    ?.let { flatEdgesByImage.get(it) }
+                                    ?.contains(outerEdge) == true
+                            val curveCenterX = if (flatOuterEdge) edgeFadeCenterXFlat else edgeFadeCenterX
                             val curveCenter =
                                 Offset(
-                                    if (isRtl) size.width * (1f - edgeFadeCenterX) else size.width * edgeFadeCenterX,
+                                    if (isRtl) size.width * (1f - curveCenterX) else size.width * curveCenterX,
                                     size.height * edgeFadeCenterY,
                                 )
                             // Horizontal reach: from the centre to the image's outer edge
