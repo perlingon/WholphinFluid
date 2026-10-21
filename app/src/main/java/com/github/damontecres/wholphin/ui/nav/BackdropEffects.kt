@@ -300,10 +300,20 @@ internal suspend fun bakeBackdropBackground(
     withContext(Dispatchers.Default) {
         val started = System.nanoTime()
         try {
+            // Tiles that reflect an edge of the image which is one flat colour would only add a
+            // flat patch, so they are left out
+            val flatEdges =
+                if (imageUrl != null && tiles.any { it.reflects != null }) {
+                    findFlatEdges(context, imageUrl, flatEdgeStrip, flatEdgeTolerance)
+                } else {
+                    emptySet()
+                }
+            val shownTiles = tiles.filter { it.reflects == null || it.reflects !in flatEdges }
+
             // The tiny versions of the backdrop that get stretched into blurs, one per resolution
             val tinyVersions = HashMap<Int, ImageBitmap?>()
             if (imageUrl != null) {
-                tiles.map { it.resolution }.distinct().forEach { resolution ->
+                shownTiles.map { it.resolution }.distinct().forEach { resolution ->
                     val tinyHeight = (resolution / imageAspect).toInt().coerceAtLeast(1)
                     val request =
                         ImageRequest
@@ -329,16 +339,6 @@ internal suspend fun bakeBackdropBackground(
                     tinyVersions[resolution] = soft?.asImageBitmap()
                 }
             }
-
-            // Tiles that reflect an edge of the image which is one flat colour would only add a
-            // flat patch, so they are left out
-            val flatEdges =
-                if (imageUrl != null && tiles.any { it.reflects != null }) {
-                    findFlatEdges(context, imageUrl, flatEdgeStrip, flatEdgeTolerance)
-                } else {
-                    emptySet()
-                }
-            val shownTiles = tiles.filter { it.reflects == null || it.reflects !in flatEdges }
 
             val output = ImageBitmap(width, height)
             val outputSize = Size(width.toFloat(), height.toFloat())
