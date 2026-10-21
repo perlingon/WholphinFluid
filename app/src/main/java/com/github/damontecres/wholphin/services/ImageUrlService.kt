@@ -1,5 +1,6 @@
 package com.github.damontecres.wholphin.services
 
+import android.content.res.Resources
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import com.github.damontecres.wholphin.data.model.BaseItem
@@ -11,6 +12,7 @@ import org.jellyfin.sdk.model.api.ImageFormat
 import org.jellyfin.sdk.model.api.ImageType
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.math.ceil
 
 /**
  * Provides image URLs for items with several convenience methods
@@ -280,7 +282,30 @@ class ImageUrlService
             }
         }
 
+        /**
+         * The backdrop shown behind pages. It covers at most about 60% of the screen's width (see
+         * FluidLayout.backdropImageWidth), so it is fetched at that size rather than full size,
+         * which makes it quicker to download, decode and bake. The screensaver shows backdrops
+         * full screen, so it keeps using [getItemImageUrl]
+         */
+        fun getPageBackdropUrl(item: BaseItem): String? =
+            if (item.type == BaseItemKind.GENRE) {
+                item.imageUrlOverride
+            } else {
+                getItemImageUrl(item, ImageType.BACKDROP, fillWidth = pageBackdropWidth)
+            }
+
+        // A little over the largest share of the screen the image can cover, rounded up to a
+        // multiple of 100 so screens of nearly the same size share the server's resized copies
+        private val pageBackdropWidth: Int by lazy {
+            val screenWidth = Resources.getSystem().displayMetrics.widthPixels
+            ceil(screenWidth * PAGE_BACKDROP_SHARE / 100.0).toInt() * 100
+        }
+
         companion object {
             private const val QUALITY = 96
+
+            // Share of the screen's width the page backdrop is fetched at
+            private const val PAGE_BACKDROP_SHARE = 0.65
         }
     }

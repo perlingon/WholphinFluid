@@ -75,6 +75,7 @@ import com.github.damontecres.wholphin.ui.components.ScrollableDialog
 import com.github.damontecres.wholphin.ui.ifElse
 import com.github.damontecres.wholphin.ui.indexOfFirstOrNull
 import com.github.damontecres.wholphin.ui.nav.Destination
+import com.github.damontecres.wholphin.ui.nav.bakedBackgrounds
 import com.github.damontecres.wholphin.ui.playOnClickSound
 import com.github.damontecres.wholphin.ui.playSoundOnFocus
 import com.github.damontecres.wholphin.ui.preferences.subtitle.SubtitleSettings
@@ -384,6 +385,7 @@ fun PreferencesContent(
                                             SingletonImageLoader.get(context).let {
                                                 it.memoryCache?.clear()
                                                 it.diskCache?.clear()
+                                                bakedBackgrounds.clear()
                                                 updateCache = true
                                             }
                                         },

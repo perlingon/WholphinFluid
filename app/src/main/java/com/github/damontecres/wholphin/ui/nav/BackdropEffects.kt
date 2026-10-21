@@ -195,16 +195,36 @@ internal class BakedBackgrounds {
         return File(folder, digest.joinToString("") { "%02x".format(it) } + ".jpg")
     }
 
-    // Removes the least recently used files beyond the limit, including those of older builds
-    private fun trim() {
-        val files = folder.listFiles { file -> file.name.endsWith(".jpg") } ?: return
-        if (files.size <= MAX_FILES) return
-        files.sortedBy { it.lastModified() }.take(files.size - MAX_FILES).forEach { it.delete() }
+    /**
+     * Removes every saved background, from memory and from disk
+     */
+    fun clear() {
+        memory.evictAll()
+        writer.launch { folder.listFiles()?.forEach { it.delete() } }
     }
 
-    private companion object {
-        const val MEMORY_BYTES = 40 * 1024 * 1024
-        const val MAX_FILES = 300
+    // Removes the least recently used files beyond the size limit, including those of older builds
+    private fun trim() {
+        val files = folder.listFiles { file -> file.name.endsWith(".jpg") } ?: return
+        var total = files.sumOf { it.length() }
+        for (file in files.sortedBy { it.lastModified() }) {
+            if (total <= diskBytes) break
+            total -= file.length()
+            file.delete()
+        }
+    }
+
+    companion object {
+        private const val MEMORY_BYTES = 40 * 1024 * 1024
+
+        // Share of the image cache size setting that saved backgrounds may use on disk. The
+        // image cache gets the rest, so the setting stays the total
+        const val DISK_SHARE = 0.15
+
+        // How much the saved backgrounds may take up on disk. Set from the image cache size
+        // setting when the app starts
+        @Volatile
+        var diskBytes = 30L * 1024 * 1024
     }
 }
 
