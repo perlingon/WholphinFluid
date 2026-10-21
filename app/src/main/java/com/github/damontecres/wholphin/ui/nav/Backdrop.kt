@@ -391,6 +391,12 @@ fun Backdrop(
             // flatEdgeDarkTolerance instead: lower = stricter
             val flatEdgeDarkLevel = 40f
             val flatEdgeDarkTolerance = 3f
+            // When the image's left or right edge is flat, the colour base leans towards that
+            // edge's colour on the same side of the screen, so the image melts into it.
+            // flatEdgeTint: how strongly, 0 = not at all, 1 = fully that colour at the screen edge.
+            // flatEdgeTintReach: how far in it fades out, as a share of the screen's width
+            val flatEdgeTint = 0.8f
+            val flatEdgeTintReach = 0.7f
             // Vignettes over the background and the sharp image: clear at the centre, darkening
             // outwards. Each one has:
             // - centerX, centerY: the centre as a share of the screen (0f, 0f is the top-left
@@ -545,7 +551,14 @@ fun Backdrop(
                         listOf(primary, secondary, tertiary, baseBackgroundColor),
                         listOf(glows, isRtl, bakeWidth, bakeHeight),
                         tiles,
-                        listOf(flatEdgeStrip, flatEdgeTolerance, flatEdgeDarkLevel, flatEdgeDarkTolerance),
+                        listOf(
+                            flatEdgeStrip,
+                            flatEdgeTolerance,
+                            flatEdgeDarkLevel,
+                            flatEdgeDarkTolerance,
+                            flatEdgeTint,
+                            flatEdgeTintReach,
+                        ),
                         vignettes,
                         bakeSmooth,
                         groupSmooth,
@@ -574,6 +587,8 @@ fun Backdrop(
                         flatEdgeTolerance = flatEdgeTolerance,
                         flatEdgeDarkLevel = flatEdgeDarkLevel,
                         flatEdgeDarkTolerance = flatEdgeDarkTolerance,
+                        flatEdgeTint = flatEdgeTint,
+                        flatEdgeTintReach = flatEdgeTintReach,
                         drawBackground = if (glows) glowPainter(primary, secondary, tertiary) else drawPlain,
                         drawOverlay = drawVignette,
                         groupSmoothRadius = (bakeWidth * groupSmooth).roundToInt(),
