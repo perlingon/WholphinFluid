@@ -54,6 +54,15 @@ val gitDescribe =
         .standardOutput.asText
         .getOrElse("v0.0.0")
 
+// Time of the last commit instead of the current time, so a rebuild without code changes
+// stays UP-TO-DATE instead of recompiling and re-running R8
+val gitCommitTime =
+    providers
+        .exec { commandLine("git", "log", "-1", "--format=%ct") }
+        .standardOutput.asText
+        .map { it.trim().toLongOrNull()?.times(1000) ?: 0L }
+        .getOrElse(0L)
+
 kotlin {
     compilerOptions {
         languageVersion = org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_2_3
@@ -79,7 +88,7 @@ configure<ApplicationExtension> {
         versionName = gitDescribe.trim().removePrefix("v").ifBlank { "0.0.0" }
         testInstrumentationRunner = "com.github.damontecres.wholphin.test.WholphinTestRunner"
 
-        buildConfigField("long", "BUILD_TIME", System.currentTimeMillis().toString())
+        buildConfigField("long", "BUILD_TIME", "${gitCommitTime}L")
     }
 
     signingConfigs {
