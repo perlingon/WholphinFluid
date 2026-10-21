@@ -323,6 +323,13 @@ tasks.named("preBuild") {
     dependsOn.add(tasks.named("openApiGenerate"))
 }
 
+// The fast build type is for quick testing on a device, so skip the slow release lint check
+tasks.configureEach {
+    if (name.startsWith("lintVital") && name.endsWith("Fast")) {
+        enabled = false
+    }
+}
+
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)

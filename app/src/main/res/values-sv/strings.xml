@@ -410,6 +410,10 @@
     <string name="hdr_subtitle_style">HDR-undertextstil</string>
     <string name="height">Höjd</string>
     <string name="image_subtitle_opacity">Opacitet för bildundertexter</string>
+    <string name="ignore_embedded_subtitle_colors">Ignorera inbäddade färger</string>
+    <string name="ignore_embedded_subtitle_colors_summary">Använd alltid teckenfärgen ovan, även om undertextfilen har egna färger. SSA/ASS-undertexter renderas då utan libass</string>
+    <string name="ignore_embedded_subtitle_styles">Ignorera inbäddad stil</string>
+    <string name="ignore_embedded_subtitle_styles_summary">Ta bort fetstil, kursiv, understrykning och typsnitt som undertextfilen anger. SSA/ASS-undertexter renderas då utan libass</string>
     <string name="hue">Nyans</string>
     <string name="image_type_thumb">Miniatyr</string>
     <string name="image_type_primary">Primär</string>

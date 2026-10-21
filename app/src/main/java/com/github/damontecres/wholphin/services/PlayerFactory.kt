@@ -32,6 +32,7 @@ import com.github.damontecres.wholphin.preferences.MediaExtensionStatus
 import com.github.damontecres.wholphin.preferences.PlayerBackend
 import com.github.damontecres.wholphin.preferences.get
 import com.github.damontecres.wholphin.services.hilt.AuthOkHttpClient
+import com.github.damontecres.wholphin.ui.preferences.subtitle.SubtitleSettings.stripsEmbeddedFormatting
 import com.github.damontecres.wholphin.util.BitstreamFilteringCodecAdapterFactory
 import com.github.damontecres.wholphin.util.Hdr10PlusMaskingFilter
 import com.github.damontecres.wholphin.util.WholphinDispatchers
@@ -89,8 +90,11 @@ class PlayerFactory
                     PlayerBackend.UNRECOGNIZED,
                     -> {
                         val extensions = prefs.overrides.mediaExtensionsEnabled
+                        // libass draws embedded colors and styles itself, so fall back to ExoPlayer's
+                        // rendering when the user wants them removed
                         val useLibAss =
-                            prefs.overrides.assPlaybackMode == AssPlaybackMode.ASS_LIBASS
+                            prefs.overrides.assPlaybackMode == AssPlaybackMode.ASS_LIBASS &&
+                                !appPreferences.interfacePreferences.subtitlesPreferences.stripsEmbeddedFormatting
                         val decodeAv1 = prefs.overrides.decodeAv1
                         val preferDolbyVision =
                             appPreferences.experimentalPreferences
