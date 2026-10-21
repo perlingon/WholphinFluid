@@ -5,7 +5,6 @@ package com.github.damontecres.wholphin.ui.nav
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
@@ -131,7 +130,6 @@ fun Backdrop(
     val fadeIn = crossfadeDuration * fadeInShare.toDouble()
     // Used by the live (not baked) layers
     val imageFade = fadeIn
-    val backgroundFade = fadeIn
     val showGlows =
         backdrop.hasColors &&
             (backdropStyle == BackdropStyle.BACKDROP_DYNAMIC_COLOR || backdropStyle == BackdropStyle.UNRECOGNIZED)
@@ -281,6 +279,7 @@ fun Backdrop(
                         listOf(
                             // right reflection
                             Tile(
+                                reflects = ImageEdge.RIGHT,
                                 left = 0.9f,
                                 top = -0.01f,
                                 width = 1.05f,
@@ -292,6 +291,7 @@ fun Backdrop(
                             ),
                             // lower left reflection
                             Tile(
+                                reflects = ImageEdge.LEFT,
                                 left = -2.2f,
                                 top = 0.45f,
                                 width = 2.75f,
@@ -304,6 +304,7 @@ fun Backdrop(
                             ),
                             // left reflection
                             Tile(
+                                reflects = ImageEdge.LEFT,
                                 left = -2.2f,
                                 top = 0.071f,
                                 width = 1.75f,
@@ -315,6 +316,7 @@ fun Backdrop(
                             ),
                             // lower left reflection mirror
                             Tile(
+                                reflects = ImageEdge.LEFT,
                                 left = -3f,
                                 top = 0.56f,
                                 width = 4f,
@@ -327,6 +329,7 @@ fun Backdrop(
                             ),
                             // bottom reflection
                             Tile(
+                                reflects = ImageEdge.BOTTOM,
                                 left = 0.38f,
                                 top = 0.69f,
                                 width = 0.68f,
@@ -372,9 +375,14 @@ fun Backdrop(
                 } else {
                     mirrorTiles.withFeather()
                 }
-            // Animated titles (by genre): how much of the tiles they keep.
-            // 1 = same as everything else, 0 = no tiles, just the glows
-            val tilesOnAnimation = 0.6f
+            // Flat edges: a tile marked with reflects = ImageEdge.LEFT, BOTTOM or RIGHT is left
+            // out when that edge of the image is one flat colour (plain backgrounds in animation,
+            // black bars), since reflecting it would only add a flat patch.
+            // How much of the edge is checked, in pixels of a 1920 wide image
+            val flatEdgeStrip = 10
+            // How much the colours along the edge may vary and still count as flat, in steps of
+            // 0 to 255: higher = more edges count as flat
+            val flatEdgeTolerance = 8f
             // Vignettes over the background and the sharp image: clear at the centre, darkening
             // outwards. Each one has:
             // - centerX, centerY: the centre as a share of the screen (0f, 0f is the top-left
@@ -516,18 +524,6 @@ fun Backdrop(
                 // ones, so it is composed once per backdrop instead of on every animation frame
                 fun targetGlow(color: Color) = color.takeOrElse { Color.Transparent }.intensified()
 
-                // The tiles as they apply to this title
-                fun tilesFor(animated: Boolean): List<Tile> =
-                    if (!animated) {
-                        tiles
-                    } else if (tilesOnAnimation <= 0f) {
-                        emptyList()
-                    } else {
-                        tiles.map { tile ->
-                            tile.copy(layers = tile.layers.map { (mode, opacity) -> mode to opacity * tilesOnAnimation })
-                        }
-                    }
-
                 // Everything a baked image depends on; also its key in the cache
                 fun bakeKeyFor(
                     imageUrl: String?,
@@ -535,13 +531,13 @@ fun Backdrop(
                     secondary: Color,
                     tertiary: Color,
                     glows: Boolean,
-                    animated: Boolean,
                 ): List<Any?> =
                     listOf(
                         imageUrl,
                         listOf(primary, secondary, tertiary, baseBackgroundColor),
                         listOf(glows, isRtl, bakeWidth, bakeHeight),
-                        tilesFor(animated),
+                        tiles,
+                        listOf(flatEdgeStrip, flatEdgeTolerance),
                         vignettes,
                         bakeSmooth,
                         groupSmooth,
@@ -556,7 +552,6 @@ fun Backdrop(
                     secondary: Color,
                     tertiary: Color,
                     glows: Boolean,
-                    animated: Boolean,
                 ): ImageBitmap? =
                     bakeBackdropBackground(
                         context = context,
@@ -566,7 +561,9 @@ fun Backdrop(
                         density = density,
                         layoutDirection = layoutDirection,
                         imageAspect = imageAspect,
-                        tiles = tilesFor(animated),
+                        tiles = tiles,
+                        flatEdgeStrip = flatEdgeStrip / 1920f,
+                        flatEdgeTolerance = flatEdgeTolerance,
                         drawBackground = if (glows) glowPainter(primary, secondary, tertiary) else drawPlain,
                         drawOverlay = drawVignette,
                         groupSmoothRadius = (bakeWidth * groupSmooth).roundToInt(),
@@ -586,7 +583,6 @@ fun Backdrop(
                         targetSecondary,
                         targetTertiary,
                         showGlows,
-                        backdrop.isAnimated,
                     )
                 // The finished background, together with the image it was made for
                 val baked by produceState<Pair<String?, ImageBitmap>?>(null, bakeKey, backdrop.colorsPending) {
@@ -610,7 +606,6 @@ fun Backdrop(
                             targetSecondary,
                             targetTertiary,
                             showGlows,
-                            backdrop.isAnimated,
                         )
                     // Keep showing the previous background if this one could not be made
                     if (result != null) {
@@ -664,7 +659,7 @@ fun Backdrop(
                     val dynamicColors =
                         backdropStyle == BackdropStyle.BACKDROP_DYNAMIC_COLOR ||
                             backdropStyle == BackdropStyle.UNRECOGNIZED
-                    val prebake: suspend (String, Boolean) -> Unit = { imageUrl, animated ->
+                    val prebake: suspend (String) -> Unit = { imageUrl ->
                         val colors = if (dynamicColors) prebakeColors(imageUrl) else ExtractedColors.DEFAULT
                         if (colors != null) {
                             val glows =
@@ -673,9 +668,9 @@ fun Backdrop(
                             val primary = targetGlow(colors.primary)
                             val secondary = targetGlow(colors.secondary)
                             val tertiary = targetGlow(colors.tertiary)
-                            val key = bakeKeyFor(imageUrl, primary, secondary, tertiary, glows, animated)
+                            val key = bakeKeyFor(imageUrl, primary, secondary, tertiary, glows)
                             if (bakedBackgrounds.load(key) == null) {
-                                bakeFor(imageUrl, primary, secondary, tertiary, glows, animated)?.let {
+                                bakeFor(imageUrl, primary, secondary, tertiary, glows)?.let {
                                     bakedBackgrounds.put(key, it)
                                 }
                             }
@@ -951,14 +946,6 @@ fun Backdrop(
             // It has to be drawn at full screen resolution, so it is its own layer on top and
             // cannot be part of the small baked image
             val grainOpacity = 0.4f // strength: 0 = none
-            // Animated titles (by genre): how much grain they keep. 1 = same as everything else,
-            // 0 = none. The change is faded so it does not pop when moving between titles
-            val grainOnAnimation = 0f
-            val grainFactor by animateFloatAsState(
-                targetValue = if (backdrop.isAnimated) grainOnAnimation else 1f,
-                animationSpec = tween(backgroundFade.inWholeMilliseconds.toInt()),
-                label = "grain_on_animation",
-            )
             val grainSize = 0.25f // size of one grain in screen pixels: higher = coarser
             val grainContrast = 0.2f // range of greys: 0 = all neutral (no grain), 1 = black to white
             // how much the grain gathers into uneven patches: 0 = evenly fine, 1 = all patches
@@ -992,7 +979,7 @@ fun Backdrop(
                     Modifier
                         .fillMaxSize()
                         .drawBehind {
-                            if (grainOpacity * grainFactor > 0f) {
+                            if (grainOpacity > 0f) {
                                 val grain = grainSize.coerceAtLeast(0.25f)
                                 val shift = grainShift.value
                                 scale(scaleX = grain, scaleY = grain, pivot = Offset.Zero) {
@@ -1001,7 +988,7 @@ fun Backdrop(
                                         brush = grainBrush,
                                         topLeft = shift,
                                         size = Size(size.width / grain, size.height / grain),
-                                        alpha = (grainOpacity * grainFactor).coerceIn(0f, 1f),
+                                        alpha = grainOpacity.coerceIn(0f, 1f),
                                         blendMode = grainBlendMode,
                                     )
                                     }
