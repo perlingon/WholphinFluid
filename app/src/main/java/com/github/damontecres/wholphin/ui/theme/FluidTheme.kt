@@ -55,6 +55,7 @@ fun AppThemeColors.resolved(): AppThemeColors =
 /** The highlight colours offered in settings, in display order (matches R.array.highlight_colors) */
 val highlightColors =
     listOf(
+        Color(0xFFC9A24A), // Gold, the default
         Color(0xFF8A4DFF), // Purple
         Color(0xFF3D8BFF), // Blue
         Color(0xFF1FC8C8), // Cyan
