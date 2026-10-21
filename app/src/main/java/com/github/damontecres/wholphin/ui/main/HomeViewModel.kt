@@ -14,6 +14,7 @@ import com.github.damontecres.wholphin.services.FavoriteWatchManager
 import com.github.damontecres.wholphin.services.HomeDataService
 import com.github.damontecres.wholphin.services.HomePageResolvedSettings
 import com.github.damontecres.wholphin.services.HomeSettingsService
+import com.github.damontecres.wholphin.services.ImageUrlService
 import com.github.damontecres.wholphin.services.LatestNextUpService
 import com.github.damontecres.wholphin.services.MediaManagementService
 import com.github.damontecres.wholphin.services.NavDrawerService
@@ -26,6 +27,7 @@ import com.github.damontecres.wholphin.ui.combinePair
 import com.github.damontecres.wholphin.ui.data.RowColumn
 import com.github.damontecres.wholphin.ui.launchDefault
 import com.github.damontecres.wholphin.ui.launchIO
+import com.github.damontecres.wholphin.ui.nav.BackdropPrebaker
 import com.github.damontecres.wholphin.ui.showToast
 import com.github.damontecres.wholphin.ui.util.EmptyStringProvider
 import com.github.damontecres.wholphin.util.ExceptionHandler
@@ -70,6 +72,7 @@ class HomeViewModel
         private val userPreferencesService: UserPreferencesService,
         private val mediaManagementService: MediaManagementService,
         private val latestNextUpService: LatestNextUpService,
+        private val imageUrlService: ImageUrlService,
     ) : ViewModel() {
         private val _state = MutableStateFlow(HomeState.EMPTY)
         val state: StateFlow<HomeState> = _state
@@ -185,45 +188,52 @@ class HomeViewModel
                     settings.rows
                         .map { row ->
                             viewModelScope.async(WholphinDispatchers.IO) {
-                                semaphore.withPermit {
-                                    Timber.v("Fetching row: %s", row)
-                                    try {
-                                        homeDataService.fetchDataForRow(
-                                            row = row.config,
-                                            scope = viewModelScope,
-                                            prefs = prefs,
-                                            userDto = userDto,
-                                            libraries = libraries,
-                                            limit = prefs.maxItemsPerRow,
-                                            isRefresh = refresh,
-                                        )
-                                    } catch (ex: InvalidStatusException) {
-                                        if (ex.status == 404) {
-                                            Timber.w(ex, "404 on row %s", row)
-                                            HomeRowLoadingState.Success(
-                                                row.title,
-                                                emptyList(),
+                                val rowData =
+                                    semaphore.withPermit {
+                                        Timber.v("Fetching row: %s", row)
+                                        try {
+                                            homeDataService.fetchDataForRow(
+                                                row = row.config,
+                                                scope = viewModelScope,
+                                                prefs = prefs,
+                                                userDto = userDto,
+                                                libraries = libraries,
+                                                limit = prefs.maxItemsPerRow,
+                                                isRefresh = refresh,
                                             )
-                                        } else {
-                                            Timber.e(
-                                                ex,
-                                                "Error %s on row %s",
-                                                ex.status,
-                                                row,
-                                            )
+                                        } catch (ex: InvalidStatusException) {
+                                            if (ex.status == 404) {
+                                                Timber.w(ex, "404 on row %s", row)
+                                                HomeRowLoadingState.Success(
+                                                    row.title,
+                                                    emptyList(),
+                                                )
+                                            } else {
+                                                Timber.e(
+                                                    ex,
+                                                    "Error %s on row %s",
+                                                    ex.status,
+                                                    row,
+                                                )
+                                                HomeRowLoadingState.Error(
+                                                    row.title,
+                                                    exception = ex,
+                                                )
+                                            }
+                                        } catch (ex: Exception) {
+                                            Timber.e(ex, "Error on row %s", row)
                                             HomeRowLoadingState.Error(
                                                 row.title,
                                                 exception = ex,
                                             )
                                         }
-                                    } catch (ex: Exception) {
-                                        Timber.e(ex, "Error on row %s", row)
-                                        HomeRowLoadingState.Error(
-                                            row.title,
-                                            exception = ex,
-                                        )
                                     }
+                                // On a first load the spinner stays until every row is in, so
+                                // start preparing each row's first backdrops as soon as it arrives
+                                if (!refresh && rowData is HomeRowLoadingState.Success) {
+                                    BackdropPrebaker.requestFirst(rowData.items, imageUrlService)
                                 }
+                                rowData
                             }
                         }
 
@@ -260,6 +270,11 @@ class HomeViewModel
                 } else {
                     val rows = deferred.awaitAll()
                     Timber.v("Got all rows")
+                    // The row that gets focus first goes to the front of the queue
+                    rows
+                        .filterIsInstance<HomeRowLoadingState.Success>()
+                        .firstOrNull { it.items.isNotEmpty() }
+                        ?.let { BackdropPrebaker.requestFirst(it.items, imageUrlService) }
                     _state.update {
                         it.copy(
                             loadingState = LoadingState.Success,
