@@ -176,6 +176,7 @@ internal suspend fun bakeBackdropBackground(
     outlineCopies: Boolean,
 ): ImageBitmap? =
     withContext(Dispatchers.Default) {
+        val started = System.nanoTime()
         try {
             // The tiny versions of the backdrop that get stretched into blurs, one per resolution
             val tinyVersions = HashMap<Int, ImageBitmap?>()
@@ -340,6 +341,13 @@ internal suspend fun bakeBackdropBackground(
                     }
                 }
             }
+            // To compare devices and settings: filter Logcat on "BackdropBake"
+            Timber.tag("BackdropBake").i(
+                "Baked %dx%d in %d ms",
+                width,
+                height,
+                (System.nanoTime() - started) / 1_000_000,
+            )
             output
         } catch (ex: CancellationException) {
             throw ex
