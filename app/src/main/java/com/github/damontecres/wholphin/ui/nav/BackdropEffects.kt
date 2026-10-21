@@ -14,6 +14,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.Paint
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.CanvasDrawScope
@@ -300,10 +301,21 @@ internal suspend fun bakeBackdropBackground(
     withContext(Dispatchers.Default) {
         val started = System.nanoTime()
         try {
+            // Tiles that reflect an edge of the image which is one flat colour would only add a
+            // flat patch, so they are left out
+            val flatEdges =
+                if (imageUrl != null && tiles.any { it.reflects != null }) {
+                    findFlatEdges(context, imageUrl, flatEdgeStrip, flatEdgeTolerance)
+                } else {
+                    emptySet()
+                }
+            val shownTiles = tiles.filter { it.reflects == null || it.reflects !in flatEdges }
+            if (imageUrl != null) flatEdgesByImage.put(imageUrl, flatEdges)
+
             // The tiny versions of the backdrop that get stretched into blurs, one per resolution
             val tinyVersions = HashMap<Int, ImageBitmap?>()
             if (imageUrl != null) {
-                tiles.map { it.resolution }.distinct().forEach { resolution ->
+                shownTiles.map { it.resolution }.distinct().forEach { resolution ->
                     val tinyHeight = (resolution / imageAspect).toInt().coerceAtLeast(1)
                     val request =
                         ImageRequest
@@ -329,16 +341,6 @@ internal suspend fun bakeBackdropBackground(
                     tinyVersions[resolution] = soft?.asImageBitmap()
                 }
             }
-
-            // Tiles that reflect an edge of the image which is one flat colour would only add a
-            // flat patch, so they are left out
-            val flatEdges =
-                if (imageUrl != null && tiles.any { it.reflects != null }) {
-                    findFlatEdges(context, imageUrl, flatEdgeStrip, flatEdgeTolerance)
-                } else {
-                    emptySet()
-                }
-            val shownTiles = tiles.filter { it.reflects == null || it.reflects !in flatEdges }
 
             val output = ImageBitmap(width, height)
             val outputSize = Size(width.toFloat(), height.toFloat())
@@ -494,6 +496,44 @@ internal suspend fun bakeBackdropBackground(
  * An edge of the backdrop image, for tiles that reflect it
  */
 internal enum class ImageEdge { LEFT, BOTTOM, RIGHT }
+
+// The flat edges found for recently baked images, for BackdropDebug.showFlatEdges
+internal val flatEdgesByImage = LruCache<Any, Set<ImageEdge>>(200)
+
+/**
+ * Development aid: a red arrow on each of these edges of the area, pointing outwards
+ */
+internal fun DrawScope.drawFlatEdgeArrows(edges: Set<ImageEdge>) {
+    if (edges.isEmpty()) return
+    val arrow = minOf(size.width, size.height) * 0.08f
+    val inset = arrow * 0.5f
+    val color = Color(0xFFFF3B30)
+    edges.forEach { edge ->
+        val path = Path()
+        when (edge) {
+            ImageEdge.LEFT -> {
+                val y = size.height / 2f
+                path.moveTo(inset, y)
+                path.lineTo(inset + arrow, y - arrow * 0.6f)
+                path.lineTo(inset + arrow, y + arrow * 0.6f)
+            }
+            ImageEdge.RIGHT -> {
+                val y = size.height / 2f
+                path.moveTo(size.width - inset, y)
+                path.lineTo(size.width - inset - arrow, y - arrow * 0.6f)
+                path.lineTo(size.width - inset - arrow, y + arrow * 0.6f)
+            }
+            ImageEdge.BOTTOM -> {
+                val x = size.width / 2f
+                path.moveTo(x, size.height - inset)
+                path.lineTo(x - arrow * 0.6f, size.height - inset - arrow)
+                path.lineTo(x + arrow * 0.6f, size.height - inset - arrow)
+            }
+        }
+        path.close()
+        drawPath(path, color)
+    }
+}
 
 // Width of the version of the image that is checked for flat edges
 private const val EDGE_CHECK_WIDTH = 480
