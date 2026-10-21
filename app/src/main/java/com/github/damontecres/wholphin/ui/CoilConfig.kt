@@ -19,6 +19,7 @@ import coil3.request.crossfade
 import coil3.util.DebugLogger
 import com.github.damontecres.wholphin.preferences.AppPreference
 import com.github.damontecres.wholphin.preferences.AppPreferences
+import com.github.damontecres.wholphin.ui.nav.BakedBackgrounds
 import okhttp3.OkHttpClient
 import timber.log.Timber
 import kotlin.time.ExperimentalTime
@@ -29,19 +30,24 @@ fun CoilConfig(
     okHttpClient: OkHttpClient,
     debugLogging: Boolean,
     enableCache: Boolean = true,
-) = CoilConfig(
-    diskCacheSizeBytes =
+) {
+    val diskCacheSizeBytes =
         prefs.advancedPreferences.imageDiskCacheSizeBytes.let {
             if (it < AppPreference.ImageDiskCacheSize.min * AppPreference.MEGA_BIT) {
                 AppPreference.ImageDiskCacheSize.defaultValue * AppPreference.MEGA_BIT
             } else {
                 it
             }
-        },
-    okHttpClient = okHttpClient,
-    debugLogging = debugLogging,
-    enableCache = enableCache,
-)
+        }
+    // Saved backdrop backgrounds get a share of the same setting
+    BakedBackgrounds.diskBytes = (diskCacheSizeBytes * BakedBackgrounds.DISK_SHARE).toLong()
+    CoilConfig(
+        diskCacheSizeBytes = diskCacheSizeBytes,
+        okHttpClient = okHttpClient,
+        debugLogging = debugLogging,
+        enableCache = enableCache,
+    )
+}
 
 /**
  * Configure Coil image loading
