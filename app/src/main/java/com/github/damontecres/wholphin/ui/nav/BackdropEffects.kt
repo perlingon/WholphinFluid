@@ -267,6 +267,9 @@ internal data class Tile(
     val onTop: Boolean = false,
     // Soft edges, see Feather. Null = use the default given where the tiles are set up
     val feather: Feather? = null,
+    // How strongly it is drawn when any edge of the image is one flat colour, as a share of its
+    // layers' opacity: 1f = unchanged, 0.5f = half, 0f = left out
+    val flatEdgeOpacity: Float = 1f,
 )
 
 /**
@@ -314,7 +317,10 @@ internal suspend fun bakeBackdropBackground(
     flatEdgeDarkLevel: Float,
     flatEdgeDarkTolerance: Float,
     flatEdgeTint: Float,
+    flatEdgeTintSolid: Float,
     flatEdgeTintReach: Float,
+    imageLeft: Float,
+    imageRight: Float,
     drawBackground: DrawScope.() -> Unit,
     drawOverlay: DrawScope.() -> Unit,
     groupSmoothRadius: Int,
@@ -378,25 +384,33 @@ internal suspend fun bakeBackdropBackground(
             val outputSize = Size(width.toFloat(), height.toFloat())
             CanvasDrawScope().draw(density, layoutDirection, Canvas(output), outputSize) {
                 drawBackground()
-                // Where the image's left or right edge is one flat colour, the colour base leans
-                // towards that colour on that side, so the image blends into it
+                // Where the image's left or right edge is one flat colour, the colour base takes
+                // that colour on that side: full from the screen's edge to just past the image's
+                // edge, so the image's edge always sits on it, then fading out behind the image
                 val tint = flatEdgeTint.coerceIn(0f, 1f)
-                val reach = flatEdgeTintReach.coerceIn(0.01f, 1f)
+                val solid = flatEdgeTintSolid.coerceAtLeast(0f)
+                val reach = flatEdgeTintReach.coerceAtLeast(solid + 0.001f)
                 if (tint > 0f) {
                     flatEdges[ImageEdge.LEFT]?.let { color ->
+                        val full = (imageLeft + solid).coerceIn(0f, 0.998f)
+                        val gone = (imageLeft + reach).coerceIn(full + 0.001f, 1f)
                         drawRect(
                             brush =
                                 Brush.horizontalGradient(
                                     0f to color.copy(alpha = tint),
-                                    reach to color.copy(alpha = 0f),
+                                    full to color.copy(alpha = tint),
+                                    gone to color.copy(alpha = 0f),
                                 ),
                         )
                     }
                     flatEdges[ImageEdge.RIGHT]?.let { color ->
+                        val full = (imageRight - solid).coerceIn(0.002f, 1f)
+                        val gone = (imageRight - reach).coerceIn(0f, full - 0.001f)
                         drawRect(
                             brush =
                                 Brush.horizontalGradient(
-                                    (1f - reach) to color.copy(alpha = 0f),
+                                    gone to color.copy(alpha = 0f),
+                                    full to color.copy(alpha = tint),
                                     1f to color.copy(alpha = tint),
                                 ),
                         )
@@ -429,71 +443,88 @@ internal suspend fun bakeBackdropBackground(
                                     (size.width * copy.width).roundToInt().coerceAtLeast(1),
                                     (size.height * tileHeight).roundToInt().coerceAtLeast(1),
                                 )
-                            // This copy's own blur: stretch the tiny version to its final size first,
-                            // blur that, and draw the result in place of the plain stretch
                             val smoothRadius = (size.width * copy.smooth).roundToInt()
-                            val source =
-                                if (smoothRadius >= 1) {
-                                    // Kept to a sensible size; the blur radius shrinks along with it
-                                    val shrink = minOf(1f, 2048f / maxOf(area.width, area.height))
-                                    val stretched =
-                                        Bitmap
-                                            .createScaledBitmap(
-                                                blurred.asAndroidBitmap(),
-                                                (area.width * shrink).roundToInt().coerceAtLeast(1),
-                                                (area.height * shrink).roundToInt().coerceAtLeast(1),
-                                                true,
-                                            ).copy(Bitmap.Config.ARGB_8888, true)
-                                    boxBlur(stretched, (smoothRadius * shrink).roundToInt().coerceAtLeast(1))
-                                    stretched.asImageBitmap()
-                                } else {
-                                    blurred
-                                }
                             // The fades are made before the flip, so a flipped tile swaps its sides
                             val feather =
-                                copy.feather?.let {
-                                    Feather(
-                                        top = if (copy.flipVertical) it.bottom else it.top,
-                                        right = if (copy.flip) it.left else it.right,
-                                        bottom = if (copy.flipVertical) it.top else it.bottom,
-                                        left = if (copy.flip) it.right else it.left,
-                                    )
-                                }
-                            val drawn =
-                                if (feather != null && feather.any) {
-                                    val shrink = minOf(1f, 2048f / maxOf(area.width, area.height))
-                                    featheredCopy(
-                                        source,
-                                        (area.width * shrink).roundToInt().coerceAtLeast(1),
-                                        (area.height * shrink).roundToInt().coerceAtLeast(1),
-                                        feather,
-                                        density,
-                                        layoutDirection,
-                                    )
+                                copy.feather
+                                    ?.let {
+                                        Feather(
+                                            top = if (copy.flipVertical) it.bottom else it.top,
+                                            right = if (copy.flip) it.left else it.right,
+                                            bottom = if (copy.flipVertical) it.top else it.bottom,
+                                            left = if (copy.flip) it.right else it.left,
+                                        )
+                                    }?.takeIf { it.any }
+                            // What gets drawn, and where within the tile (before the flip)
+                            val drawn: ImageBitmap?
+                            val drawOffset: IntOffset
+                            val drawSize: IntSize
+                            if (smoothRadius < 1 && feather == null) {
+                                // A plain stretch of the tiny version: nothing to prepare
+                                drawn = blurred
+                                drawOffset = offset
+                                drawSize = area
+                            } else {
+                                // Only the part of the tile that can be seen is prepared. A blur
+                                // reaches about three radii, so that much more around the screen
+                                // is kept to blur the visible edge correctly
+                                val margin = 3 * smoothRadius
+                                val visibleLeft = maxOf(offset.x, -margin)
+                                val visibleTop = maxOf(offset.y, -margin)
+                                val visibleRight = minOf(offset.x + area.width, size.width.roundToInt() + margin)
+                                val visibleBottom = minOf(offset.y + area.height, size.height.roundToInt() + margin)
+                                if (visibleRight <= visibleLeft || visibleBottom <= visibleTop) {
+                                    // Entirely off screen
+                                    drawn = null
+                                    drawOffset = offset
+                                    drawSize = area
                                 } else {
-                                    source
+                                    // The same part of the tile before the flip, in the tile's
+                                    // own coordinates
+                                    val cropLeft =
+                                        if (copy.flip) area.width - (visibleRight - offset.x) else visibleLeft - offset.x
+                                    val cropTop =
+                                        if (copy.flipVertical) area.height - (visibleBottom - offset.y) else visibleTop - offset.y
+                                    val cropSize = IntSize(visibleRight - visibleLeft, visibleBottom - visibleTop)
+                                    drawn =
+                                        tileCrop(
+                                            blurred,
+                                            area,
+                                            IntOffset(cropLeft, cropTop),
+                                            cropSize,
+                                            smoothRadius,
+                                            feather,
+                                            density,
+                                            layoutDirection,
+                                        )
+                                    drawOffset = IntOffset(offset.x + cropLeft, offset.y + cropTop)
+                                    drawSize = cropSize
                                 }
+                            }
                             // Mirrored about the copy's own middle, so it stays where it is
                             val middle = Offset(offset.x + area.width / 2f, offset.y + area.height / 2f)
-                            withTransform({
-                                if (copy.flip || copy.flipVertical) {
-                                    scale(
-                                        scaleX = if (copy.flip) -1f else 1f,
-                                        scaleY = if (copy.flipVertical) -1f else 1f,
-                                        pivot = middle,
-                                    )
-                                }
-                            }) {
-                                copy.layers.forEach { (layerBlendMode, layerOpacity) ->
-                                    drawImage(
-                                        image = drawn,
-                                        dstOffset = offset,
-                                        dstSize = area,
-                                        alpha = layerOpacity.coerceIn(0f, 1f),
-                                        blendMode = layerBlendMode,
-                                        // A plain stretch, which is what turns the tiny version into a blur
-                                        filterQuality = FilterQuality.Low,
-                                    )
+                            if (drawn != null) {
+                                withTransform({
+                                    if (copy.flip || copy.flipVertical) {
+                                        scale(
+                                            scaleX = if (copy.flip) -1f else 1f,
+                                            scaleY = if (copy.flipVertical) -1f else 1f,
+                                            pivot = middle,
+                                        )
+                                    }
+                                }) {
+                                    val flatDim = if (flatEdges.isEmpty()) 1f else copy.flatEdgeOpacity
+                                    copy.layers.forEach { (layerBlendMode, layerOpacity) ->
+                                        drawImage(
+                                            image = drawn,
+                                            dstOffset = drawOffset,
+                                            dstSize = drawSize,
+                                            alpha = (layerOpacity * flatDim).coerceIn(0f, 1f),
+                                            blendMode = layerBlendMode,
+                                            // A plain stretch, which is what turns the tiny version into a blur
+                                            filterQuality = FilterQuality.Low,
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -676,50 +707,81 @@ private suspend fun findFlatEdges(
 }
 
 /**
- * The image stretched to the given size, with its edges fading out to transparent. Each side
- * fades over its share in [feather]
+ * Part of a tile, ready to draw: the tiny version stretched over the whole tile ([tileSize]), of
+ * which only the area at [cropOffset] and [cropSize] is made. That area is blurred by
+ * [smoothRadius] and its edges fade out by [feather], both measured on the whole tile, so the part
+ * looks exactly like the same part of the whole tile. Kept to a sensible size; the blur radius
+ * shrinks along with it
  */
-private fun featheredCopy(
-    source: ImageBitmap,
-    width: Int,
-    height: Int,
-    feather: Feather,
+private fun tileCrop(
+    tiny: ImageBitmap,
+    tileSize: IntSize,
+    cropOffset: IntOffset,
+    cropSize: IntSize,
+    smoothRadius: Int,
+    feather: Feather?,
     density: Density,
     layoutDirection: LayoutDirection,
 ): ImageBitmap {
+    val shrink = minOf(1f, 2048f / maxOf(cropSize.width, cropSize.height))
+    val width = (cropSize.width * shrink).roundToInt().coerceAtLeast(1)
+    val height = (cropSize.height * shrink).roundToInt().coerceAtLeast(1)
+    // Where the whole tile sits, seen from the crop
+    val tileLeft = -cropOffset.x * shrink
+    val tileTop = -cropOffset.y * shrink
+    val tileWidth = tileSize.width * shrink
+    val tileHeight = tileSize.height * shrink
     val result = ImageBitmap(width, height)
     val size = Size(width.toFloat(), height.toFloat())
     CanvasDrawScope().draw(density, layoutDirection, Canvas(result), size) {
         // A plain stretch, so a tiny source still turns into the same blur
         drawImage(
-            image = source,
-            dstSize = IntSize(width, height),
+            image = tiny,
+            dstOffset = IntOffset(tileLeft.roundToInt(), tileTop.roundToInt()),
+            dstSize = IntSize(tileWidth.roundToInt().coerceAtLeast(1), tileHeight.roundToInt().coerceAtLeast(1)),
             filterQuality = FilterQuality.Low,
         )
-        // Solid between the two fades, see-through at a side that fades. A side without a fade
-        // starts solid, so it keeps a hard edge
-        fun fade(
-            start: Float,
-            end: Float,
-        ): Array<Pair<Float, Color>> {
-            val first = start.coerceIn(0f, 0.5f)
-            val last = end.coerceIn(0f, 0.5f)
-            return listOfNotNull(
-                0f to if (first > 0f) Color.Transparent else Color.Black,
-                if (first > 0f) first to Color.Black else null,
-                if (last > 0f) (1f - last) to Color.Black else null,
-                1f to if (last > 0f) Color.Transparent else Color.Black,
-            ).toTypedArray()
+    }
+    if (smoothRadius >= 1) {
+        boxBlur(result.asAndroidBitmap(), (smoothRadius * shrink).roundToInt().coerceAtLeast(1))
+    }
+    if (feather != null) {
+        CanvasDrawScope().draw(density, layoutDirection, Canvas(result), size) {
+            // Solid between the two fades, see-through at a side that fades. A side without a fade
+            // starts solid, so it keeps a hard edge
+            fun fade(
+                start: Float,
+                end: Float,
+            ): Array<Pair<Float, Color>> {
+                val first = start.coerceIn(0f, 0.5f)
+                val last = end.coerceIn(0f, 0.5f)
+                return listOfNotNull(
+                    0f to if (first > 0f) Color.Transparent else Color.Black,
+                    if (first > 0f) first to Color.Black else null,
+                    if (last > 0f) (1f - last) to Color.Black else null,
+                    1f to if (last > 0f) Color.Transparent else Color.Black,
+                ).toTypedArray()
+            }
+            // Keep the image only where these are solid: once across, once down
+            drawRect(
+                brush =
+                    Brush.horizontalGradient(
+                        colorStops = fade(feather.left, feather.right),
+                        startX = tileLeft,
+                        endX = tileLeft + tileWidth,
+                    ),
+                blendMode = BlendMode.DstIn,
+            )
+            drawRect(
+                brush =
+                    Brush.verticalGradient(
+                        colorStops = fade(feather.top, feather.bottom),
+                        startY = tileTop,
+                        endY = tileTop + tileHeight,
+                    ),
+                blendMode = BlendMode.DstIn,
+            )
         }
-        // Keep the image only where these are solid: once across, once down
-        drawRect(
-            brush = Brush.horizontalGradient(colorStops = fade(feather.left, feather.right)),
-            blendMode = BlendMode.DstIn,
-        )
-        drawRect(
-            brush = Brush.verticalGradient(colorStops = fade(feather.top, feather.bottom)),
-            blendMode = BlendMode.DstIn,
-        )
     }
     return result
 }
