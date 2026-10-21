@@ -267,6 +267,9 @@ internal data class Tile(
     val onTop: Boolean = false,
     // Soft edges, see Feather. Null = use the default given where the tiles are set up
     val feather: Feather? = null,
+    // How strongly it is drawn when any edge of the image is one flat colour, as a share of its
+    // layers' opacity: 1f = unchanged, 0.5f = half, 0f = left out
+    val flatEdgeOpacity: Float = 1f,
 )
 
 /**
@@ -510,12 +513,13 @@ internal suspend fun bakeBackdropBackground(
                                         )
                                     }
                                 }) {
+                                    val flatDim = if (flatEdges.isEmpty()) 1f else copy.flatEdgeOpacity
                                     copy.layers.forEach { (layerBlendMode, layerOpacity) ->
                                         drawImage(
                                             image = drawn,
                                             dstOffset = drawOffset,
                                             dstSize = drawSize,
-                                            alpha = layerOpacity.coerceIn(0f, 1f),
+                                            alpha = (layerOpacity * flatDim).coerceIn(0f, 1f),
                                             blendMode = layerBlendMode,
                                             // A plain stretch, which is what turns the tiny version into a blur
                                             filterQuality = FilterQuality.Low,
