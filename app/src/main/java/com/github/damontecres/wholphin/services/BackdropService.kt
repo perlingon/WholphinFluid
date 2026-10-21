@@ -29,8 +29,6 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.withContext
 import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.client.extensions.userLibraryApi
-import org.jellyfin.sdk.model.api.BaseItemKind
-import org.jellyfin.sdk.model.api.ImageType
 import timber.log.Timber
 import java.util.UUID
 import javax.inject.Inject
@@ -74,13 +72,7 @@ class BackdropService
          */
         suspend fun submit(item: BaseItem) =
             withContext(WholphinDispatchers.IO) {
-                val imageUrl =
-                    if (item.type == BaseItemKind.GENRE) {
-                        item.imageUrlOverride
-                    } else {
-                        imageUrlService.getItemImageUrl(item, ImageType.BACKDROP)
-                    }
-                submit(item.id.toString(), imageUrl, AnimatedTitles.isAnimated(item))
+                submit(item.id.toString(), imageUrlService.getPageBackdropUrl(item), AnimatedTitles.isAnimated(item))
             }
 
         /**

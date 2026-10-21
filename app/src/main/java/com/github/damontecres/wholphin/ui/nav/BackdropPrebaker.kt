@@ -19,8 +19,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeoutOrNull
-import org.jellyfin.sdk.model.api.BaseItemKind
-import org.jellyfin.sdk.model.api.ImageType
 import timber.log.Timber
 
 /**
@@ -159,12 +157,7 @@ fun PrebakeBackdrop(item: BaseItem?) {
 private fun backdropImageUrl(
     item: BaseItem,
     imageUrlService: ImageUrlService,
-): String? =
-    if (item.type == BaseItemKind.GENRE) {
-        item.imageUrlOverride
-    } else {
-        imageUrlService.getItemImageUrl(item, ImageType.BACKDROP)
-    }
+): String? = imageUrlService.getPageBackdropUrl(item)
 
 /**
  * Hands the prebaker the current recipe for baking a backdrop, and takes it away again when the

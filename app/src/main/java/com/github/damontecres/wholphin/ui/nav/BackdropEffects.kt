@@ -219,12 +219,12 @@ internal class BakedBackgrounds {
 
         // Share of the image cache size setting that saved backgrounds may use on disk. The
         // image cache gets the rest, so the setting stays the total
-        const val DISK_SHARE = 0.2
+        const val DISK_SHARE = 0.15
 
         // How much the saved backgrounds may take up on disk. Set from the image cache size
         // setting when the app starts
         @Volatile
-        var diskBytes = 40L * 1024 * 1024
+        var diskBytes = 30L * 1024 * 1024
     }
 }
 
