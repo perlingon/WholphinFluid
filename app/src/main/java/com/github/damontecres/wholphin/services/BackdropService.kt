@@ -205,6 +205,10 @@ class BackdropService
         // degrees away from the most common one, so the glows are not all the same colour
         private val DISTINCT_HUE_RANGE = 40f
 
+        // When white covers more than this share of the image, its most vivid colour is used as
+        // an accent for the top-left glow, so the gradient gets some real colour
+        private val WHITE_HEAVY_SHARE = 0.3f
+
         private val Palette.Swatch.isWhitish: Boolean
             get() = hsl[2] >= WHITE_MIN_LIGHTNESS && hsl[1] <= WHITE_MAX_SATURATION
 
@@ -275,6 +279,14 @@ class BackdropService
                             .toFloat() / totalPopulation
                     }
                 val useVivid = vividShare > VIVID_SHARE_THRESHOLD
+                val whiteShare =
+                    if (totalPopulation == 0) {
+                        0f
+                    } else {
+                        palette.swatches.filter { it.isWhitish }.sumOf { it.population }.toFloat() / totalPopulation
+                    }
+                // An accent: the most vivid colour, even when it covers only a small part
+                val accent = (mostVivid ?: muted)?.takeIf { whiteShare > WHITE_HEAVY_SHARE && !it.isWhitish }
 
                 // Primary (Bottom-Right)
                 val primaryColor =
@@ -297,7 +309,7 @@ class BackdropService
                             else -> null
                         }.let { toColor(it, .4f) }
                     } else {
-                        toColor(secondMostCommon ?: mostCommon ?: vibrant ?: muted, .4f)
+                        toColor(accent ?: secondMostCommon ?: mostCommon ?: vibrant ?: muted, .4f)
                     }
 
                 // Tertiary (Top-Right under image)
@@ -308,7 +320,13 @@ class BackdropService
                         toColor(mostCommon ?: vibrant ?: lightVibrant, .35f)
                     }
 
-                Timber.v("Vivid colour covers %s of the image, useVivid=%s", vividShare, useVivid)
+                Timber.v(
+                    "Vivid colour covers %s of the image, useVivid=%s, white covers %s, accent=%s",
+                    vividShare,
+                    useVivid,
+                    whiteShare,
+                    accent != null,
+                )
                 Timber.v(
                     "Colors extracted: primary=%s, secondary=%s, tertiary=%s",
                     primaryColor,
