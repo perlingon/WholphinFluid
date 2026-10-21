@@ -6,7 +6,6 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import com.github.damontecres.wholphin.data.model.BaseItem
-import com.github.damontecres.wholphin.services.AnimatedTitles
 import com.github.damontecres.wholphin.services.ImageUrlService
 import com.github.damontecres.wholphin.ui.LocalImageUrlService
 import kotlinx.coroutines.CancellationException
@@ -38,12 +37,12 @@ object BackdropPrebaker {
     // Pause between two backdrops, to leave the device room for everything else
     private const val PAUSE_MS = 40L
 
-    // Image address and whether the title is animated
-    private val waiting = ArrayDeque<Pair<String, Boolean>>()
+    // Image addresses
+    private val waiting = ArrayDeque<String>()
     private val done = LruCache<String, Boolean>(400)
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private var worker: Job? = null
-    private var baker: (suspend (String, Boolean) -> Unit)? = null
+    private var baker: (suspend (String) -> Unit)? = null
 
     // Counts finished backdrops, so waiting for one can tell when to look again
     private val finished = MutableStateFlow(0)
@@ -52,7 +51,7 @@ object BackdropPrebaker {
      * Sets what actually bakes a backdrop. The [Backdrop] on screen provides it, because the
      * recipe (theme, glows, blur layers, vignettes) lives there. Null when no backdrop is shown
      */
-    fun setBaker(newBaker: (suspend (String, Boolean) -> Unit)?) {
+    fun setBaker(newBaker: (suspend (String) -> Unit)?) {
         synchronized(this) {
             baker = newBaker
         }
@@ -62,15 +61,12 @@ object BackdropPrebaker {
     /**
      * Asks for the background of this backdrop image to be prepared
      */
-    fun request(
-        imageUrl: String?,
-        animated: Boolean,
-    ) {
+    fun request(imageUrl: String?) {
         if (imageUrl.isNullOrBlank()) return
         synchronized(this) {
             if (done.get(imageUrl) != null) return
-            waiting.removeAll { it.first == imageUrl }
-            waiting.addFirst(imageUrl to animated)
+            waiting.removeAll { it == imageUrl }
+            waiting.addFirst(imageUrl)
             while (waiting.size > MAX_WAITING) waiting.removeLast()
         }
         startWorker()
@@ -81,14 +77,14 @@ object BackdropPrebaker {
      * first. For lists that are known before their cards are on screen, such as home rows that
      * load behind the loading spinner
      */
-    suspend fun requestFirst(
+    fun requestFirst(
         items: List<BaseItem?>,
         imageUrlService: ImageUrlService,
         count: Int = 4,
     ) {
         // Each request goes to the front of the queue, so the first item is asked for last
         items.filterNotNull().take(count).asReversed().forEach { item ->
-            request(backdropImageUrl(item, imageUrlService), AnimatedTitles.isAnimated(item))
+            request(backdropImageUrl(item, imageUrlService))
         }
     }
 
@@ -125,8 +121,8 @@ object BackdropPrebaker {
                                 waiting.removeFirst() to currentBaker
                             }
                         try {
-                            bake(request.first, request.second)
-                            done.put(request.first, true)
+                            bake(request)
+                            done.put(request, true)
                             finished.value++
                         } catch (ex: CancellationException) {
                             throw ex
@@ -148,7 +144,7 @@ fun PrebakeBackdrop(item: BaseItem?) {
     val imageUrlService = LocalImageUrlService.current
     LaunchedEffect(item?.id) {
         if (item != null) {
-            BackdropPrebaker.request(backdropImageUrl(item, imageUrlService), AnimatedTitles.isAnimated(item))
+            BackdropPrebaker.request(backdropImageUrl(item, imageUrlService))
         }
     }
 }
@@ -165,7 +161,7 @@ private fun backdropImageUrl(
  * update a file that contains an onDispose block
  */
 @Composable
-internal fun RegisterBackdropBaker(baker: suspend (String, Boolean) -> Unit) {
+internal fun RegisterBackdropBaker(baker: suspend (String) -> Unit) {
     SideEffect { BackdropPrebaker.setBaker(baker) }
     DisposableEffect(Unit) {
         onDispose { BackdropPrebaker.setBaker(null) }

@@ -45,6 +45,7 @@ import java.io.File
 import java.security.MessageDigest
 import kotlin.math.max
 import kotlin.math.roundToInt
+import kotlin.math.sqrt
 
 // The heavy lifting behind the backdrop: composing the baked background and generating film grain.
 // Kept apart from Backdrop.kt on purpose. While tuning values there with Live Edit, the code in
@@ -236,6 +237,9 @@ internal class BakedBackgrounds {
  * that differ.
  */
 internal data class Tile(
+    // The edge of the image this tile reflects, if any. It is left out when that edge is one
+    // flat colour. Null = always drawn
+    val reflects: ImageEdge? = null,
     // Where the tile's left and top edges sit, as shares of the screen: 0f, 0f is the top-left
     // corner, 1f, 1f the bottom-right. Either may be negative or above 1 to reach off screen
     val left: Float = 0f,
@@ -283,6 +287,8 @@ internal suspend fun bakeBackdropBackground(
     layoutDirection: LayoutDirection,
     imageAspect: Float,
     tiles: List<Tile>,
+    flatEdgeStrip: Float,
+    flatEdgeTolerance: Float,
     drawBackground: DrawScope.() -> Unit,
     drawOverlay: DrawScope.() -> Unit,
     groupSmoothRadius: Int,
@@ -324,6 +330,16 @@ internal suspend fun bakeBackdropBackground(
                 }
             }
 
+            // Tiles that reflect an edge of the image which is one flat colour would only add a
+            // flat patch, so they are left out
+            val flatEdges =
+                if (imageUrl != null && tiles.any { it.reflects != null }) {
+                    findFlatEdges(context, imageUrl, flatEdgeStrip, flatEdgeTolerance)
+                } else {
+                    emptySet()
+                }
+            val shownTiles = tiles.filter { it.reflects == null || it.reflects !in flatEdges }
+
             val output = ImageBitmap(width, height)
             val outputSize = Size(width.toFloat(), height.toFloat())
             CanvasDrawScope().draw(density, layoutDirection, Canvas(output), outputSize) {
@@ -334,9 +350,9 @@ internal suspend fun bakeBackdropBackground(
             // that sheet is blended on top. Then the tiles marked onTop go straight onto the
             // result. Last, everything is smoothed together
             listOf(
-                Triple(tiles.filter { it.behind && !it.onTop }, 0, false),
-                Triple(tiles.filter { !it.behind && !it.onTop }, groupSmoothRadius, true),
-                Triple(tiles.filter { it.onTop }, 0, false),
+                Triple(shownTiles.filter { it.behind && !it.onTop }, 0, false),
+                Triple(shownTiles.filter { !it.behind && !it.onTop }, groupSmoothRadius, true),
+                Triple(shownTiles.filter { it.onTop }, 0, false),
             ).forEach { (passTiles, passRadius, isGroup) ->
                 val target = if (isGroup) ImageBitmap(width, height) else output
                 CanvasDrawScope().draw(density, layoutDirection, Canvas(target), outputSize) {
@@ -459,10 +475,11 @@ internal suspend fun bakeBackdropBackground(
             }
             // To compare devices and settings: filter Logcat on "BackdropBake"
             Timber.tag("BackdropBake").i(
-                "Baked %dx%d in %d ms",
+                "Baked %dx%d in %d ms, flat edges: %s",
                 width,
                 height,
                 (System.nanoTime() - started) / 1_000_000,
+                flatEdges.ifEmpty { "none" },
             )
             output
         } catch (ex: CancellationException) {
@@ -472,6 +489,71 @@ internal suspend fun bakeBackdropBackground(
             null
         }
     }
+
+/**
+ * An edge of the backdrop image, for tiles that reflect it
+ */
+internal enum class ImageEdge { LEFT, BOTTOM, RIGHT }
+
+// Width of the version of the image that is checked for flat edges
+private const val EDGE_CHECK_WIDTH = 480
+
+/**
+ * The edges of the image that are one flat colour: along each, a strip [stripShare] of the
+ * image's width (or height, for the bottom) deep is checked, and it is flat when no colour
+ * channel varies by more than [tolerance] (a standard deviation, 0 to 255)
+ */
+private suspend fun findFlatEdges(
+    context: Context,
+    imageUrl: Any,
+    stripShare: Float,
+    tolerance: Float,
+): Set<ImageEdge> {
+    val request =
+        ImageRequest
+            .Builder(context)
+            .data(imageUrl)
+            .size(EDGE_CHECK_WIDTH, EDGE_CHECK_WIDTH)
+            .allowHardware(false)
+            .bitmapConfig(Bitmap.Config.ARGB_8888)
+            .build()
+    val result = context.imageLoader.execute(request) as? SuccessResult ?: return emptySet()
+    val bitmap = result.image.asDrawable(context.resources).toBitmap(config = Bitmap.Config.ARGB_8888)
+    val width = bitmap.width
+    val height = bitmap.height
+    val strip = (width * stripShare).roundToInt().coerceIn(1, max(1, minOf(width, height) / 2))
+
+    // Standard deviation of each colour channel over the area; flat when all are small
+    fun isFlat(
+        x: Int,
+        y: Int,
+        w: Int,
+        h: Int,
+    ): Boolean {
+        val pixels = IntArray(w * h)
+        bitmap.getPixels(pixels, 0, w, x, y, w, h)
+        val sums = DoubleArray(3)
+        val squares = DoubleArray(3)
+        for (color in pixels) {
+            val channels = intArrayOf((color shr 16) and 0xFF, (color shr 8) and 0xFF, color and 0xFF)
+            for (c in 0..2) {
+                sums[c] += channels[c]
+                squares[c] += channels[c].toDouble() * channels[c]
+            }
+        }
+        val count = pixels.size.toDouble()
+        return (0..2).all { c ->
+            val mean = sums[c] / count
+            sqrt((squares[c] / count - mean * mean).coerceAtLeast(0.0)) <= tolerance
+        }
+    }
+
+    return buildSet {
+        if (isFlat(0, 0, strip, height)) add(ImageEdge.LEFT)
+        if (isFlat(width - strip, 0, strip, height)) add(ImageEdge.RIGHT)
+        if (isFlat(0, height - strip, width, strip)) add(ImageEdge.BOTTOM)
+    }
+}
 
 /**
  * The image stretched to the given size, with its edges fading out to transparent. The fades
