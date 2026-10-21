@@ -447,14 +447,14 @@ fun Backdrop(
             // can turn it off with enableTopScrim
             val topShade =
                 Vignette(
-                    centerX = 0.5f,
-                    centerY = 0f,
-                    radius = 0.15f,
-                    widthToHeight = 5f,
+                    centerX = 1f,
+                    centerY = -0.6f,
+                    radius = 0.88f,
+                    widthToHeight = 0.3f,
                     stops =
                         listOf(
-                            0f to 0.55f,
-                            0.5f to 0.25f,
+                            0f to 0.3f,
+                            0.29f to 0.6f,
                             1f to 0f,
                         ),
                 )
