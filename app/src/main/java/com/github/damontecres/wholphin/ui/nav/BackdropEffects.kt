@@ -2,6 +2,7 @@ package com.github.damontecres.wholphin.ui.nav
 
 import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.util.LruCache
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
@@ -31,10 +32,17 @@ import coil3.request.ImageRequest
 import coil3.request.SuccessResult
 import coil3.request.allowHardware
 import coil3.request.bitmapConfig
+import com.github.damontecres.wholphin.BuildConfig
+import com.github.damontecres.wholphin.WholphinApplication
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import timber.log.Timber
+import java.io.File
+import java.security.MessageDigest
 import kotlin.math.max
 import kotlin.math.roundToInt
 
@@ -110,7 +118,95 @@ private fun makeGrainTile(
 }
 
 // Recently baked backgrounds, so going back to a backdrop that was already shown is instant
-internal val bakedBackgrounds = LruCache<Any, ImageBitmap>(96)
+internal val bakedBackgrounds = BakedBackgrounds()
+
+/**
+ * Keeps baked backgrounds in memory and saves them as files, so they survive the app being closed.
+ * A saved file only counts for the build that made it, because a code change can change the look.
+ * Debug builds don't save files: with Live Edit the look changes without a new build
+ */
+internal class BakedBackgrounds {
+    // Limited by size rather than count, so larger bakes can't fill the memory
+    private val memory =
+        object : LruCache<Any, ImageBitmap>(MEMORY_BYTES) {
+            override fun sizeOf(
+                key: Any,
+                value: ImageBitmap,
+            ): Int = value.width * value.height * 4
+        }
+
+    private val saveDisk = !BuildConfig.DEBUG
+    private val folder by lazy { File(WholphinApplication.instance.cacheDir, "baked_backdrops") }
+    private val writer = CoroutineScope(SupervisorJob() + Dispatchers.IO.limitedParallelism(1))
+
+    /**
+     * The background for this key if it is in memory
+     */
+    fun get(key: Any): ImageBitmap? = memory.get(key)
+
+    /**
+     * The background for this key from memory, or else from its saved file
+     */
+    suspend fun load(key: Any): ImageBitmap? {
+        memory.get(key)?.let { return it }
+        if (!saveDisk) return null
+        return withContext(Dispatchers.IO) {
+            val file = fileFor(key)
+            if (!file.exists()) return@withContext null
+            try {
+                val options = BitmapFactory.Options().apply { inPreferredConfig = Bitmap.Config.ARGB_8888 }
+                BitmapFactory.decodeFile(file.path, options)?.asImageBitmap()?.also {
+                    Timber.tag("BackdropBake").i("Loaded %dx%d from a saved file", it.width, it.height)
+                    memory.put(key, it)
+                    // Marks it as recently used, so it is kept when old files are cleared out
+                    file.setLastModified(System.currentTimeMillis())
+                }
+            } catch (ex: Exception) {
+                Timber.w(ex, "Could not read saved backdrop background")
+                null
+            }
+        }
+    }
+
+    fun put(
+        key: Any,
+        image: ImageBitmap,
+    ) {
+        memory.put(key, image)
+        if (!saveDisk) return
+        writer.launch {
+            try {
+                folder.mkdirs()
+                val file = fileFor(key)
+                val temp = File(folder, file.name + ".tmp")
+                temp.outputStream().use { image.asAndroidBitmap().compress(Bitmap.CompressFormat.JPEG, 90, it) }
+                temp.renameTo(file)
+                trim()
+            } catch (ex: Exception) {
+                Timber.w(ex, "Could not save backdrop background")
+            }
+        }
+    }
+
+    // The file name is a fingerprint of the key and the build, so any change to the look gets
+    // new files
+    private fun fileFor(key: Any): File {
+        val digest = MessageDigest.getInstance("SHA-1").digest("${BuildConfig.BUILD_TIME}|$key".toByteArray())
+        return File(folder, digest.joinToString("") { "%02x".format(it) } + ".jpg")
+    }
+
+    // Removes the least recently used files beyond the limit, including those of older builds
+    private fun trim() {
+        val files = folder.listFiles { file -> file.name.endsWith(".jpg") } ?: return
+        if (files.size <= MAX_FILES) return
+        files.sortedBy { it.lastModified() }.take(files.size - MAX_FILES).forEach { it.delete() }
+    }
+
+    private companion object {
+        const val MEMORY_BYTES = 40 * 1024 * 1024
+        const val MAX_FILES = 300
+    }
+}
 
 /**
  * One tile of the baked background: a copy of the backdrop image, usually blurred, laid over an

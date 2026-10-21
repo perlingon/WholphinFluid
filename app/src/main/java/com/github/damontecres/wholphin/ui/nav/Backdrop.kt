@@ -577,7 +577,7 @@ fun Backdrop(
                     // The colours for this image are not in yet; wait for them
                     if (backdrop.colorsPending) return@produceState
                     // Already made for this backdrop
-                    bakedBackgrounds.get(bakeKey)?.let {
+                    bakedBackgrounds.load(bakeKey)?.let {
                         value = backdrop.imageUrl to it
                         return@produceState
                     }
@@ -652,7 +652,7 @@ fun Backdrop(
                             val secondary = targetGlow(colors.secondary)
                             val tertiary = targetGlow(colors.tertiary)
                             val key = bakeKeyFor(imageUrl, primary, secondary, tertiary, glows, animated)
-                            if (bakedBackgrounds.get(key) == null) {
+                            if (bakedBackgrounds.load(key) == null) {
                                 bakeFor(imageUrl, primary, secondary, tertiary, glows, animated)?.let {
                                     bakedBackgrounds.put(key, it)
                                 }
