@@ -421,7 +421,28 @@ fun Backdrop(
                             ),
                     ),
                 )
-            val vignettes = if (showVignettes) allVignettes else emptyList()
+            // Top shade, so the clock and tabs stay readable: darkest at its centre on the top
+            // edge, fading out downwards. A wide, flat ellipse, so it spans the whole top. Pages
+            // can turn it off with enableTopScrim
+            val topShade =
+                Vignette(
+                    centerX = 0.5f,
+                    centerY = 0f,
+                    radius = 0.15f,
+                    widthToHeight = 5f,
+                    stops =
+                        listOf(
+                            0f to 0.55f,
+                            0.5f to 0.25f,
+                            1f to 0f,
+                        ),
+                )
+            val vignettes =
+                if (showVignettes) {
+                    allVignettes + if (enableTopScrim) listOf(topShade) else emptyList()
+                } else {
+                    emptyList()
+                }
             // Draws the vignette for a screen of the given size. origin is where the area being
             // drawn into sits on that screen, so a smaller layer (the sharp image) gets the part
             // of the vignette that falls on it
@@ -722,21 +743,6 @@ fun Backdrop(
                                 drawRect(
                                     brush = SolidColor(Color.Black),
                                     alpha = .75f,
-                                    // Only darken the image itself, not the empty box before it loads
-                                    blendMode = BlendMode.SrcAtop,
-                                )
-                            }
-                            // Subtle top scrim for system UI readability (clock, tabs)
-                            if (false) {
-                                drawRect(
-                                    brush =
-                                        Brush.verticalGradient(
-                                            colorStops =
-                                                arrayOf(
-                                                    0f to Color.Black.copy(alpha = TOP_SCRIM_ALPHA),
-                                                    TOP_SCRIM_END_FRACTION to Color.Transparent,
-                                                ),
-                                        ),
                                     // Only darken the image itself, not the empty box before it loads
                                     blendMode = BlendMode.SrcAtop,
                                 )
