@@ -24,5 +24,5 @@ object BackdropDebug {
 
     // Draws a red arrow on each edge of the sharp image that was found to be one flat colour, so
     // its reflection tiles were left out of the background. Points out of the image
-    val showFlatEdges = false
+    val showFlatEdges = true
 }

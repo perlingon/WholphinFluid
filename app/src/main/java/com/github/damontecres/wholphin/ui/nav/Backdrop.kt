@@ -305,14 +305,14 @@ fun Backdrop(
                             // left reflection
                             Tile(
                                 reflects = ImageEdge.LEFT,
-                                left = -2.1f,
+                                left = -2f,
                                 top = -0.05f,
                                 width = 2.67f,
                                 height = 0.84f,
                                 flip = true,
-                                resolution = 330,
-                                smooth = 0.009f,
-                                layers = listOf(BlendMode.Softlight to 1f,BlendMode.Overlay to 0.5f),
+                                resolution = 130,
+                                smooth = 0.09f,
+                                layers = listOf(BlendMode.Softlight to 1f,BlendMode.Hardlight to 0.8f),
                             ),
                             Tile(
                                 left = -0.6f,
@@ -345,7 +345,7 @@ fun Backdrop(
                                 flipVertical = true,
                                 resolution = 80,
                                 smooth = 0.01f,
-                                layers = listOf(BlendMode.Hardlight to 0.9f),
+                                layers = listOf(BlendMode.Hardlight to 0.2f),
                             ),
                             // bottom reflection
                             Tile(
@@ -383,7 +383,7 @@ fun Backdrop(
                     smooth = 0.09f,
                     layers =
                         listOf(
-                            BlendMode.Exclusion to 0.2f,BlendMode.Hardlight to 0.8f,
+                            BlendMode.Exclusion to 0.1f
                         ),
                 )
             // Switch for the main tile: true = on, false = off
@@ -453,18 +453,18 @@ fun Backdrop(
             // edge, fading out downwards. A wide, flat ellipse, so it spans the whole top.
             val sideShade =
                 Vignette(
-                    centerX = 0.51f,
-                    centerY = 0.6f,
+                    centerX = 0.53f,
+                    centerY = 0.7f,
                     radius = 0.5f,
                     widthToHeight = 1f,
                     stops =
                         listOf(
                             0f to 0f,
-                            0.55f to 0f,
-                            0.67f to 0.25f,
-                            1f to 1f,
+                            0.45f to 0f,
+                            0.77f to 0.35f,
+                            1f to 0.7f,
                         ),
-                    blendMode = BlendMode.SrcOver,
+                    blendMode = BlendMode.Darken,
                 )
             val vignettes =
                 if (showVignettes) {
