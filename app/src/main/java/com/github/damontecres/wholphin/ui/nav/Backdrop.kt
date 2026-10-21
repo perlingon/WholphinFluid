@@ -940,6 +940,12 @@ fun Backdrop(
                                     blendMode = BlendMode.DstIn,
                                 )
                             }
+                            // Development switch, see BackdropDebug. Drawn after the masks so
+                            // they cannot fade it
+                            if (BackdropDebug.showFlatEdges) {
+                                val shown = if (bakeBackground) shownImageUrl.value else backdrop.imageUrl
+                                shown?.let { flatEdgesByImage.get(it) }?.let { drawFlatEdgeArrows(it) }
+                            }
                         },
             )
             // Film grain over everything: the baked background and the sharp image.
