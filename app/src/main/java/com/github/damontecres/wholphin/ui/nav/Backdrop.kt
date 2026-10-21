@@ -420,7 +420,7 @@ fun Backdrop(
                         ),
                     // When an edge of the image is flat, it is drawn at this share of the above,
                     // so it does not wash out the flat edge colour
-                    flatEdgeOpacity = 0.4f,
+                    flatEdgeOpacity = 0.7f,
                 )
             // Switch for the main tile: true = on, false = off
             val showMainTile = true
@@ -471,7 +471,7 @@ fun Backdrop(
             //   1f = black)
             // They are drawn in order, each on top of the one before
             // Switch for all the vignettes at once: true = on, false = off
-            val showVignettes = false
+            val showVignettes = true
             val allVignettes =
                 listOf(
                     // spotlight on the image
@@ -483,9 +483,9 @@ fun Backdrop(
                         stops =
                             listOf(
                                 0f to 0f,
-                                0.18f to 0.1f,
-                                0.38f to 0.2f,
-                                1f to 0.5f,
+                                0.18f to 0.05f,
+                                0.38f to 0.1f,
+                                1f to 0.4f,
                             ),
                         blendMode = BlendMode.SrcOver,
                     ),
@@ -875,7 +875,7 @@ fun Backdrop(
                             val horizontalFadeFlat =
                                 listOf(
                                     0f to 1f,
-                                    0.97f to 1f,
+                                    0.999f to 1f,
                                     1f to 0f,
                                 )
                             val horizontalFade = if (flatOuterEdge) horizontalFadeFlat else horizontalFadeNormal
@@ -928,7 +928,7 @@ fun Backdrop(
                             // The same when the image's edge facing the screen edge is one flat
                             // colour: closer to the edge = a much narrower fade, since the colour
                             // base already carries that colour onwards
-                            val edgeFadeCenterXFlat = 0.92f
+                            val edgeFadeCenterXFlat = 0.9f
                             val edgeFadeCenterY = 0.35f
                             // Height of the curve relative to the image's height: lower = rounder
                             // (corners cut away more), higher = flatter (closer to a straight edge)
