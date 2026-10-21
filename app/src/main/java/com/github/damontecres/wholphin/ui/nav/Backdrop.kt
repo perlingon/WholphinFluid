@@ -304,26 +304,26 @@ fun Backdrop(
                             ),
                             // left reflection
                             Tile(
-                                left = -2.2f,
+                                left = -1.1f,
                                 top = 0.071f,
-                                width = 1.75f,
-                                height = 0.7f,
+                                width = 1.85f,
+                                height = 0.72f,
                                 flip = true,
-                                resolution = 180,
-                                smooth = 0.01f,
-                                layers = listOf(BlendMode.SrcOver to 1f),
+                                resolution = 80,
+                                smooth = 0.0005f,
+                                layers = listOf(BlendMode.Softlight to 0.5f),
                             ),
                             // lower left reflection mirror
                             Tile(
-                                left = -3f,
-                                top = 0.56f,
-                                width = 4f,
-                                height = 2.4f,
-                                flip = false,
+                                left = -1.2f,
+                                top = 0.61f,
+                                width = 1.95f,
+                                height = 3f,
+                                flip = true,
                                 flipVertical = true,
                                 resolution = 80,
-                                smooth = 0.04f,
-                                layers = listOf(BlendMode.SrcOver to 1f),
+                                smooth = 0.00001f,
+                                layers = listOf(BlendMode.Hardlight to 0.9f),
                             ),
                             // bottom reflection
                             Tile(
@@ -333,8 +333,8 @@ fun Backdrop(
                                 height = 0.72f,
                                 flip = true,
                                 flipVertical = true,
-                                resolution = 60,
-                                smooth = 0.03f,
+                                resolution = 90,
+                                smooth = 0.01f,
                                 layers = listOf(BlendMode.Softlight to 0.5f),
                             ),
                         )
@@ -478,13 +478,13 @@ fun Backdrop(
                 val density = LocalDensity.current
                 val layoutDirection = LocalLayoutDirection.current
                 // Size of the baked image; it is soft everywhere, so it can be small
-                val bakeWidth = 480
+                val bakeWidth = 280
                 // Extra smoothing of the baked glows and blur, as a share of the screen width:
                 // 0 = none, 0.01 = a soft blur about 1% of the screen wide. Only applies when baked
-                val bakeSmooth = 0f // the final blur, over everything: glows and all tiles
+                val bakeSmooth = 0.0009f // the final blur, over everything: glows and all tiles
                 // Blur of the mirror tiles as one group, before they are blended over the main
                 // tile. Same scale as bakeSmooth
-                val groupSmooth = 0f
+                val groupSmooth = 0.0009f
                 // How the blurred mirror tiles are blended onto the glows, bottom to top, as blend
                 // mode to opacity, and the opacity of the group as a whole
                 val groupLayers = listOf(BlendMode.SrcOver to 1f)
@@ -766,8 +766,8 @@ fun Backdrop(
                             val horizontalFade =
                                 listOf(
                                     0f to 0f,
-                                    0.12f to 0.2f,
-                                    0.35f to 0.8f,
+                                    0.11f to 0.2f,
+                                    0.21f to 0.9f,
                                     0.40f to 1f,
                                     0.79f to 1f,
                                     1f to 1f,
