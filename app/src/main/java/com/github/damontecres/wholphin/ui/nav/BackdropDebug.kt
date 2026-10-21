@@ -11,6 +11,9 @@ object BackdropDebug {
     // Hides the card rows
     val hideRows = false
 
+    // Hides the logo, title and details of the focused item at the top of the page
+    val hideInfo = false
+
     // Hides the sharp backdrop image, leaving only the baked background
     val hideImage = false
 
