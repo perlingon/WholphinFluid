@@ -151,15 +151,15 @@ fun Backdrop(
     // Strength of the colour glows behind the image: 1 = upstream's look, higher = more colour.
     // Kept local so Live Edit picks up changes
     // The theme scales this: full strength on Vivid, down to a fraction on Darkest
-    val glowIntensity = 6f * LocalFluidTheme.current.glow
+    val glowIntensity = 7f * LocalFluidTheme.current.glow
 
     // Brightest a glow colour may be, 0 to 1 (1 = no cap). Brighter colours are darkened down
     // to this, keeping their hue and saturation, so a white or yellow poster cannot wash the
     // background out
-    val glowMaxBrightness = 0.45f
+    val glowMaxBrightness = 0.8f
     // Darkest a glow colour may be, 0 to 1 (0 = no cap). Darker colours are lifted up to this,
     // keeping their hue and saturation, so a near-black poster still gives a hint of colour
-    val glowMinBrightness = 0.18f
+    val glowMinBrightness = 0.15f
 
     fun Color.capped(): Color {
         if (!isSpecified) return this
@@ -281,13 +281,14 @@ fun Backdrop(
                             Tile(
                                 reflects = ImageEdge.RIGHT,
                                 left = 0.9f,
-                                top = -0.01f,
+                                top = 0.01f,
                                 width = 1.05f,
                                 height = 0.85f,
                                 flip = true,
-                                resolution = 280,
+                                resolution = 240,
                                 smooth = 0.005f,
-                                layers = listOf(BlendMode.SrcOver to 1f),
+                                feather = Feather(0f, 0f, 0.2f, 0f),
+                                layers = listOf(BlendMode.Softlight to 0.7f),
                             ),
                             // lower left reflection
                             Tile(
@@ -300,21 +301,49 @@ fun Backdrop(
                                 flipVertical = true,
                                 resolution = 80,
                                 smooth = 0.03f,
-                                layers = listOf(BlendMode.SrcOver to 0.8f),
+                                layers = listOf(BlendMode.Overlay to 0.9f),
                             ),
                             // left reflection
                             Tile(
                                 reflects = ImageEdge.LEFT,
-                                left = -2f,
-                                top = -0.05f,
-                                width = 2.67f,
-                                height = 0.84f,
+                                left = -2.3f,
+                                top = -0.12f,
+                                width = 2.77f,
+                                height = 1f,
                                 flip = true,
-                                resolution = 130,
-                                smooth = 0.09f,
+                                resolution = 300,
+                                smooth = 0.003f,
+                                feather = Feather(0.2f, 0f, 0.6f,0.2f),
                                 layers = listOf(BlendMode.Softlight to 1f,BlendMode.Hardlight to 0.8f),
                             ),
                             Tile(
+                                reflects = ImageEdge.LEFT,
+                                left = -0.22f,
+                                top = -0.2f,
+                                width = 0.7f,
+                                height = 1f,
+                                flip = true,
+                                flipVertical = false,
+                                resolution = 100,
+                                smooth = 0.012f,
+                                feather = Feather(0.45f),
+                                layers = listOf(BlendMode.SrcOver to 0.85f),
+                            ),
+                            Tile(
+                                reflects = ImageEdge.LEFT,
+                                left = -0.72f,
+                                top = -1.1f,
+                                width = 1.3f,
+                                height = 1.4f,
+                                flip = true,
+                                flipVertical = true,
+                                resolution = 50,
+                                smooth = 0.032f,
+                                feather = Feather(0f,0.1f,0.12f,1f),
+                                layers = listOf(BlendMode.Luminosity to 1f),
+                            ),
+                            Tile(
+                                reflects = ImageEdge.LEFT,
                                 left = -0.6f,
                                 top = 0f,
                                 width = 1f,
@@ -322,9 +351,10 @@ fun Backdrop(
                                 flip = true,
                                 resolution = 230,
                                 smooth = 0.03f,
-                                layers = listOf(BlendMode.SrcOver to 0.8f),
+                                layers = listOf(BlendMode.SrcOver to 0.1f),
                             ),
                             Tile(
+                                reflects = ImageEdge.LEFT,
                                 left = -0.82f,
                                 top = -0.05f,
                                 width = 3.81f,
@@ -350,15 +380,16 @@ fun Backdrop(
                             // bottom reflection
                             Tile(
                                 reflects = ImageEdge.BOTTOM,
-                                left = 0.38f,
+                                left = 0.37f,
                                 top = 0.69f,
-                                width = 0.68f,
+                                width = 0.6f,
                                 height = 0.72f,
-                                flip = true,
+                                flip = false,
                                 flipVertical = true,
                                 resolution = 90,
                                 smooth = 0.01f,
-                                layers = listOf(BlendMode.Softlight to 0.5f),
+                                feather = Feather(0.3f, 0.1f,0f,0.6f,),
+                                layers = listOf(BlendMode.Softlight to 0.9f),
                             ),
                         )
                     )
@@ -375,17 +406,17 @@ fun Backdrop(
             // after they have been blurred and blended as a group
             val mainTile =
                 Tile(
-                    left = -0.2f,
-                    top = -3.3f,
-                    width = 3f,
-                    height = 4.792f,
-                    flip = true,
-                    flipVertical = true,
-                    resolution = 30,
+                    left = -1.2f,
+                    top = -0.9f,
+                    width = 2.3f,
+                    height = 2.192f,
+                    flip = false,
+                    flipVertical = false,
+                    resolution = 200,
                     smooth = 0.09f,
                     layers =
                         listOf(
-                            BlendMode.Exclusion to 0.1f
+                            BlendMode.Softlight to 0.33f
                         ),
                 )
             // Switch for the main tile: true = on, false = off
@@ -417,24 +448,23 @@ fun Backdrop(
             //   1f = black)
             // They are drawn in order, each on top of the one before
             // Switch for all the vignettes at once: true = on, false = off
-            val showVignettes = true
+            val showVignettes = false
             val allVignettes =
                 listOf(
                     // spotlight on the image
                     Vignette(
-                        centerX = 0.72f,
+                        centerX = 0.69f,
                         centerY = 0.31f,
-                        radius = 1.7f,
-                        widthToHeight = 1.35f,
+                        radius = 0.3f,
+                        widthToHeight = 1.25f,
                         stops =
                             listOf(
                                 0f to 0f,
-                                0.68f to 0f,
-                                0.77f to 0.05f,
-                                0.88f to 0.1f,
-                                0.96f to 0.1f,
-                                1f to 0.1f,
+                                0.18f to 0.1f,
+                                0.38f to 0.2f,
+                                1f to 0.5f,
                             ),
+                        blendMode = BlendMode.SrcOver,
                     ),
                     // dark bottom-left corner: the other way round, darkest at its centre (which
                     // sits below the screen) and fading out from there
@@ -445,8 +475,8 @@ fun Backdrop(
                         widthToHeight = 3.1f,
                         stops =
                             listOf(
-                                0f to 1f,
-                                0.2f to 0.7f,
+                                0f to 0f,
+                                0.2f to 0f,
                                 1f to 0f,
                             ),
                     ),
@@ -455,18 +485,18 @@ fun Backdrop(
             // edge, fading out downwards. A wide, flat ellipse, so it spans the whole top.
             val sideShade =
                 Vignette(
-                    centerX = 0.53f,
-                    centerY = 0.7f,
-                    radius = 0.5f,
+                    centerX = 0.49f,
+                    centerY = 0.5f,
+                    radius = 0.45f,
                     widthToHeight = 1f,
                     stops =
                         listOf(
                             0f to 0f,
-                            0.45f to 0f,
-                            0.77f to 0.35f,
+                            0.77f to 0f,
+                            0.85f to 0.25f,
                             1f to 0.7f,
                         ),
-                    blendMode = BlendMode.Darken,
+                    blendMode = BlendMode.Overlay,
                 )
             val vignettes =
                 if (showVignettes) {
@@ -530,17 +560,17 @@ fun Backdrop(
                 val density = LocalDensity.current
                 val layoutDirection = LocalLayoutDirection.current
                 // Size of the baked image; it is soft everywhere, so it can be small
-                val bakeWidth = 280
+                val bakeWidth = 480
                 // Extra smoothing of the baked glows and blur, as a share of the screen width:
                 // 0 = none, 0.01 = a soft blur about 1% of the screen wide. Only applies when baked
-                val bakeSmooth = 0.0009f // the final blur, over everything: glows and all tiles
+                val bakeSmooth = 0.009f // the final blur, over everything: glows and all tiles
                 // Blur of the mirror tiles as one group, before they are blended over the main
                 // tile. Same scale as bakeSmooth
                 val groupSmooth = 0.0009f
                 // How the blurred mirror tiles are blended onto the glows, bottom to top, as blend
                 // mode to opacity, and the opacity of the group as a whole
-                val groupLayers = listOf(BlendMode.SrcOver to 1f)
-                val groupOpacity = 1f
+                val groupLayers = listOf(BlendMode.Overlay to 1f, BlendMode.SrcOver to 0.8f)
+                val groupOpacity = 0.6f
                 val bakeHeight = (bakeWidth * (maxHeight / maxWidth)).toInt().coerceAtLeast(1)
                 // The baked version uses the colours the glows are heading for, not the animated
                 // ones, so it is composed once per backdrop instead of on every animation frame
@@ -790,7 +820,8 @@ fun Backdrop(
                             val horizontalFade =
                                 listOf(
                                     0f to 1f,
-                                    1f to 1f,
+                                    0.9f to 1f,
+                                    1f to 0f,
                                 )
                             // Vertical fade, measured from the top of the image to the bottom
                             val verticalFade =
