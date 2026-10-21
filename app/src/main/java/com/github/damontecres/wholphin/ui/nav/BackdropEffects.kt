@@ -265,11 +265,32 @@ internal data class Tile(
     // onTop = drawn last, straight onto the result, so it ends up over the group
     val behind: Boolean = false,
     val onTop: Boolean = false,
-    // Soft edges: how far in from each edge the tile fades out, as a share of its own width
-    // (left and right) and height (top and bottom). 0 = hard edges, 0.5 = fades all the way
-    // to the middle. Null = use the default given where the tiles are set up
-    val feather: Float? = null,
+    // Soft edges, see Feather. Null = use the default given where the tiles are set up
+    val feather: Feather? = null,
 )
+
+/**
+ * Soft edges on a tile: how far in from each side it fades out, as a share of its own width
+ * (left and right) or height (top and bottom). 0f = a hard edge, 0.2f = the outer fifth fades,
+ * 0.5f = fades all the way to the middle. The sides are as the tile appears on screen, after any
+ * flip. Written like CSS margins:
+ * - Feather(0.2f): all four sides
+ * - Feather(0.1f, 0.2f): top and bottom, then left and right
+ * - Feather(0.1f, 0.2f, 0f): top, then left and right, then bottom
+ * - Feather(0.1f, 0f, 0.2f, 0.3f): top, right, bottom, left
+ */
+internal data class Feather(
+    val top: Float,
+    val right: Float,
+    val bottom: Float,
+    val left: Float,
+) {
+    constructor(all: Float) : this(all, all, all, all)
+    constructor(vertical: Float, horizontal: Float) : this(vertical, horizontal, vertical, horizontal)
+    constructor(top: Float, horizontal: Float, bottom: Float) : this(top, horizontal, bottom, horizontal)
+
+    val any: Boolean get() = top > 0f || right > 0f || bottom > 0f || left > 0f
+}
 
 /**
  * Composes the backdrop's background once, into a small image: the theme background and colour
@@ -393,9 +414,18 @@ internal suspend fun bakeBackdropBackground(
                                 } else {
                                     blurred
                                 }
-                            val feather = (copy.feather ?: 0f).coerceIn(0f, 0.5f)
+                            // The fades are made before the flip, so a flipped tile swaps its sides
+                            val feather =
+                                copy.feather?.let {
+                                    Feather(
+                                        top = if (copy.flipVertical) it.bottom else it.top,
+                                        right = if (copy.flip) it.left else it.right,
+                                        bottom = if (copy.flipVertical) it.top else it.bottom,
+                                        left = if (copy.flip) it.right else it.left,
+                                    )
+                                }
                             val drawn =
-                                if (feather > 0f) {
+                                if (feather != null && feather.any) {
                                     val shrink = minOf(1f, 2048f / maxOf(area.width, area.height))
                                     featheredCopy(
                                         source,
@@ -596,14 +626,14 @@ private suspend fun findFlatEdges(
 }
 
 /**
- * The image stretched to the given size, with its edges fading out to transparent. The fades
- * cover [feather] of the width at the left and right, and of the height at the top and bottom
+ * The image stretched to the given size, with its edges fading out to transparent. Each side
+ * fades over its share in [feather]
  */
 private fun featheredCopy(
     source: ImageBitmap,
     width: Int,
     height: Int,
-    feather: Float,
+    feather: Feather,
     density: Density,
     layoutDirection: LayoutDirection,
 ): ImageBitmap {
@@ -616,16 +646,30 @@ private fun featheredCopy(
             dstSize = IntSize(width, height),
             filterQuality = FilterQuality.Low,
         )
-        val fade =
-            arrayOf(
-                0f to Color.Transparent,
-                feather to Color.Black,
-                (1f - feather) to Color.Black,
-                1f to Color.Transparent,
-            )
+        // Solid between the two fades, see-through at a side that fades. A side without a fade
+        // starts solid, so it keeps a hard edge
+        fun fade(
+            start: Float,
+            end: Float,
+        ): Array<Pair<Float, Color>> {
+            val first = start.coerceIn(0f, 0.5f)
+            val last = end.coerceIn(0f, 0.5f)
+            return listOfNotNull(
+                0f to if (first > 0f) Color.Transparent else Color.Black,
+                if (first > 0f) first to Color.Black else null,
+                if (last > 0f) (1f - last) to Color.Black else null,
+                1f to if (last > 0f) Color.Transparent else Color.Black,
+            ).toTypedArray()
+        }
         // Keep the image only where these are solid: once across, once down
-        drawRect(brush = Brush.horizontalGradient(colorStops = fade), blendMode = BlendMode.DstIn)
-        drawRect(brush = Brush.verticalGradient(colorStops = fade), blendMode = BlendMode.DstIn)
+        drawRect(
+            brush = Brush.horizontalGradient(colorStops = fade(feather.left, feather.right)),
+            blendMode = BlendMode.DstIn,
+        )
+        drawRect(
+            brush = Brush.verticalGradient(colorStops = fade(feather.top, feather.bottom)),
+            blendMode = BlendMode.DstIn,
+        )
     }
     return result
 }
