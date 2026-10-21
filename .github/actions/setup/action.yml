@@ -14,7 +14,10 @@ runs:
       with:
         distribution: zulu
         java-version: '21'
-        cache: 'gradle'
+    # Caches Gradle dependencies, wrapper and the build cache between runs.
+    # Written on the default branch, read-only on PRs and other branches.
+    - name: Setup Gradle
+      uses: gradle/actions/setup-gradle@3f5f9adaf7d9fecd50b5935e54106014257a94e6 # v6.4.0
     - name: Set versions
       shell: bash
       run: |
