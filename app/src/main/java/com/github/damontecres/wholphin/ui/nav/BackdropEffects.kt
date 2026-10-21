@@ -316,6 +316,8 @@ internal suspend fun bakeBackdropBackground(
     flatEdgeTint: Float,
     flatEdgeTintSolid: Float,
     flatEdgeTintReach: Float,
+    imageLeft: Float,
+    imageRight: Float,
     drawBackground: DrawScope.() -> Unit,
     drawOverlay: DrawScope.() -> Unit,
     groupSmoothRadius: Int,
@@ -379,29 +381,33 @@ internal suspend fun bakeBackdropBackground(
             val outputSize = Size(width.toFloat(), height.toFloat())
             CanvasDrawScope().draw(density, layoutDirection, Canvas(output), outputSize) {
                 drawBackground()
-                // Where the image's left or right edge is one flat colour, the colour base leans
-                // towards that colour on that side, so the image blends into it
+                // Where the image's left or right edge is one flat colour, the colour base takes
+                // that colour on that side: full from the screen's edge to just past the image's
+                // edge, so the image's edge always sits on it, then fading out behind the image
                 val tint = flatEdgeTint.coerceIn(0f, 1f)
-                val reach = flatEdgeTintReach.coerceIn(0.01f, 1f)
-                // Fully the edge colour up to here, then fading out until reach
-                val solid = flatEdgeTintSolid.coerceIn(0f, reach - 0.001f)
+                val solid = flatEdgeTintSolid.coerceAtLeast(0f)
+                val reach = flatEdgeTintReach.coerceAtLeast(solid + 0.001f)
                 if (tint > 0f) {
                     flatEdges[ImageEdge.LEFT]?.let { color ->
+                        val full = (imageLeft + solid).coerceIn(0f, 0.998f)
+                        val gone = (imageLeft + reach).coerceIn(full + 0.001f, 1f)
                         drawRect(
                             brush =
                                 Brush.horizontalGradient(
                                     0f to color.copy(alpha = tint),
-                                    solid to color.copy(alpha = tint),
-                                    reach to color.copy(alpha = 0f),
+                                    full to color.copy(alpha = tint),
+                                    gone to color.copy(alpha = 0f),
                                 ),
                         )
                     }
                     flatEdges[ImageEdge.RIGHT]?.let { color ->
+                        val full = (imageRight - solid).coerceIn(0.002f, 1f)
+                        val gone = (imageRight - reach).coerceIn(0f, full - 0.001f)
                         drawRect(
                             brush =
                                 Brush.horizontalGradient(
-                                    (1f - reach) to color.copy(alpha = 0f),
-                                    (1f - solid) to color.copy(alpha = tint),
+                                    gone to color.copy(alpha = 0f),
+                                    full to color.copy(alpha = tint),
                                     1f to color.copy(alpha = tint),
                                 ),
                         )

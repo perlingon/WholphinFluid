@@ -391,14 +391,20 @@ fun Backdrop(
             // flatEdgeDarkTolerance instead: lower = stricter
             val flatEdgeDarkLevel = 40f
             val flatEdgeDarkTolerance = 3f
-            // When the image's left or right edge is flat, the colour base leans towards that
-            // edge's colour on the same side of the screen, so the image melts into it.
-            // flatEdgeTint: how strongly, 0 = not at all, 1 = fully that colour at the screen edge.
-            // flatEdgeTintSolid: how far in it stays fully that colour, as a share of the screen's width.
-            // flatEdgeTintReach: where it has faded out completely, as a share of the screen's width
+            // When the image's left or right edge is flat, the colour base takes that edge's colour
+            // on the same side of the screen, so the image melts into it. The colour is full from
+            // the screen's edge to just past the image's edge, so the image's edge always sits on
+            // it, then fades out further in, behind the image.
+            // flatEdgeTint: how strongly, 0 = not at all, 1 = fully that colour.
+            // flatEdgeTintSolid: how far past the image's edge it stays full, as a share of the screen's width.
+            // flatEdgeTintReach: how far past the image's edge it has faded out, as a share of the screen's width
             val flatEdgeTint = 0.8f
-            val flatEdgeTintSolid = 0.2f
-            val flatEdgeTintReach = 0.7f
+            val flatEdgeTintSolid = 0.05f
+            val flatEdgeTintReach = 0.35f
+            // Where the image's edges sit across the screen, as shares of its width
+            val imageLeftShare =
+                if (isRtl) imageEdgeMargin / vw else 1f - (imageEdgeMargin + imageWidth) / vw
+            val imageRightShare = imageLeftShare + imageWidth / vw
             // Vignettes over the background and the sharp image: clear at the centre, darkening
             // outwards. Each one has:
             // - centerX, centerY: the centre as a share of the screen (0f, 0f is the top-left
@@ -561,6 +567,8 @@ fun Backdrop(
                             flatEdgeTint,
                             flatEdgeTintSolid,
                             flatEdgeTintReach,
+                            imageLeftShare,
+                            imageRightShare,
                         ),
                         vignettes,
                         bakeSmooth,
@@ -593,6 +601,8 @@ fun Backdrop(
                         flatEdgeTint = flatEdgeTint,
                         flatEdgeTintSolid = flatEdgeTintSolid,
                         flatEdgeTintReach = flatEdgeTintReach,
+                        imageLeft = imageLeftShare,
+                        imageRight = imageRightShare,
                         drawBackground = if (glows) glowPainter(primary, secondary, tertiary) else drawPlain,
                         drawOverlay = drawVignette,
                         groupSmoothRadius = (bakeWidth * groupSmooth).roundToInt(),
