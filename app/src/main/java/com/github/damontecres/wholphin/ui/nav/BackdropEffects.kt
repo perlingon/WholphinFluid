@@ -314,6 +314,7 @@ internal suspend fun bakeBackdropBackground(
     flatEdgeDarkLevel: Float,
     flatEdgeDarkTolerance: Float,
     flatEdgeTint: Float,
+    flatEdgeTintSolid: Float,
     flatEdgeTintReach: Float,
     drawBackground: DrawScope.() -> Unit,
     drawOverlay: DrawScope.() -> Unit,
@@ -382,12 +383,15 @@ internal suspend fun bakeBackdropBackground(
                 // towards that colour on that side, so the image blends into it
                 val tint = flatEdgeTint.coerceIn(0f, 1f)
                 val reach = flatEdgeTintReach.coerceIn(0.01f, 1f)
+                // Fully the edge colour up to here, then fading out until reach
+                val solid = flatEdgeTintSolid.coerceIn(0f, reach - 0.001f)
                 if (tint > 0f) {
                     flatEdges[ImageEdge.LEFT]?.let { color ->
                         drawRect(
                             brush =
                                 Brush.horizontalGradient(
                                     0f to color.copy(alpha = tint),
+                                    solid to color.copy(alpha = tint),
                                     reach to color.copy(alpha = 0f),
                                 ),
                         )
@@ -397,6 +401,7 @@ internal suspend fun bakeBackdropBackground(
                             brush =
                                 Brush.horizontalGradient(
                                     (1f - reach) to color.copy(alpha = 0f),
+                                    (1f - solid) to color.copy(alpha = tint),
                                     1f to color.copy(alpha = tint),
                                 ),
                         )

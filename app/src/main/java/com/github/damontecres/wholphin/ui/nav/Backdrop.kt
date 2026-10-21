@@ -394,8 +394,10 @@ fun Backdrop(
             // When the image's left or right edge is flat, the colour base leans towards that
             // edge's colour on the same side of the screen, so the image melts into it.
             // flatEdgeTint: how strongly, 0 = not at all, 1 = fully that colour at the screen edge.
-            // flatEdgeTintReach: how far in it fades out, as a share of the screen's width
+            // flatEdgeTintSolid: how far in it stays fully that colour, as a share of the screen's width.
+            // flatEdgeTintReach: where it has faded out completely, as a share of the screen's width
             val flatEdgeTint = 0.8f
+            val flatEdgeTintSolid = 0.2f
             val flatEdgeTintReach = 0.7f
             // Vignettes over the background and the sharp image: clear at the centre, darkening
             // outwards. Each one has:
@@ -557,6 +559,7 @@ fun Backdrop(
                             flatEdgeDarkLevel,
                             flatEdgeDarkTolerance,
                             flatEdgeTint,
+                            flatEdgeTintSolid,
                             flatEdgeTintReach,
                         ),
                         vignettes,
@@ -588,6 +591,7 @@ fun Backdrop(
                         flatEdgeDarkLevel = flatEdgeDarkLevel,
                         flatEdgeDarkTolerance = flatEdgeDarkTolerance,
                         flatEdgeTint = flatEdgeTint,
+                        flatEdgeTintSolid = flatEdgeTintSolid,
                         flatEdgeTintReach = flatEdgeTintReach,
                         drawBackground = if (glows) glowPainter(primary, secondary, tertiary) else drawPlain,
                         drawOverlay = drawVignette,
