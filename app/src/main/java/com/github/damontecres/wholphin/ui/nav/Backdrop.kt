@@ -856,13 +856,29 @@ fun Backdrop(
                             // there (0f = invisible, 1f = solid). Add as many stops as you like,
                             // in order of position.
 
+                            // Whether the image's edge facing the screen edge is one flat colour.
+                            // The fades on that side are then much narrower, since the colour base
+                            // already carries that colour onwards
+                            val outerEdge = if (isRtl) ImageEdge.LEFT else ImageEdge.RIGHT
+                            val flatOuterEdge =
+                                (if (bakeBackground) shownImageUrl.value else backdrop.imageUrl)
+                                    ?.let { flatEdgesByImage.get(it) }
+                                    ?.contains(outerEdge) == true
                             // Side fade, measured from the image's inner edge towards the screen edge
-                            val horizontalFade =
+                            val horizontalFadeNormal =
                                 listOf(
                                     0f to 1f,
                                     0.9f to 1f,
                                     1f to 0f,
                                 )
+                            // The same when that edge is flat
+                            val horizontalFadeFlat =
+                                listOf(
+                                    0f to 1f,
+                                    0.97f to 1f,
+                                    1f to 0f,
+                                )
+                            val horizontalFade = if (flatOuterEdge) horizontalFadeFlat else horizontalFadeNormal
                             // Vertical fade, measured from the top of the image to the bottom
                             val verticalFade =
                                 listOf(
@@ -918,11 +934,6 @@ fun Backdrop(
                             // (corners cut away more), higher = flatter (closer to a straight edge)
                             val edgeFadeHeight = 0.9f
 
-                            val outerEdge = if (isRtl) ImageEdge.LEFT else ImageEdge.RIGHT
-                            val flatOuterEdge =
-                                (if (bakeBackground) shownImageUrl.value else backdrop.imageUrl)
-                                    ?.let { flatEdgesByImage.get(it) }
-                                    ?.contains(outerEdge) == true
                             val curveCenterX = if (flatOuterEdge) edgeFadeCenterXFlat else edgeFadeCenterX
                             val curveCenter =
                                 Offset(
