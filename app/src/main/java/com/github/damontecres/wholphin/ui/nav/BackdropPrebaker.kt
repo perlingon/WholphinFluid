@@ -15,7 +15,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import org.jellyfin.sdk.model.api.BaseItemKind
 import org.jellyfin.sdk.model.api.ImageType
 import timber.log.Timber
@@ -43,6 +46,9 @@ object BackdropPrebaker {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private var worker: Job? = null
     private var baker: (suspend (String, Boolean) -> Unit)? = null
+
+    // Counts finished backdrops, so waiting for one can tell when to look again
+    private val finished = MutableStateFlow(0)
 
     /**
      * Sets what actually bakes a backdrop. The [Backdrop] on screen provides it, because the
@@ -88,6 +94,23 @@ object BackdropPrebaker {
         }
     }
 
+    /**
+     * Waits until this item's backdrop has been prepared, but no longer than [timeoutMs]. Returns
+     * straight away when there is nothing to wait for, such as when no backdrop is set up to bake
+     */
+    suspend fun awaitPrepared(
+        item: BaseItem?,
+        imageUrlService: ImageUrlService,
+        timeoutMs: Long,
+    ) {
+        if (item == null || synchronized(this) { baker } == null) return
+        val imageUrl = backdropImageUrl(item, imageUrlService)
+        if (imageUrl.isNullOrBlank()) return
+        withTimeoutOrNull(timeoutMs) {
+            finished.first { synchronized(this@BackdropPrebaker) { done.get(imageUrl) } != null }
+        }
+    }
+
     private fun startWorker() {
         synchronized(this) {
             if (worker?.isActive == true) return
@@ -106,6 +129,7 @@ object BackdropPrebaker {
                         try {
                             bake(request.first, request.second)
                             done.put(request.first, true)
+                            finished.value++
                         } catch (ex: CancellationException) {
                             throw ex
                         } catch (ex: Exception) {

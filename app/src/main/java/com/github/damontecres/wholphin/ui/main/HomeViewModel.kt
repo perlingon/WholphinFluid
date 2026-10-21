@@ -271,10 +271,21 @@ class HomeViewModel
                     val rows = deferred.awaitAll()
                     Timber.v("Got all rows")
                     // The row that gets focus first goes to the front of the queue
-                    rows
-                        .filterIsInstance<HomeRowLoadingState.Success>()
-                        .firstOrNull { it.items.isNotEmpty() }
-                        ?.let { BackdropPrebaker.requestFirst(it.items, imageUrlService) }
+                    val firstItems =
+                        rows
+                            .filterIsInstance<HomeRowLoadingState.Success>()
+                            .firstOrNull { it.items.isNotEmpty() }
+                            ?.items
+                    if (firstItems != null) {
+                        BackdropPrebaker.requestFirst(firstItems, imageUrlService)
+                        // Keep the spinner a moment longer so the first backdrop is ready when
+                        // the page appears, but never hold up a slow device for long
+                        BackdropPrebaker.awaitPrepared(
+                            firstItems.firstOrNull { it != null },
+                            imageUrlService,
+                            FIRST_BACKDROP_WAIT_MS,
+                        )
+                    }
                     _state.update {
                         it.copy(
                             loadingState = LoadingState.Success,
@@ -368,6 +379,9 @@ class HomeViewModel
             }
         }
     }
+
+// Longest the loading spinner waits for the first backdrop on the home page
+private const val FIRST_BACKDROP_WAIT_MS = 2000L
 
 data class HomeState(
     val loadingState: LoadingState,
