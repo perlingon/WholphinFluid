@@ -848,6 +848,54 @@ fun Backdrop(
                                 )
                             }
 
+                            // Rounded fade on the inner side, facing the rows and text: the same
+                            // idea as the curve above, mirrored. An ellipse whose centre sits
+                            // inside the image and whose far side reaches the image's inner edge.
+                            // Stops are "position to opacity", from the centre (0f) out to the
+                            // ellipse's rim (1f). Works together with horizontalFade: set that one's
+                            // first stops to 1f to see this curve on its own
+                            val innerFade =
+                                listOf(
+                                    0f to 1f,
+                                    0.6f to 1f,
+                                    0.85f to 0.3f,
+                                    1f to 0f,
+                                )
+                            // Centre of the curve, as shares of the image's width and height,
+                            // measured from the inner edge. Further from the edge = a wider,
+                            // gentler curve
+                            val innerFadeCenterX = 0.35f
+                            val innerFadeCenterY = 0.4f
+                            // Height of the curve relative to the image's height: lower = rounder
+                            // (corners cut away more), higher = flatter (closer to a straight edge)
+                            val innerFadeHeight = 0.9f
+
+                            val innerCenter =
+                                Offset(
+                                    if (isRtl) size.width * (1f - innerFadeCenterX) else size.width * innerFadeCenterX,
+                                    size.height * innerFadeCenterY,
+                                )
+                            // Horizontal reach: from the centre to the image's inner edge
+                            val innerReach = (if (isRtl) size.width - innerCenter.x else innerCenter.x).coerceAtLeast(1f)
+                            val innerStretch = (size.height * innerFadeHeight / innerReach).coerceAtLeast(0.01f)
+                            scale(scaleX = 1f, scaleY = innerStretch, pivot = innerCenter) {
+                                // Only the part of the image between the inner edge and the
+                                // curve's centre is touched
+                                val top = innerCenter.y - innerCenter.y / innerStretch
+                                val bottom = innerCenter.y + (size.height - innerCenter.y) / innerStretch
+                                drawRect(
+                                    brush =
+                                        Brush.radialGradient(
+                                            colorStops = innerFade.asMask(),
+                                            center = innerCenter,
+                                            radius = innerReach,
+                                        ),
+                                    topLeft = Offset(if (isRtl) innerCenter.x else 0f, top),
+                                    size = Size(innerReach, bottom - top),
+                                    blendMode = BlendMode.DstIn,
+                                )
+                            }
+
                             // Rounded fade along the bottom, the same idea turned on its side: an
                             // ellipse whose centre sits inside the image and whose lower rim
                             // reaches the image's bottom edge. Stops are "position to opacity",
