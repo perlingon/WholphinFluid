@@ -418,6 +418,9 @@ fun Backdrop(
                         listOf(
                             BlendMode.Softlight to 0.33f
                         ),
+                    // When an edge of the image is flat, it is drawn at this share of the above,
+                    // so it does not wash out the flat edge colour
+                    flatEdgeOpacity = 0.4f,
                 )
             // Switch for the main tile: true = on, false = off
             val showMainTile = true
