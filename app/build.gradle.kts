@@ -33,6 +33,11 @@ val av1ModuleExists =
     providers.provider { project.file("libs/lib-decoder-av1-release.aar").exists() }
 val mpvModuleExists =
     providers.provider { project.file("libs/wholphin-mpv-release.aar").exists() }
+val localProperties =
+    Properties().apply {
+        val file = rootProject.file("local.properties")
+        if (file.exists()) file.inputStream().use { load(it) }
+    }
 val extensionsRepoActive =
     providers.provider { project.hasProperty("WholphinExtensionsUsername") }
 
@@ -107,6 +112,16 @@ configure<ApplicationExtension> {
                 enableV4Signing = true
             }
         }
+        // Optional own release key for local builds, set in local.properties:
+        // release.storeFile, release.storePassword, release.keyAlias, release.keyPassword
+        localProperties.getProperty("release.storeFile")?.let { path ->
+            create("local") {
+                storeFile = rootProject.file(path)
+                storePassword = localProperties.getProperty("release.storePassword")
+                keyAlias = localProperties.getProperty("release.keyAlias")
+                keyPassword = localProperties.getProperty("release.keyPassword")
+            }
+        }
     }
 
     buildTypes {
@@ -121,16 +136,15 @@ configure<ApplicationExtension> {
             if (shouldSign.get()) {
                 signingConfig = signingConfigs.getByName("ci")
             } else {
-                val localPropertiesFile = project.rootProject.file("local.properties")
-                if (localPropertiesFile.exists()) {
-                    val properties = Properties()
-                    properties.load(localPropertiesFile.inputStream())
-                    val signingConfigName = properties["release.signing.config"]?.toString()
-                    if (signingConfigName != null) {
-                        signingConfig = signingConfigs.getByName(signingConfigName)
-                    }
-                }
+                // Without an own key, sign local release builds with the debug key so the APK
+                // can be installed straight from Android Studio for testing
+                val signingConfigName =
+                    localProperties.getProperty("release.signing.config")
+                        ?: if (localProperties.getProperty("release.storeFile") != null) "local" else "debug"
+                signingConfig = signingConfigs.getByName(signingConfigName)
             }
+            // Own app id so the fork installs next to regular Wholphin (com.github.damontecres.wholphin)
+            applicationIdSuffix = ".fluid"
         }
 
         debug {
