@@ -363,10 +363,12 @@ fun Backdrop(
                         )
                     )
                 }
-            // Soft edges on the mirror tiles: how far in from each edge they fade out, as a share
+            // Soft edges on the mirror tiles: how far in from each side they fade out, as a share
             // of the tile's own width and height. 0f = hard edges, 0.2f = the outer fifth fades,
-            // 0.5f = fades all the way to the middle. A tile can set its own with feather = …
-            val mirrorFeather = 0.2f
+            // 0.5f = fades all the way to the middle. Written like CSS: Feather(all),
+            // Feather(top and bottom, left and right) or Feather(top, right, bottom, left), as
+            // the tile appears on screen. A tile can set its own with feather = Feather(…)
+            val mirrorFeather = Feather(0.2f)
             fun List<Tile>.withFeather() = map { if (it.feather == null) it.copy(feather = mirrorFeather) else it }
 
             // The main tile: on its own, with its own blend modes, drawn over the mirror tiles
