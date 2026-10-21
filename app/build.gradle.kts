@@ -153,6 +153,19 @@ configure<ApplicationExtension> {
             isDebuggable = true
             applicationIdSuffix = ".debug"
         }
+
+        // For trying out how changes feel on the box: release settings and not debuggable, so it
+        // runs close to release speed, but without R8 so it builds faster. No Live Edit or debugger
+        create("fast") {
+            initWith(getByName("release"))
+            isMinifyEnabled = false
+            isShrinkResources = false
+            isDebuggable = false
+            applicationIdSuffix = ".fluid.fast"
+            signingConfig = signingConfigs.getByName("debug")
+            // Libraries only have debug and release, so use their release versions
+            matchingFallbacks += listOf("release")
+        }
     }
     flavorDimensions += "version"
     productFlavors {
