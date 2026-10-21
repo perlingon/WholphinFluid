@@ -304,14 +304,34 @@ fun Backdrop(
                             ),
                             // left reflection
                             Tile(
-                                left = -1.1f,
-                                top = 0.071f,
-                                width = 1.85f,
-                                height = 0.72f,
+                                left = -2.1f,
+                                top = -0.05f,
+                                width = 2.67f,
+                                height = 0.84f,
                                 flip = true,
-                                resolution = 80,
-                                smooth = 0.0005f,
-                                layers = listOf(BlendMode.Softlight to 0.5f),
+                                resolution = 330,
+                                smooth = 0.009f,
+                                layers = listOf(BlendMode.Softlight to 1f,BlendMode.Overlay to 0.5f),
+                            ),
+                            Tile(
+                                left = -0.6f,
+                                top = 0f,
+                                width = 1f,
+                                height = 0.8f,
+                                flip = true,
+                                resolution = 230,
+                                smooth = 0.03f,
+                                layers = listOf(BlendMode.SrcOver to 0.8f),
+                            ),
+                            Tile(
+                                left = -0.82f,
+                                top = -0.05f,
+                                width = 3.81f,
+                                height = 4.4f,
+                                flip = true,
+                                resolution = 330,
+                                smooth = 0.009f,
+                                layers = listOf(BlendMode.ColorDodge to 0.3f),
                             ),
                             // lower left reflection mirror
                             Tile(
@@ -322,7 +342,7 @@ fun Backdrop(
                                 flip = true,
                                 flipVertical = true,
                                 resolution = 80,
-                                smooth = 0.00001f,
+                                smooth = 0.01f,
                                 layers = listOf(BlendMode.Hardlight to 0.9f),
                             ),
                             // bottom reflection
@@ -411,12 +431,13 @@ fun Backdrop(
                     // sits below the screen) and fading out from there
                     Vignette(
                         centerX = 0f,
-                        centerY = 1.5f,
-                        radius = 0.72f,
-                        widthToHeight = 3f,
+                        centerY = 1f,
+                        radius = 0.52f,
+                        widthToHeight = 3.1f,
                         stops =
                             listOf(
                                 0f to 1f,
+                                0.2f to 0.7f,
                                 1f to 0f,
                             ),
                     ),
@@ -765,11 +786,7 @@ fun Backdrop(
                             // Side fade, measured from the image's inner edge towards the screen edge
                             val horizontalFade =
                                 listOf(
-                                    0f to 0f,
-                                    0.11f to 0.2f,
-                                    0.21f to 0.9f,
-                                    0.40f to 1f,
-                                    0.79f to 1f,
+                                    0f to 1f,
                                     1f to 1f,
                                 )
                             // Vertical fade, measured from the top of the image to the bottom
@@ -857,6 +874,7 @@ fun Backdrop(
                             val innerFade =
                                 listOf(
                                     0f to 1f,
+                                    0.3f to 1f,
                                     0.6f to 1f,
                                     0.85f to 0.3f,
                                     1f to 0f,
