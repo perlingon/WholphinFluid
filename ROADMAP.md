@@ -6,7 +6,7 @@ Board: https://github.com/users/perlingon/projects/1 · Milestones: https://gith
 
 ## Alpha (Proof of concept)
 
-- [ ] [#2](https://github.com/perlingon/WholphinFluid/issues/2) Build a release APK and compare performance (`performance`)
+- [x] [#2](https://github.com/perlingon/WholphinFluid/issues/2) Build a release APK and compare performance (`performance`)
 - [ ] [#3](https://github.com/perlingon/WholphinFluid/issues/3) Test Crop and Fill width in WholphinFluid (`Video playback`)
 - [ ] [#4](https://github.com/perlingon/WholphinFluid/issues/4) Panscan knob for playback (`Video playback`)
 - [ ] [#5](https://github.com/perlingon/WholphinFluid/issues/5) Subtitles: styling and on-by-default setting (`design`)
@@ -14,6 +14,9 @@ Board: https://github.com/users/perlingon/projects/1 · Milestones: https://gith
 - [ ] [#7](https://github.com/perlingon/WholphinFluid/issues/7) Move tuned backdrop values into FluidTheme.kt (`maintenance`, `design`)
 - [ ] [#8](https://github.com/perlingon/WholphinFluid/issues/8) Headers on other pages (`design`)
 - [ ] [#9](https://github.com/perlingon/WholphinFluid/issues/9) Screensaver in ultrawide (`design`)
+- [x] [#22](https://github.com/perlingon/WholphinFluid/issues/22) Add Kodi-style video adjust: zoom, pixel ratio and position (`enhancement`, `Video playback`)
+- [ ] [#27](https://github.com/perlingon/WholphinFluid/issues/27) Hide MPV player option, use ExoPlayer only (`Video playback`, `maintenance`)
+- [ ] [#31](https://github.com/perlingon/WholphinFluid/issues/31) Backdrop is slow to change on TV boxes: speed up baking and transitions (`performance`, `design`)
 
 ## First official release
 
@@ -21,6 +24,7 @@ Board: https://github.com/users/perlingon/projects/1 · Milestones: https://gith
 - [ ] [#11](https://github.com/perlingon/WholphinFluid/issues/11) Name, app icon and banner (`design`)
 - [ ] [#12](https://github.com/perlingon/WholphinFluid/issues/12) Widgets for new titles in collections (`enhancement`, `widgets`)
 - [ ] [#14](https://github.com/perlingon/WholphinFluid/issues/14) Research rows on the Google TV home screen (`widgets`, `needs-research`)
+- [ ] [#25](https://github.com/perlingon/WholphinFluid/issues/25) Media detail page: split crew from cast and show top cast only (`design`, `enhancement`)
 - [ ] [#17](https://github.com/perlingon/WholphinFluid/issues/17) Official release document and description (`documentation`)
 - [ ] [#18](https://github.com/perlingon/WholphinFluid/issues/18) Screenshots in readme (`documentation`)
 

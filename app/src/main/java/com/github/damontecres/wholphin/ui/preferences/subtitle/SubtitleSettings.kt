@@ -243,6 +243,28 @@ object SubtitleSettings {
             summarizer = { value -> value?.let { "$it%" } },
         )
 
+    val IgnoreEmbeddedColors =
+        AppSwitchPreference<SubtitlePreferences>(
+            title = R.string.ignore_embedded_subtitle_colors,
+            defaultValue = false,
+            getter = { it.ignoreEmbeddedColors },
+            setter = { prefs, value ->
+                prefs.update { ignoreEmbeddedColors = value }
+            },
+            summary = R.string.ignore_embedded_subtitle_colors_summary,
+        )
+
+    val IgnoreEmbeddedStyles =
+        AppSwitchPreference<SubtitlePreferences>(
+            title = R.string.ignore_embedded_subtitle_styles,
+            defaultValue = false,
+            getter = { it.ignoreEmbeddedStyles },
+            setter = { prefs, value ->
+                prefs.update { ignoreEmbeddedStyles = value }
+            },
+            summary = R.string.ignore_embedded_subtitle_styles_summary,
+        )
+
     val Reset =
         AppClickablePreference<SubtitlePreferences>(
             title = R.string.reset,
@@ -303,6 +325,8 @@ object SubtitleSettings {
                     listOf(
                         Margin,
                         ImageOpacity,
+                        IgnoreEmbeddedColors,
+                        IgnoreEmbeddedStyles,
                         Reset,
                     ),
             ),
@@ -425,7 +449,24 @@ object SubtitleSettings {
                 BackgroundStyle.BG_BOXED -> "background-box"
             }
         MPVLib.setPropertyString("sub-border-style", borderStyle)
+
+        // "strip" removes all ASS tags and styles (including colors), "force" replaces the
+        // ASS styles with the sub-* options above so the configured colors are used
+        val assOverride =
+            when {
+                ignoreEmbeddedStyles -> "strip"
+                ignoreEmbeddedColors -> "force"
+                else -> "scale"
+            }
+        MPVLib.setPropertyString("sub-ass-override", assOverride)
     }
+
+    /**
+     * Whether embedded subtitle formatting should be removed, which requires rendering SSA/ASS
+     * subtitles with ExoPlayer instead of libass
+     */
+    val SubtitlePreferences.stripsEmbeddedFormatting: Boolean
+        get() = ignoreEmbeddedColors || ignoreEmbeddedStyles
 }
 
 inline fun SubtitlePreferences.update(block: SubtitlePreferences.Builder.() -> Unit): SubtitlePreferences = toBuilder().apply(block).build()

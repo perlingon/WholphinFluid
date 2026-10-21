@@ -531,6 +531,10 @@
     <string name="upgrade_mpv_toast">MPV is now the default player except for HDR.\nYou can change this in settings.</string>
     <string name="hdr_subtitle_style">HDR subtitle style</string>
     <string name="image_subtitle_opacity">Image subtitle opacity</string>
+    <string name="ignore_embedded_subtitle_colors">Ignore embedded colors</string>
+    <string name="ignore_embedded_subtitle_colors_summary">Always use the font color above, even if the subtitle file has its own colors. SSA/ASS subtitles are then rendered without libass</string>
+    <string name="ignore_embedded_subtitle_styles">Ignore embedded styling</string>
+    <string name="ignore_embedded_subtitle_styles_summary">Remove bold, italic, underline and fonts set by the subtitle file. SSA/ASS subtitles are then rendered without libass</string>
 
     <string name="brightness">Brightness</string>
     <string name="contrast">Contrast</string>
