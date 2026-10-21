@@ -156,7 +156,7 @@ fun Backdrop(
     // Brightest a glow colour may be, 0 to 1 (1 = no cap). Brighter colours are darkened down
     // to this, keeping their hue and saturation, so a white or yellow poster cannot wash the
     // background out
-    val glowMaxBrightness = 0.8f
+    val glowMaxBrightness = 0.3f
     // Darkest a glow colour may be, 0 to 1 (0 = no cap). Darker colours are lifted up to this,
     // keeping their hue and saturation, so a near-black poster still gives a hint of colour
     val glowMinBrightness = 0.15f
@@ -445,7 +445,7 @@ fun Backdrop(
             // edge's colour on the same side of the screen, so the image melts into it.
             // flatEdgeTint: how strongly, 0 = not at all, 1 = fully that colour at the screen edge.
             // flatEdgeTintReach: how far in it fades out, as a share of the screen's width
-            val flatEdgeTint = 0.8f
+            val flatEdgeTint = 1f
             val flatEdgeTintReach = 0.7f
             // Vignettes over the background and the sharp image: clear at the centre, darkening
             // outwards. Each one has:
