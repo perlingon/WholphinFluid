@@ -151,15 +151,15 @@ fun Backdrop(
     // Strength of the colour glows behind the image: 1 = upstream's look, higher = more colour.
     // Kept local so Live Edit picks up changes
     // The theme scales this: full strength on Vivid, down to a fraction on Darkest
-    val glowIntensity = 7f * LocalFluidTheme.current.glow
+    val glowIntensity = 6f * LocalFluidTheme.current.glow
 
     // Brightest a glow colour may be, 0 to 1 (1 = no cap). Brighter colours are darkened down
     // to this, keeping their hue and saturation, so a white or yellow poster cannot wash the
     // background out
-    val glowMaxBrightness = 0.3f
+    val glowMaxBrightness = 0.2f
     // Darkest a glow colour may be, 0 to 1 (0 = no cap). Darker colours are lifted up to this,
     // keeping their hue and saturation, so a near-black poster still gives a hint of colour
-    val glowMinBrightness = 0.15f
+    val glowMinBrightness = 0.1f
 
     fun Color.capped(): Color {
         if (!isSpecified) return this
@@ -593,7 +593,7 @@ fun Backdrop(
                 // How the blurred mirror tiles are blended onto the glows, bottom to top, as blend
                 // mode to opacity, and the opacity of the group as a whole
                 val groupLayers = listOf(BlendMode.Overlay to 1f, BlendMode.SrcOver to 0.8f)
-                val groupOpacity = 0.6f
+                val groupOpacity = 0.4f
                 val bakeHeight = (bakeWidth * (maxHeight / maxWidth)).toInt().coerceAtLeast(1)
                 // The baked version uses the colours the glows are heading for, not the animated
                 // ones, so it is composed once per backdrop instead of on every animation frame
