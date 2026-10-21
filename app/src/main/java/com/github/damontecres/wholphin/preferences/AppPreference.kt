@@ -967,10 +967,10 @@ sealed interface AppPreference<Pref, T> {
                 setter = { prefs, value ->
                     prefs.updatePlaybackPreferences { playerBackend = value }
                 },
-                displayValues = R.array.player_backend_options,
-                subtitles = R.array.player_backend_options_subtitles,
-                indexToValue = { PlayerBackend.forNumber(it) ?: PlayerBackend.EXO_PLAYER },
-                valueToIndex = { if (it != PlayerBackend.UNRECOGNIZED) it.number else PlayerBackend.EXO_PLAYER.number },
+                // WholphinFluid: MPV choices are hidden, only ExoPlayer and External Player are offered
+                displayValues = R.array.player_backend_options_fluid,
+                indexToValue = { if (it == 1) PlayerBackend.EXTERNAL_PLAYER else PlayerBackend.EXO_PLAYER },
+                valueToIndex = { if (it == PlayerBackend.EXTERNAL_PLAYER) 1 else 0 },
             )
 
         val ExternalPlayerApp =
@@ -1370,20 +1370,10 @@ val advancedPreferences =
                 preferences = listOf(AppPreference.PlayerBackendPref),
                 conditionalPreferences =
                     listOf(
+                        // WholphinFluid: MPV settings are hidden; a leftover MPV choice behaves as ExoPlayer
                         ConditionalPreferences(
-                            { it.playbackPreferences.playerBackend == PlayerBackend.EXO_PLAYER },
+                            { it.playbackPreferences.playerBackend != PlayerBackend.EXTERNAL_PLAYER },
                             ExoPlayerSettings,
-                        ),
-                        ConditionalPreferences(
-                            { it.playbackPreferences.playerBackend == PlayerBackend.MPV },
-                            MpvSettings,
-                        ),
-                        ConditionalPreferences(
-                            { it.playbackPreferences.playerBackend == PlayerBackend.PREFER_MPV },
-                            listOf(
-                                AppPreference.ExoPlayerSettings,
-                                AppPreference.MpvSettings,
-                            ),
                         ),
                         ConditionalPreferences(
                             { it.playbackPreferences.playerBackend == PlayerBackend.EXTERNAL_PLAYER },

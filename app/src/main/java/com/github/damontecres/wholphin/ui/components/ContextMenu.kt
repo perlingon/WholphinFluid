@@ -662,7 +662,7 @@ private fun buildPlayWith(
         PlayerBackend.entries
             .filterNot { it == PlayerBackend.UNRECOGNIZED }
             .zip(resources.getStringArray(R.array.player_backend_options))
-            .filterNot { it.first == PlayerBackend.PREFER_MPV }
+            .filterNot { it.first == PlayerBackend.PREFER_MPV || it.first == PlayerBackend.MPV }
     entries.forEach { (backend, title) ->
         add(
             DialogItem(
