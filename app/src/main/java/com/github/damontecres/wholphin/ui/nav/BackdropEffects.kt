@@ -311,6 +311,8 @@ internal suspend fun bakeBackdropBackground(
     tiles: List<Tile>,
     flatEdgeStrip: Float,
     flatEdgeTolerance: Float,
+    flatEdgeDarkLevel: Float,
+    flatEdgeDarkTolerance: Float,
     drawBackground: DrawScope.() -> Unit,
     drawOverlay: DrawScope.() -> Unit,
     groupSmoothRadius: Int,
@@ -326,7 +328,14 @@ internal suspend fun bakeBackdropBackground(
             // flat patch, so they are left out
             val flatEdges =
                 if (imageUrl != null && tiles.any { it.reflects != null }) {
-                    findFlatEdges(context, imageUrl, flatEdgeStrip, flatEdgeTolerance)
+                    findFlatEdges(
+                        context,
+                        imageUrl,
+                        flatEdgeStrip,
+                        flatEdgeTolerance,
+                        flatEdgeDarkLevel,
+                        flatEdgeDarkTolerance,
+                    )
                 } else {
                     emptySet()
                 }
@@ -571,13 +580,16 @@ private const val EDGE_CHECK_WIDTH = 480
 /**
  * The edges of the image that are one flat colour: along each, a strip [stripShare] of the
  * image's width (or height, for the bottom) deep is checked, and it is flat when no colour
- * channel varies by more than [tolerance] (a standard deviation, 0 to 255)
+ * channel varies by more than [tolerance] (a standard deviation, 0 to 255). A dark edge, whose
+ * average brightness is at most [darkLevel], uses [darkTolerance] instead
  */
 private suspend fun findFlatEdges(
     context: Context,
     imageUrl: Any,
     stripShare: Float,
     tolerance: Float,
+    darkLevel: Float,
+    darkTolerance: Float,
 ): Set<ImageEdge> {
     val request =
         ImageRequest
@@ -612,9 +624,12 @@ private suspend fun findFlatEdges(
             }
         }
         val count = pixels.size.toDouble()
+        val means = DoubleArray(3) { sums[it] / count }
+        // Perceived brightness of the edge's average colour
+        val brightness = 0.299 * means[0] + 0.587 * means[1] + 0.114 * means[2]
+        val allowed = if (brightness <= darkLevel) darkTolerance else tolerance
         return (0..2).all { c ->
-            val mean = sums[c] / count
-            sqrt((squares[c] / count - mean * mean).coerceAtLeast(0.0)) <= tolerance
+            sqrt((squares[c] / count - means[c] * means[c]).coerceAtLeast(0.0)) <= allowed
         }
     }
 
