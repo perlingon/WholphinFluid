@@ -436,6 +436,7 @@ fun Backdrop(
                             0.5f to 0.25f,
                             1f to 0f,
                         ),
+                    blendMode = BlendMode.Overlay,
                 )
             val vignettes =
                 if (showVignettes) {
@@ -478,7 +479,7 @@ fun Backdrop(
                                 ),
                             topLeft = Offset(left, 0f),
                             size = Size(right - left, size.height),
-                            blendMode = mode,
+                            blendMode = if (vignette.blendMode == BlendMode.SrcOver) mode else vignette.blendMode,
                         )
                     }
                 }
@@ -1021,4 +1022,7 @@ private data class Vignette(
     val radius: Float,
     val widthToHeight: Float,
     val stops: List<Pair<Float, Float>>,
+    // How it blends with what is under it. SrcOver is normal; on the sharp image a normal
+    // vignette only darkens the image itself
+    val blendMode: BlendMode = BlendMode.SrcOver,
 )
