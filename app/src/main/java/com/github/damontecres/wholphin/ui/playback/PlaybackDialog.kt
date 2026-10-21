@@ -59,6 +59,7 @@ enum class PlaybackDialogType {
     AUDIO,
     PLAYBACK_SPEED,
     VIDEO_SCALE,
+    VIDEO_ADJUST,
     SUBTITLE_DELAY,
 }
 
@@ -70,6 +71,7 @@ data class PlaybackSettings(
     val subtitleStreams: List<SimpleMediaStream>,
     val playbackSpeed: Float,
     val contentScale: ContentScale,
+    val videoTransform: VideoTransform,
     val subtitleDelay: Duration,
     val hasSubtitleDownloadPermission: Boolean,
     val playbackSpeedEnabled: Boolean,
@@ -94,6 +96,7 @@ fun PlaybackDialog(
     onClickPlaybackDialogType: (PlaybackDialogType) -> Unit,
     onPlaybackActionClick: (PlaybackAction) -> Unit,
     onChangeSubtitleDelay: (Duration) -> Unit,
+    onChangeVideoTransform: (VideoTransform) -> Unit,
 ) {
     val isLtr = LocalLayoutDirection.current == LayoutDirection.Ltr
     // TODO, shouldn't this work out of the box?
@@ -150,6 +153,23 @@ fun PlaybackDialog(
                                 supporting =
                                     playbackScaleOptions[settings.contentScale]
                                         ?.let { stringResource(it) },
+                            ),
+                        )
+                        add(
+                            BottomDialogItem(
+                                data = PlaybackDialogType.VIDEO_ADJUST,
+                                headline = stringResource(R.string.video_adjust),
+                                supporting =
+                                    if (settings.videoTransform.isIdentity) {
+                                        stringResource(R.string.video_adjust_default)
+                                    } else {
+                                        String.format(
+                                            java.util.Locale.US,
+                                            "%.0f%% · %.2f",
+                                            settings.videoTransform.zoom * 100,
+                                            settings.videoTransform.pixelRatio,
+                                        )
+                                    },
                             ),
                         )
                     }
@@ -244,6 +264,36 @@ fun PlaybackDialog(
                 },
                 gravity = leftGravity,
             )
+        }
+
+        PlaybackDialogType.VIDEO_ADJUST -> {
+            Dialog(
+                onDismissRequest = onDismissRequest,
+                properties = DialogProperties(usePlatformDefaultWidth = false),
+            ) {
+                val dialogWindowProvider = LocalView.current.parent as? DialogWindowProvider
+                dialogWindowProvider?.window?.let { window ->
+                    // Keep the picture fully visible while adjusting
+                    window.setGravity(Gravity.BOTTOM or rightGravity)
+                    window.setDimAmount(0f)
+                }
+                Box(
+                    modifier =
+                        Modifier
+                            .wrapContentSize()
+                            .padding(16.dp)
+                            .background(
+                                AppColors.TransparentBlack50,
+                                shape = RoundedCornerShape(16.dp),
+                            ),
+                ) {
+                    VideoAdjust(
+                        transform = settings.videoTransform,
+                        onChange = onChangeVideoTransform,
+                        modifier = Modifier.padding(12.dp),
+                    )
+                }
+            }
         }
 
         PlaybackDialogType.SUBTITLE_DELAY -> {
