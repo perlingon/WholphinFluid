@@ -39,10 +39,12 @@ fun CoilConfig(
                 it
             }
         }
-    // Saved backdrop backgrounds get a share of the same setting
-    BakedBackgrounds.diskBytes = (diskCacheSizeBytes * BakedBackgrounds.DISK_SHARE).toLong()
+    // The setting is the total for images on disk: saved backdrop backgrounds get their share
+    // and the image cache gets the rest
+    val backdropBytes = (diskCacheSizeBytes * BakedBackgrounds.DISK_SHARE).toLong()
+    BakedBackgrounds.diskBytes = backdropBytes
     CoilConfig(
-        diskCacheSizeBytes = diskCacheSizeBytes,
+        diskCacheSizeBytes = diskCacheSizeBytes - backdropBytes,
         okHttpClient = okHttpClient,
         debugLogging = debugLogging,
         enableCache = enableCache,
