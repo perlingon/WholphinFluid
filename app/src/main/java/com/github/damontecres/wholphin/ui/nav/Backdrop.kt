@@ -121,8 +121,8 @@ fun Backdrop(
     // new backdrop is ready, the background crossfades to the new one while the darkening lifts,
     // and the sharp image crossfades to the new one a moment later
     val fadeOutShare = 0.4f // how long the background takes to darken
-    val fadeInShare = 3f // how long each crossfade takes, and the darkening takes to lift
-    val imageDelayShare = 2f // how long the sharp image waits after the background starts
+    val fadeInShare = 1f // how long each crossfade takes, and the darkening takes to lift
+    val imageDelayShare = 0.2f // how long the sharp image waits after the background starts
     // How dark the background gets in between: 0 = not at all, 1 = fully black
     val dipDepth = 1f
     val dipColor = Color.Black
@@ -281,13 +281,13 @@ fun Backdrop(
                         listOf(
                             // right reflection
                             Tile(
-                                left = 0.8f,
-                                top = -0.13f,
-                                width = 1.1f,
-                                height = 0.791f,
+                                left = 0.9f,
+                                top = -0.01f,
+                                width = 1.05f,
+                                height = 0.85f,
                                 flip = true,
-                                resolution = 80,
-                                smooth = 0f,
+                                resolution = 280,
+                                smooth = 0.005f,
                                 layers = listOf(BlendMode.SrcOver to 1f),
                             ),
                             // lower left reflection
@@ -305,12 +305,12 @@ fun Backdrop(
                             // left reflection
                             Tile(
                                 left = -2.2f,
-                                top = -0.06f,
-                                width = 2.75f,
+                                top = 0.071f,
+                                width = 1.75f,
                                 height = 0.7f,
                                 flip = true,
-                                resolution = 80,
-                                smooth = 0.03f,
+                                resolution = 180,
+                                smooth = 0.01f,
                                 layers = listOf(BlendMode.SrcOver to 1f),
                             ),
                             // lower left reflection mirror
@@ -327,14 +327,14 @@ fun Backdrop(
                             ),
                             // bottom reflection
                             Tile(
-                                left = 0.37f,
-                                top = 0.63f,
-                                width = 0.57f,
+                                left = 0.38f,
+                                top = 0.69f,
+                                width = 0.68f,
                                 height = 0.72f,
-                                flip = false,
+                                flip = true,
                                 flipVertical = true,
-                                resolution = 80,
-                                smooth = 0.01f,
+                                resolution = 60,
+                                smooth = 0.03f,
                                 layers = listOf(BlendMode.Softlight to 0.5f),
                             ),
                         )
@@ -395,29 +395,16 @@ fun Backdrop(
                     Vignette(
                         centerX = 0.72f,
                         centerY = 0.31f,
-                        radius = 1.3f,
+                        radius = 1.7f,
                         widthToHeight = 1.35f,
                         stops =
                             listOf(
                                 0f to 0f,
-                                0.48f to 0f,
-                                0.55f to 0.05f,
-                                0.66f to 0.1f,
+                                0.68f to 0f,
+                                0.77f to 0.05f,
+                                0.88f to 0.1f,
                                 0.96f to 0.1f,
                                 1f to 0.1f,
-                            ),
-                    ),
-                    // edge shade
-                    Vignette(
-                        centerX = 0.52f,
-                        centerY = 0.41f,
-                        radius = 1.1f,
-                        widthToHeight = 0.5f,
-                        stops =
-                            listOf(
-                                0f to 0f,
-                                0.4f to 0f,
-                                1f to 0.88f,
                             ),
                     ),
                     // dark bottom-left corner: the other way round, darkest at its centre (which
@@ -491,17 +478,17 @@ fun Backdrop(
                 val density = LocalDensity.current
                 val layoutDirection = LocalLayoutDirection.current
                 // Size of the baked image; it is soft everywhere, so it can be small
-                val bakeWidth = 1280
+                val bakeWidth = 480
                 // Extra smoothing of the baked glows and blur, as a share of the screen width:
                 // 0 = none, 0.01 = a soft blur about 1% of the screen wide. Only applies when baked
-                val bakeSmooth = 0.01f // the final blur, over everything: glows and all tiles
+                val bakeSmooth = 0f // the final blur, over everything: glows and all tiles
                 // Blur of the mirror tiles as one group, before they are blended over the main
                 // tile. Same scale as bakeSmooth
-                val groupSmooth = 0.007f
+                val groupSmooth = 0f
                 // How the blurred mirror tiles are blended onto the glows, bottom to top, as blend
                 // mode to opacity, and the opacity of the group as a whole
-                val groupLayers = listOf(BlendMode.Overlay to 1f, BlendMode.Hardlight to 1f, BlendMode.Multiply to 1f, BlendMode.Hardlight to 1f)
-                val groupOpacity = 0.3f
+                val groupLayers = listOf(BlendMode.SrcOver to 1f)
+                val groupOpacity = 1f
                 val bakeHeight = (bakeWidth * (maxHeight / maxWidth)).toInt().coerceAtLeast(1)
                 // The baked version uses the colours the glows are heading for, not the animated
                 // ones, so it is composed once per backdrop instead of on every animation frame
@@ -740,7 +727,7 @@ fun Backdrop(
                                 )
                             }
                             // Subtle top scrim for system UI readability (clock, tabs)
-                            if (enableTopScrim) {
+                            if (false) {
                                 drawRect(
                                     brush =
                                         Brush.verticalGradient(
@@ -779,12 +766,11 @@ fun Backdrop(
                             val horizontalFade =
                                 listOf(
                                     0f to 0f,
-                                    0.18f to 0.3f,
-                                    0.35f to 0.5f,
-                                    0.45f to 0.8f,
-                                    0.75f to 0.68f,
-                                    0.98f to 0.9f,
-                                    1f to 0f,
+                                    0.12f to 0.2f,
+                                    0.35f to 0.8f,
+                                    0.40f to 1f,
+                                    0.79f to 1f,
+                                    1f to 1f,
                                 )
                             // Vertical fade, measured from the top of the image to the bottom
                             val verticalFade =
@@ -825,13 +811,14 @@ fun Backdrop(
                             val edgeFade =
                                 listOf(
                                     0f to 1f,
-                                    0.86f to 1f,
+                                    0.66f to 1f,
+                                    0.88f to 0.2f,
                                     1f to 0f,
                                 )
                             // Centre of the curve, as shares of the image's width and height.
                             // Further from the edge = a wider, gentler curve
-                            val edgeFadeCenterX = 0.3f
-                            val edgeFadeCenterY = 0.4f
+                            val edgeFadeCenterX = 0.7f
+                            val edgeFadeCenterY = 0.35f
                             // Height of the curve relative to the image's height: lower = rounder
                             // (corners cut away more), higher = flatter (closer to a straight edge)
                             val edgeFadeHeight = 0.9f

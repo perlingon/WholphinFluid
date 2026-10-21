@@ -9,7 +9,7 @@ package com.github.damontecres.wholphin.ui.nav
  */
 object BackdropDebug {
     // Hides the card rows
-    val hideRows = false
+    val hideRows = true
 
     // Hides the sharp backdrop image, leaving only the baked background
     val hideImage = false
