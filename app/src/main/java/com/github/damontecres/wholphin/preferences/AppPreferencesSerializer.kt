@@ -284,4 +284,6 @@ fun SubtitlePreferences.Builder.resetSubtitles() {
     margin = SubtitleSettings.Margin.defaultValue.toInt()
     edgeThickness = SubtitleSettings.EdgeThickness.defaultValue.toInt()
     imageSubtitleOpacity = SubtitleSettings.ImageOpacity.defaultValue.toInt()
+    ignoreEmbeddedColors = SubtitleSettings.IgnoreEmbeddedColors.defaultValue
+    ignoreEmbeddedStyles = SubtitleSettings.IgnoreEmbeddedStyles.defaultValue
 }
