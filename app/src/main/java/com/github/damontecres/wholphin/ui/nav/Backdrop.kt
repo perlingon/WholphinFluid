@@ -385,11 +385,12 @@ fun Backdrop(
             // How much the colours along the edge may vary and still count as flat, in steps of
             // 0 to 255: higher = more edges count as flat
             val flatEdgeTolerance = 8f
-            // Dark edges (black bars, night scenes, dark vignetting) count as flat more easily:
-            // when an edge's average brightness is at or below flatEdgeDarkLevel (0 to 255), it
-            // uses flatEdgeDarkTolerance instead. Reflecting a dark edge adds little anyway
+            // Dark edges must be more uniform to count as flat: their faint detail still makes
+            // good blurry reflections, so only near solid black (bars) is left out. When an
+            // edge's average brightness is at or below flatEdgeDarkLevel (0 to 255), it uses
+            // flatEdgeDarkTolerance instead: lower = stricter
             val flatEdgeDarkLevel = 40f
-            val flatEdgeDarkTolerance = 16f
+            val flatEdgeDarkTolerance = 3f
             // Vignettes over the background and the sharp image: clear at the centre, darkening
             // outwards. Each one has:
             // - centerX, centerY: the centre as a share of the screen (0f, 0f is the top-left
