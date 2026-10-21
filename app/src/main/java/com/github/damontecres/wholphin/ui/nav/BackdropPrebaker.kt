@@ -7,6 +7,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import com.github.damontecres.wholphin.data.model.BaseItem
 import com.github.damontecres.wholphin.services.AnimatedTitles
+import com.github.damontecres.wholphin.services.ImageUrlService
 import com.github.damontecres.wholphin.ui.LocalImageUrlService
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -14,7 +15,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 import org.jellyfin.sdk.model.api.BaseItemKind
 import org.jellyfin.sdk.model.api.ImageType
 import timber.log.Timber
@@ -42,6 +46,9 @@ object BackdropPrebaker {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private var worker: Job? = null
     private var baker: (suspend (String, Boolean) -> Unit)? = null
+
+    // Counts finished backdrops, so waiting for one can tell when to look again
+    private val finished = MutableStateFlow(0)
 
     /**
      * Sets what actually bakes a backdrop. The [Backdrop] on screen provides it, because the
@@ -71,6 +78,39 @@ object BackdropPrebaker {
         startWorker()
     }
 
+    /**
+     * Asks for the backdrops of the first few items to be prepared, with the first item done
+     * first. For lists that are known before their cards are on screen, such as home rows that
+     * load behind the loading spinner
+     */
+    suspend fun requestFirst(
+        items: List<BaseItem?>,
+        imageUrlService: ImageUrlService,
+        count: Int = 4,
+    ) {
+        // Each request goes to the front of the queue, so the first item is asked for last
+        items.filterNotNull().take(count).asReversed().forEach { item ->
+            request(backdropImageUrl(item, imageUrlService), AnimatedTitles.isAnimated(item))
+        }
+    }
+
+    /**
+     * Waits until this item's backdrop has been prepared, but no longer than [timeoutMs]. Returns
+     * straight away when there is nothing to wait for, such as when no backdrop is set up to bake
+     */
+    suspend fun awaitPrepared(
+        item: BaseItem?,
+        imageUrlService: ImageUrlService,
+        timeoutMs: Long,
+    ) {
+        if (item == null || synchronized(this) { baker } == null) return
+        val imageUrl = backdropImageUrl(item, imageUrlService)
+        if (imageUrl.isNullOrBlank()) return
+        withTimeoutOrNull(timeoutMs) {
+            finished.first { synchronized(this@BackdropPrebaker) { done.get(imageUrl) } != null }
+        }
+    }
+
     private fun startWorker() {
         synchronized(this) {
             if (worker?.isActive == true) return
@@ -89,6 +129,7 @@ object BackdropPrebaker {
                         try {
                             bake(request.first, request.second)
                             done.put(request.first, true)
+                            finished.value++
                         } catch (ex: CancellationException) {
                             throw ex
                         } catch (ex: Exception) {
@@ -109,17 +150,21 @@ fun PrebakeBackdrop(item: BaseItem?) {
     val imageUrlService = LocalImageUrlService.current
     LaunchedEffect(item?.id) {
         if (item != null) {
-            // The same address the backdrop itself will use when this item gets focus
-            val imageUrl =
-                if (item.type == BaseItemKind.GENRE) {
-                    item.imageUrlOverride
-                } else {
-                    imageUrlService.getItemImageUrl(item, ImageType.BACKDROP)
-                }
-            BackdropPrebaker.request(imageUrl, AnimatedTitles.isAnimated(item))
+            BackdropPrebaker.request(backdropImageUrl(item, imageUrlService), AnimatedTitles.isAnimated(item))
         }
     }
 }
+
+// The same address the backdrop itself will use when this item gets focus
+private fun backdropImageUrl(
+    item: BaseItem,
+    imageUrlService: ImageUrlService,
+): String? =
+    if (item.type == BaseItemKind.GENRE) {
+        item.imageUrlOverride
+    } else {
+        imageUrlService.getItemImageUrl(item, ImageType.BACKDROP)
+    }
 
 /**
  * Hands the prebaker the current recipe for baking a backdrop, and takes it away again when the
