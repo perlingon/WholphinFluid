@@ -195,6 +195,24 @@ class BackdropService
         // Swatches less saturated than this (0-1) are not counted as vivid
         private val VIVID_MIN_SATURATION = 0.3f
 
+        // Swatches lighter than this (0-1) and less saturated than WHITE_MAX_SATURATION count as
+        // white. Images with lots of white (lab coats, office ceilings) would otherwise give
+        // white or grey glows, so the colours are picked from the rest of the image instead
+        private val WHITE_MIN_LIGHTNESS = 0.75f
+        private val WHITE_MAX_SATURATION = 0.25f
+
+        // When picking the second most common colour, prefer one whose hue is at least this many
+        // degrees away from the most common one, so the glows are not all the same colour
+        private val DISTINCT_HUE_RANGE = 40f
+
+        private val Palette.Swatch.isWhitish: Boolean
+            get() = hsl[2] >= WHITE_MIN_LIGHTNESS && hsl[1] <= WHITE_MAX_SATURATION
+
+        private fun hueDistance(
+            a: Palette.Swatch,
+            b: Palette.Swatch,
+        ): Float = abs(a.hsl[0] - b.hsl[0]).let { minOf(it, 360f - it) }
+
         private fun toColor(
             swatch: Palette.Swatch?,
             alpha: Float,
@@ -228,10 +246,17 @@ class BackdropService
                 val lightMuted = palette.lightMutedSwatch
                 val dominant = palette.dominantSwatch
 
-                // The colours the image is mostly made of
-                val byCoverage = palette.swatches.sortedByDescending { it.population }
-                val mostCommon = dominant ?: byCoverage.getOrNull(0)
-                val secondMostCommon = byCoverage.firstOrNull { it != mostCommon }
+                // The colours the image is mostly made of. White is left out when there are other
+                // colours to use, so images with lots of white still get coloured glows
+                val byCoverage =
+                    palette.swatches
+                        .sortedByDescending { it.population }
+                        .let { all -> all.filterNot { it.isWhitish }.ifEmpty { all } }
+                val mostCommon = (dominant?.takeIf { it in byCoverage }) ?: byCoverage.getOrNull(0)
+                // Preferably a clearly different colour, for a more varied gradient
+                val secondMostCommon =
+                    byCoverage.firstOrNull { it != mostCommon && mostCommon != null && hueDistance(it, mostCommon) >= DISTINCT_HUE_RANGE }
+                        ?: byCoverage.firstOrNull { it != mostCommon }
 
                 // How much of the image the most vivid colour covers, counting every swatch of a
                 // similar hue that is not washed out
