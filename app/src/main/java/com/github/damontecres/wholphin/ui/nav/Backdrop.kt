@@ -373,18 +373,17 @@ fun Backdrop(
             // after they have been blurred and blended as a group
             val mainTile =
                 Tile(
-                    left = -0.05f,
-                    top = -0.1f,
-                    width = 3.8f,
-                    height = 4.012f,
-                    flip = false,
-                    flipVertical = false,
-                    resolution = 680,
-                    smooth = 0.03f,
+                    left = -0.2f,
+                    top = -3.3f,
+                    width = 3f,
+                    height = 4.792f,
+                    flip = true,
+                    flipVertical = true,
+                    resolution = 30,
+                    smooth = 0.09f,
                     layers =
                         listOf(
-                            BlendMode.SrcOver to 0.1f,
-                            BlendMode.Overlay to 0.1f,
+                            BlendMode.Exclusion to 0.2f,BlendMode.Hardlight to 0.8f,
                         ),
                 )
             // Switch for the main tile: true = on, false = off
@@ -399,7 +398,7 @@ fun Backdrop(
             // out when that edge of the image is one flat colour (plain backgrounds in animation,
             // black bars), since reflecting it would only add a flat patch.
             // How much of the edge is checked, in pixels of a 1920 wide image
-            val flatEdgeStrip = 10
+            val flatEdgeStrip = 3
             // How much the colours along the edge may vary and still count as flat, in steps of
             // 0 to 255: higher = more edges count as flat
             val flatEdgeTolerance = 8f
@@ -450,26 +449,26 @@ fun Backdrop(
                             ),
                     ),
                 )
-            // Top shade, so the clock and tabs stay readable: darkest at its centre on the top
-            // edge, fading out downwards. A wide, flat ellipse, so it spans the whole top. Pages
-            // can turn it off with enableTopScrim
-            val topShade =
+            // Side shade, so the clock and tabs stay readable: darkest at its centre on the top
+            // edge, fading out downwards. A wide, flat ellipse, so it spans the whole top.
+            val sideShade =
                 Vignette(
-                    centerX = 0.9f,
-                    centerY = -0.6f,
-                    radius = 0.88f,
-                    widthToHeight = 0.3f,
+                    centerX = 0.51f,
+                    centerY = 0.6f,
+                    radius = 0.5f,
+                    widthToHeight = 1f,
                     stops =
                         listOf(
-                            0f to 1f,
-                            0.29f to 1f,
-                            1f to 0f,
+                            0f to 0f,
+                            0.55f to 0f,
+                            0.67f to 0.25f,
+                            1f to 1f,
                         ),
-                    blendMode = BlendMode.Modulate,
+                    blendMode = BlendMode.SrcOver,
                 )
             val vignettes =
                 if (showVignettes) {
-                    allVignettes + if (enableTopScrim) listOf(topShade) else emptyList()
+                    allVignettes + if (enableTopScrim) listOf(sideShade) else emptyList()
                 } else {
                     emptyList()
                 }
