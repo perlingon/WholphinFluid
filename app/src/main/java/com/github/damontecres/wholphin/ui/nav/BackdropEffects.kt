@@ -313,6 +313,8 @@ internal suspend fun bakeBackdropBackground(
     flatEdgeTolerance: Float,
     flatEdgeDarkLevel: Float,
     flatEdgeDarkTolerance: Float,
+    flatEdgeTint: Float,
+    flatEdgeTintReach: Float,
     drawBackground: DrawScope.() -> Unit,
     drawOverlay: DrawScope.() -> Unit,
     groupSmoothRadius: Int,
@@ -337,10 +339,10 @@ internal suspend fun bakeBackdropBackground(
                         flatEdgeDarkTolerance,
                     )
                 } else {
-                    emptySet()
+                    emptyMap()
                 }
             val shownTiles = tiles.filter { it.reflects == null || it.reflects !in flatEdges }
-            if (imageUrl != null) flatEdgesByImage.put(imageUrl, flatEdges)
+            if (imageUrl != null) flatEdgesByImage.put(imageUrl, flatEdges.keys)
 
             // The tiny versions of the backdrop that get stretched into blurs, one per resolution
             val tinyVersions = HashMap<Int, ImageBitmap?>()
@@ -376,6 +378,30 @@ internal suspend fun bakeBackdropBackground(
             val outputSize = Size(width.toFloat(), height.toFloat())
             CanvasDrawScope().draw(density, layoutDirection, Canvas(output), outputSize) {
                 drawBackground()
+                // Where the image's left or right edge is one flat colour, the colour base leans
+                // towards that colour on that side, so the image blends into it
+                val tint = flatEdgeTint.coerceIn(0f, 1f)
+                val reach = flatEdgeTintReach.coerceIn(0.01f, 1f)
+                if (tint > 0f) {
+                    flatEdges[ImageEdge.LEFT]?.let { color ->
+                        drawRect(
+                            brush =
+                                Brush.horizontalGradient(
+                                    0f to color.copy(alpha = tint),
+                                    reach to color.copy(alpha = 0f),
+                                ),
+                        )
+                    }
+                    flatEdges[ImageEdge.RIGHT]?.let { color ->
+                        drawRect(
+                            brush =
+                                Brush.horizontalGradient(
+                                    (1f - reach) to color.copy(alpha = 0f),
+                                    1f to color.copy(alpha = tint),
+                                ),
+                        )
+                    }
+                }
             }
             // Three passes. First the tiles marked behind go straight onto the glows. Then the
             // group is drawn on a see-through sheet of its own, blurred together as one, and
@@ -520,7 +546,7 @@ internal suspend fun bakeBackdropBackground(
                 width,
                 height,
                 (System.nanoTime() - started) / 1_000_000,
-                flatEdges.ifEmpty { "none" },
+                flatEdges.keys.ifEmpty { "none" },
             )
             output
         } catch (ex: CancellationException) {
@@ -581,7 +607,9 @@ private const val EDGE_CHECK_WIDTH = 480
  * The edges of the image that are one flat colour: along each, a strip [stripShare] of the
  * image's width (or height, for the bottom) deep is checked, and it is flat when no colour
  * channel varies by more than [tolerance] (a standard deviation, 0 to 255). A dark edge, whose
- * average brightness is at most [darkLevel], uses [darkTolerance] instead
+ * average brightness is at most [darkLevel], uses [darkTolerance] instead.
+ *
+ * @return each flat edge with its average colour
  */
 private suspend fun findFlatEdges(
     context: Context,
@@ -590,7 +618,7 @@ private suspend fun findFlatEdges(
     tolerance: Float,
     darkLevel: Float,
     darkTolerance: Float,
-): Set<ImageEdge> {
+): Map<ImageEdge, Color> {
     val request =
         ImageRequest
             .Builder(context)
@@ -599,19 +627,20 @@ private suspend fun findFlatEdges(
             .allowHardware(false)
             .bitmapConfig(Bitmap.Config.ARGB_8888)
             .build()
-    val result = context.imageLoader.execute(request) as? SuccessResult ?: return emptySet()
+    val result = context.imageLoader.execute(request) as? SuccessResult ?: return emptyMap()
     val bitmap = result.image.asDrawable(context.resources).toBitmap(config = Bitmap.Config.ARGB_8888)
     val width = bitmap.width
     val height = bitmap.height
     val strip = (width * stripShare).roundToInt().coerceIn(1, max(1, minOf(width, height) / 2))
 
-    // Standard deviation of each colour channel over the area; flat when all are small
-    fun isFlat(
+    // Standard deviation of each colour channel over the area; flat when all are small.
+    // Returns the area's average colour when it is flat, otherwise null
+    fun flatColor(
         x: Int,
         y: Int,
         w: Int,
         h: Int,
-    ): Boolean {
+    ): Color? {
         val pixels = IntArray(w * h)
         bitmap.getPixels(pixels, 0, w, x, y, w, h)
         val sums = DoubleArray(3)
@@ -628,15 +657,21 @@ private suspend fun findFlatEdges(
         // Perceived brightness of the edge's average colour
         val brightness = 0.299 * means[0] + 0.587 * means[1] + 0.114 * means[2]
         val allowed = if (brightness <= darkLevel) darkTolerance else tolerance
-        return (0..2).all { c ->
-            sqrt((squares[c] / count - means[c] * means[c]).coerceAtLeast(0.0)) <= allowed
+        val flat =
+            (0..2).all { c ->
+                sqrt((squares[c] / count - means[c] * means[c]).coerceAtLeast(0.0)) <= allowed
+            }
+        return if (flat) {
+            Color(means[0].toInt(), means[1].toInt(), means[2].toInt())
+        } else {
+            null
         }
     }
 
-    return buildSet {
-        if (isFlat(0, 0, strip, height)) add(ImageEdge.LEFT)
-        if (isFlat(width - strip, 0, strip, height)) add(ImageEdge.RIGHT)
-        if (isFlat(0, height - strip, width, strip)) add(ImageEdge.BOTTOM)
+    return buildMap {
+        flatColor(0, 0, strip, height)?.let { put(ImageEdge.LEFT, it) }
+        flatColor(width - strip, 0, strip, height)?.let { put(ImageEdge.RIGHT, it) }
+        flatColor(0, height - strip, width, strip)?.let { put(ImageEdge.BOTTOM, it) }
     }
 }
 
