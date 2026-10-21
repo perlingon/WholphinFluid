@@ -171,6 +171,12 @@
     <string name="updates">Updates</string>
     <string name="version">Version</string>
     <string name="video_scale">Video Scale</string>
+    <string name="video_adjust">Video Adjust</string>
+    <string name="video_adjust_zoom">Zoom</string>
+    <string name="video_adjust_pixel_ratio">Pixel ratio</string>
+    <string name="video_adjust_shift_vertical">Vertical shift</string>
+    <string name="video_adjust_shift_horizontal">Horizontal shift</string>
+    <string name="video_adjust_default">Default</string>
     <string name="video">Video</string>
     <string name="videos">Videos</string>
     <string name="watch_live">Watch live</string>

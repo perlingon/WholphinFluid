@@ -50,6 +50,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.IntSize
@@ -182,6 +183,14 @@ fun PlaybackPageContent(
             },
         )
     }
+    // Kodi-style zoom / pixel ratio / shift. ExoPlayer only: MPV handles aspect itself.
+    val videoAdjustEnabled = player !is MpvPlayer
+    val context = LocalContext.current
+    val videoTransformStore = remember(context) { VideoTransformStore(context) }
+    val currentMediaId = rememberCurrentMediaId(player)
+    var videoTransform by remember(currentMediaId) {
+        mutableStateOf(videoTransformStore.get(currentMediaId))
+    }
     var playbackSpeed by remember { mutableFloatStateOf(1.0f) }
     LaunchedEffect(playbackSpeed) { player.setPlaybackSpeed(playbackSpeed) }
 
@@ -204,7 +213,12 @@ fun PlaybackPageContent(
         }
     }
     val scaledModifier =
-        Modifier.resizeWithContentScale(contentScale, presentationState.videoSizeDp)
+        Modifier
+            .resizeWithContentScale(contentScale, presentationState.videoSizeDp)
+            .videoTransform(
+                // Skip while the player is shrunk for "next up", so it can't spill over the UI
+                if (videoAdjustEnabled && state.nextUp == null) videoTransform else VideoTransform.IDENTITY,
+            )
     val focusRequester = remember { FocusRequester() }
     val playPauseState = rememberPlayPauseButtonState(player)
     val seekBarState = rememberSeekBarState(player, scope)
@@ -746,6 +760,7 @@ fun PlaybackPageContent(
                     subtitleStreams = state.currentMediaInfo.subtitleStreams,
                     playbackSpeed = playbackSpeed,
                     contentScale = contentScale,
+                    videoTransform = videoTransform,
                     subtitleDelay = state.currentPlayback?.subtitleDelay ?: Duration.ZERO,
                     hasSubtitleDownloadPermission =
                         remember(userDto) { userDto?.policy?.let { it.isAdministrator || it.enableSubtitleManagement } == true },
@@ -759,6 +774,7 @@ fun PlaybackPageContent(
                         // Go back to settings dialog
                         PlaybackDialogType.PLAYBACK_SPEED,
                         PlaybackDialogType.VIDEO_SCALE,
+                        PlaybackDialogType.VIDEO_ADJUST,
                         -> PlaybackDialogType.SETTINGS
 
                         else -> null
@@ -771,7 +787,7 @@ fun PlaybackPageContent(
                 controllerViewState.pulseControls(Long.MAX_VALUE)
             },
             onClickPlaybackDialogType = {
-                if (it == PlaybackDialogType.SUBTITLE_DELAY) {
+                if (it == PlaybackDialogType.SUBTITLE_DELAY || it == PlaybackDialogType.VIDEO_ADJUST) {
                     // Hide controls so subtitles are fully visible
                     controllerViewState.hideControls()
                 }
@@ -779,8 +795,12 @@ fun PlaybackPageContent(
             },
             onPlaybackActionClick = onPlaybackActionClick,
             onChangeSubtitleDelay = { viewModel.updateSubtitleDelay(it) },
+            onChangeVideoTransform = {
+                videoTransform = it
+                videoTransformStore.put(currentMediaId, it)
+            },
             enableSubtitleDelay = player is MpvPlayer,
-            enableVideoScale = player !is MpvPlayer,
+            enableVideoScale = videoAdjustEnabled,
         )
     }
 }
