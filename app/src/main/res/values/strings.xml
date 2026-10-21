@@ -747,6 +747,11 @@
         <item>@string/external_player</item>
     </string-array>
 
+    <string-array name="player_backend_options_fluid">
+        <item>@string/exoplayer</item>
+        <item>@string/external_player</item>
+    </string-array>
+
     <string name="player_backend_options_subtitles_prefer_mpv">Use ExoPlayer for HDR playback</string>
     <string-array name="player_backend_options_subtitles">
         <item /><!-- Intentionally blank -->
