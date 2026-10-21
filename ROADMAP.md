@@ -6,7 +6,7 @@ Board: https://github.com/users/perlingon/projects/1 · Milestones: https://gith
 
 ## Alpha (Proof of concept)
 
-- [ ] [#2](https://github.com/perlingon/WholphinFluid/issues/2) Build a release APK and compare performance (`performance`)
+- [x] [#2](https://github.com/perlingon/WholphinFluid/issues/2) Build a release APK and compare performance (`performance`)
 - [ ] [#3](https://github.com/perlingon/WholphinFluid/issues/3) Test Crop and Fill width in WholphinFluid (`Video playback`)
 - [ ] [#4](https://github.com/perlingon/WholphinFluid/issues/4) Panscan knob for playback (`Video playback`)
 - [ ] [#5](https://github.com/perlingon/WholphinFluid/issues/5) Subtitles: styling and on-by-default setting (`design`)
@@ -14,6 +14,8 @@ Board: https://github.com/users/perlingon/projects/1 · Milestones: https://gith
 - [ ] [#7](https://github.com/perlingon/WholphinFluid/issues/7) Move tuned backdrop values into FluidTheme.kt (`maintenance`, `design`)
 - [ ] [#8](https://github.com/perlingon/WholphinFluid/issues/8) Headers on other pages (`design`)
 - [ ] [#9](https://github.com/perlingon/WholphinFluid/issues/9) Screensaver in ultrawide (`design`)
+- [ ] [#27](https://github.com/perlingon/WholphinFluid/issues/27) Hide MPV player option, use ExoPlayer only (`Video playback`, `maintenance`)
+- [ ] [#31](https://github.com/perlingon/WholphinFluid/issues/31) Backdrop is slow to change on TV boxes: speed up baking and transitions (`performance`, `design`)
 
 ## First official release
 
