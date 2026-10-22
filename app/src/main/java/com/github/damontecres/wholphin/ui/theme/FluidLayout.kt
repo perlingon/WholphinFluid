@@ -4,7 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.github.damontecres.wholphin.ui.nav.CollapsedDrawerItemWidth
+import com.github.damontecres.wholphin.ui.nav.PageStartPadding
 
 /**
  * Side margins that adapt to the shape of the screen.
@@ -53,12 +53,12 @@ object FluidLayout {
     }
 
     /**
-     * How far headlines are indented within a page. Pages already start just clear of the nav
-     * drawer, so this is the left margin less that, and never less than the app's usual small
-     * indent
+     * How far headlines are indented within a page. Pages already start [PageStartPadding] in
+     * from the left edge, so this is the left margin less that, and never less than the app's
+     * usual small indent
      */
     @Composable
-    fun headlineInset(): Dp = (leftMargin() - (CollapsedDrawerItemWidth + 8.dp)).coerceAtLeast(8.dp)
+    fun headlineInset(): Dp = (leftMargin() - PageStartPadding).coerceAtLeast(8.dp)
 
     /**
      * Where the first card of a row starts: level with the headlines, or at the row's own usual

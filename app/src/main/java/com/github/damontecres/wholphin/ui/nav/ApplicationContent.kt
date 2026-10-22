@@ -2,7 +2,6 @@ package com.github.damontecres.wholphin.ui.nav
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -65,7 +64,6 @@ fun ApplicationContent(
             enableTopScrim = enableTopScrim,
             viewModel = viewModel,
         )
-        val navDrawerListState = rememberLazyListState()
         NavDisplay(
             backStack = navigationManager.backStack,
             onBack = { navigationManager.goBack() },
@@ -92,7 +90,6 @@ fun ApplicationContent(
                             user = user,
                             server = server,
                             drawerState = drawerState,
-                            navDrawerListState = navDrawerListState,
                             onClearBackdrop = viewModel::clearBackdrop,
                             modifier = Modifier.fillMaxSize(),
                         )
