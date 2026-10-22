@@ -20,19 +20,13 @@ import com.github.damontecres.wholphin.preferences.AppPreferences
 import com.github.damontecres.wholphin.preferences.BackdropStyle
 import com.github.damontecres.wholphin.util.WholphinDispatchers
 import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.withContext
-import org.jellyfin.sdk.api.client.ApiClient
-import org.jellyfin.sdk.api.client.extensions.userLibraryApi
-import org.jellyfin.sdk.model.api.BaseItemKind
-import org.jellyfin.sdk.model.api.ImageType
 import timber.log.Timber
-import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.math.abs
@@ -50,17 +44,7 @@ class BackdropService
         @param:ApplicationContext private val context: Context,
         private val imageUrlService: ImageUrlService,
         private val preferences: DataStore<AppPreferences>,
-        private val api: ApiClient,
     ) {
-        init {
-            // Lets the animation check look up a series' genres, for episodes and seasons
-            AnimatedTitles.fetchGenres = { itemId ->
-                api.userLibraryApi
-                    .getItem(itemId = itemId)
-                    .content.genres
-            }
-        }
-
         // How long focus has to rest on an item before its backdrop starts loading
         private val BACKDROP_FOCUS_DELAY_MS = 250L
 
@@ -74,13 +58,7 @@ class BackdropService
          */
         suspend fun submit(item: BaseItem) =
             withContext(WholphinDispatchers.IO) {
-                val imageUrl =
-                    if (item.type == BaseItemKind.GENRE) {
-                        item.imageUrlOverride
-                    } else {
-                        imageUrlService.getItemImageUrl(item, ImageType.BACKDROP)
-                    }
-                submit(item.id.toString(), imageUrl, AnimatedTitles.isAnimated(item))
+                submit(item.id.toString(), imageUrlService.getPageBackdropUrl(item))
             }
 
         /**
@@ -94,7 +72,6 @@ class BackdropService
         suspend fun submit(
             itemId: String,
             imageUrl: String?,
-            animated: Boolean = false,
         ) = withContext(WholphinDispatchers.IO) {
             if (backdropFlow.firstOrNull()?.imageUrl != imageUrl || imageUrl == null) {
                 _backdropFlow.update {
@@ -105,7 +82,7 @@ class BackdropService
                         colorsPending = true,
                     )
                 }
-                extractColors(itemId, imageUrl, animated)
+                extractColors(itemId, imageUrl)
             }
         }
 
@@ -121,14 +98,13 @@ class BackdropService
         private suspend fun extractColors(
             itemId: String,
             imageUrl: String?,
-            animated: Boolean,
         ) {
             // Wait a moment before loading anything, so nothing is fetched for items that are
             // only passed over while scrolling
             delay(BACKDROP_FOCUS_DELAY_MS)
             // Announce the image first, so it can start loading while the colours are worked out
             _backdropFlow.update {
-                if (it.itemId == itemId) it.copy(imageUrl = imageUrl, colorsPending = true, isAnimated = animated) else it
+                if (it.itemId == itemId) it.copy(imageUrl = imageUrl, colorsPending = true) else it
             }
             val backdropStyle =
                 preferences.data
@@ -152,7 +128,6 @@ class BackdropService
                         primaryColor = colors?.primary ?: it.primaryColor,
                         secondaryColor = colors?.secondary ?: it.secondaryColor,
                         tertiaryColor = colors?.tertiary ?: it.tertiaryColor,
-                        isAnimated = animated,
                     )
                 } else {
                     it
@@ -220,6 +195,28 @@ class BackdropService
         // Swatches less saturated than this (0-1) are not counted as vivid
         private val VIVID_MIN_SATURATION = 0.3f
 
+        // Swatches lighter than this (0-1) and less saturated than WHITE_MAX_SATURATION count as
+        // white. Images with lots of white (lab coats, office ceilings) would otherwise give
+        // white or grey glows, so the colours are picked from the rest of the image instead
+        private val WHITE_MIN_LIGHTNESS = 0.75f
+        private val WHITE_MAX_SATURATION = 0.25f
+
+        // When picking the second most common colour, prefer one whose hue is at least this many
+        // degrees away from the most common one, so the glows are not all the same colour
+        private val DISTINCT_HUE_RANGE = 40f
+
+        // When white covers more than this share of the image, its most vivid colour is used as
+        // an accent for the top-left glow, so the gradient gets some real colour
+        private val WHITE_HEAVY_SHARE = 0.3f
+
+        private val Palette.Swatch.isWhitish: Boolean
+            get() = hsl[2] >= WHITE_MIN_LIGHTNESS && hsl[1] <= WHITE_MAX_SATURATION
+
+        private fun hueDistance(
+            a: Palette.Swatch,
+            b: Palette.Swatch,
+        ): Float = abs(a.hsl[0] - b.hsl[0]).let { minOf(it, 360f - it) }
+
         private fun toColor(
             swatch: Palette.Swatch?,
             alpha: Float,
@@ -253,10 +250,17 @@ class BackdropService
                 val lightMuted = palette.lightMutedSwatch
                 val dominant = palette.dominantSwatch
 
-                // The colours the image is mostly made of
-                val byCoverage = palette.swatches.sortedByDescending { it.population }
-                val mostCommon = dominant ?: byCoverage.getOrNull(0)
-                val secondMostCommon = byCoverage.firstOrNull { it != mostCommon }
+                // The colours the image is mostly made of. White is left out when there are other
+                // colours to use, so images with lots of white still get coloured glows
+                val byCoverage =
+                    palette.swatches
+                        .sortedByDescending { it.population }
+                        .let { all -> all.filterNot { it.isWhitish }.ifEmpty { all } }
+                val mostCommon = (dominant?.takeIf { it in byCoverage }) ?: byCoverage.getOrNull(0)
+                // Preferably a clearly different colour, for a more varied gradient
+                val secondMostCommon =
+                    byCoverage.firstOrNull { it != mostCommon && mostCommon != null && hueDistance(it, mostCommon) >= DISTINCT_HUE_RANGE }
+                        ?: byCoverage.firstOrNull { it != mostCommon }
 
                 // How much of the image the most vivid colour covers, counting every swatch of a
                 // similar hue that is not washed out
@@ -275,6 +279,28 @@ class BackdropService
                             .toFloat() / totalPopulation
                     }
                 val useVivid = vividShare > VIVID_SHARE_THRESHOLD
+                val whiteShare =
+                    if (totalPopulation == 0) {
+                        0f
+                    } else {
+                        palette.swatches.filter { it.isWhitish }.sumOf { it.population }.toFloat() / totalPopulation
+                    }
+                // An image that is nearly one hue: no colour is clearly different from the most
+                // common one (brick walls, sepia, single-tone grades)
+                val singleHue =
+                    mostCommon != null && byCoverage.none { hueDistance(it, mostCommon) >= DISTINCT_HUE_RANGE }
+                // An accent, even when it covers only a small part. On very white images the most
+                // vivid colour. On single-hue images the most saturated colour that is not white
+                val accent =
+                    when {
+                        whiteShare > WHITE_HEAVY_SHARE -> (mostVivid ?: muted)?.takeIf { !it.isWhitish }
+                        singleHue ->
+                            palette.swatches
+                                .filterNot { it.isWhitish || it == mostCommon }
+                                .maxByOrNull { it.hsl[1] }
+                                ?.takeIf { it.hsl[1] >= VIVID_MIN_SATURATION }
+                        else -> null
+                    }
 
                 // Primary (Bottom-Right)
                 val primaryColor =
@@ -297,7 +323,7 @@ class BackdropService
                             else -> null
                         }.let { toColor(it, .4f) }
                     } else {
-                        toColor(secondMostCommon ?: mostCommon ?: vibrant ?: muted, .4f)
+                        toColor(accent ?: secondMostCommon ?: mostCommon ?: vibrant ?: muted, .4f)
                     }
 
                 // Tertiary (Top-Right under image)
@@ -308,7 +334,14 @@ class BackdropService
                         toColor(mostCommon ?: vibrant ?: lightVibrant, .35f)
                     }
 
-                Timber.v("Vivid colour covers %s of the image, useVivid=%s", vividShare, useVivid)
+                Timber.v(
+                    "Vivid colour covers %s of the image, useVivid=%s, white covers %s, single hue=%s, accent=%s",
+                    vividShare,
+                    useVivid,
+                    whiteShare,
+                    singleHue,
+                    accent != null,
+                )
                 Timber.v(
                     "Colors extracted: primary=%s, secondary=%s, tertiary=%s",
                     primaryColor,
@@ -339,8 +372,6 @@ data class BackdropResult(
     // is not known yet (imageUrl is null), then while its colours are being worked out. Until it
     // is false again, the colours here are still the previous backdrop's
     val colorsPending: Boolean = false,
-    // True for animated titles, which get a plainer treatment (see Backdrop)
-    val isAnimated: Boolean = false,
 ) {
     val hasColors: Boolean =
         primaryColor.isSpecified ||
@@ -366,44 +397,5 @@ data class ExtractedColors(
 ) {
     companion object {
         val DEFAULT = ExtractedColors(Color.Unspecified, Color.Unspecified, Color.Unspecified)
-    }
-}
-
-// Genres that mark a title as animated
-private val animationGenres = setOf("animation", "anime")
-
-private fun List<String>?.hasAnimationGenre(): Boolean = orEmpty().any { it.trim().lowercase() in animationGenres }
-
-/**
- * Works out whether a title is animated, going by its genres on the server. It is only as good as
- * the library's metadata.
- *
- * Episodes and seasons usually carry no genres of their own, so for those the series is looked up
- * once and the answer remembered.
- */
-object AnimatedTitles {
-    // Set by BackdropService; fetches the genres of the item with this id
-    @Volatile
-    var fetchGenres: (suspend (UUID) -> List<String>?)? = null
-
-    // Series already looked up
-    private val seriesAnimated = LruCache<UUID, Boolean>(500)
-
-    suspend fun isAnimated(item: BaseItem): Boolean {
-        if (item.data.genres.hasAnimationGenre()) return true
-        val seriesId = item.data.seriesId ?: return false
-        if (seriesId == item.id) return false
-        seriesAnimated.get(seriesId)?.let { return it }
-        val fetch = fetchGenres ?: return false
-        return try {
-            val animated = withContext(WholphinDispatchers.IO) { fetch(seriesId) }.hasAnimationGenre()
-            seriesAnimated.put(seriesId, animated)
-            animated
-        } catch (ex: CancellationException) {
-            throw ex
-        } catch (ex: Exception) {
-            Timber.w(ex, "Could not look up genres for series %s", seriesId)
-            false
-        }
     }
 }

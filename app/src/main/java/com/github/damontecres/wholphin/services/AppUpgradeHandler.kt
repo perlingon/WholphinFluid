@@ -20,6 +20,7 @@ import com.github.damontecres.wholphin.preferences.AppPreference
 import com.github.damontecres.wholphin.preferences.AppPreferences
 import com.github.damontecres.wholphin.preferences.ExperimentalPreference
 import com.github.damontecres.wholphin.preferences.HdrOverrideMode
+import com.github.damontecres.wholphin.preferences.PlayerBackend
 import com.github.damontecres.wholphin.preferences.ScreensaverPreference
 import com.github.damontecres.wholphin.preferences.update
 import com.github.damontecres.wholphin.preferences.updateAdvancedPreferences
@@ -504,6 +505,17 @@ class AppUpgradeHandler
                         Timber.i("Migrating %s PLC to %s STC", plcs.size, stcs.size)
                         seriesTrackChoiceDao.save(stcs)
                     }
+                }
+            }
+
+            // WholphinFluid: MPV is hidden, so move anyone who picked it back to ExoPlayer
+            appPreferences.updateData {
+                when (it.playbackPreferences.playerBackend) {
+                    PlayerBackend.MPV,
+                    PlayerBackend.PREFER_MPV,
+                    -> it.updatePlaybackPreferences { playerBackend = PlayerBackend.EXO_PLAYER }
+
+                    else -> it
                 }
             }
         }

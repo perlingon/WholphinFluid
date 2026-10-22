@@ -236,20 +236,17 @@ class PlaybackViewModel
             isHdr: Boolean,
             is4k: Boolean,
         ) {
-            val softwareDecoding =
-                !preferences.appPreferences.playbackPreferences.mpvOptions.enableHardwareDecoding
             val requestBackend =
                 (destination as? Destination.Playback)?.backend
                     ?: preferences.appPreferences.playbackPreferences.playerBackend
             val playerBackend =
                 when (requestBackend) {
+                    // WholphinFluid: MPV is hidden, so MPV choices fall back to ExoPlayer
                     PlayerBackend.UNRECOGNIZED,
                     PlayerBackend.EXO_PLAYER,
+                    PlayerBackend.MPV,
+                    PlayerBackend.PREFER_MPV,
                     -> PlayerBackend.EXO_PLAYER
-
-                    PlayerBackend.MPV -> PlayerBackend.MPV
-
-                    PlayerBackend.PREFER_MPV -> if (isHdr || (is4k && softwareDecoding)) PlayerBackend.EXO_PLAYER else PlayerBackend.MPV
 
                     PlayerBackend.EXTERNAL_PLAYER -> throw IllegalStateException("Cannot use this for external playback")
                 }
