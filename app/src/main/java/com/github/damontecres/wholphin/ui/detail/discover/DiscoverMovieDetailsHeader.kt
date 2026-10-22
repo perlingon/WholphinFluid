@@ -34,6 +34,7 @@ import com.github.damontecres.wholphin.ui.isNotNullOrBlank
 import com.github.damontecres.wholphin.ui.letNotEmpty
 import com.github.damontecres.wholphin.ui.listToDotString
 import com.github.damontecres.wholphin.ui.roundMinutes
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.util.ExceptionHandler
 import kotlinx.coroutines.launch
 import org.jellyfin.sdk.model.api.ImageType
@@ -60,7 +61,7 @@ fun DiscoverMovieDetailsHeader(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     Column(
-        verticalArrangement = Arrangement.spacedBy(4.dp),
+        verticalArrangement = Arrangement.spacedBy(Spacing.xs),
         modifier = modifier,
     ) {
         TitleOrLogo(
@@ -74,7 +75,7 @@ fun DiscoverMovieDetailsHeader(
         )
 
         Column(
-            verticalArrangement = Arrangement.spacedBy(4.dp),
+            verticalArrangement = Arrangement.spacedBy(Spacing.xs),
             modifier = Modifier.fillMaxWidth(.60f),
         ) {
             val resources = LocalResources.current

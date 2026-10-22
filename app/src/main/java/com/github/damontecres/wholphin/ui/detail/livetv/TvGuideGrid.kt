@@ -57,6 +57,7 @@ import com.github.damontecres.wholphin.ui.launchIO
 import com.github.damontecres.wholphin.ui.nav.Destination
 import com.github.damontecres.wholphin.ui.rememberInt
 import com.github.damontecres.wholphin.ui.rememberPosition
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.ui.tryRequestFocus
 import com.github.damontecres.wholphin.util.LoadingState
 import com.github.damontecres.wholphin.util.WholphinDispatchers
@@ -120,7 +121,7 @@ fun TvGuideGrid(
                     }
                 }
             Column(
-                verticalArrangement = Arrangement.spacedBy(4.dp),
+                verticalArrangement = Arrangement.spacedBy(Spacing.xs),
                 modifier = modifier,
             ) {
                 if (state.channels.isEmpty()) {
@@ -415,7 +416,7 @@ fun TvGuideGridContent(
                             // The second is padded so there are gaps between times
                             // The first covers those gaps
                             .background(MaterialTheme.colorScheme.background)
-                            .padding(horizontal = 2.dp)
+                            .padding(horizontal = Spacing.xs)
                             .fillMaxSize()
                             .background(
                                 MaterialTheme.colorScheme.surfaceVariant,
@@ -435,7 +436,7 @@ fun TvGuideGridContent(
                     Text(
                         text = time.toString(),
                         color = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.padding(2.dp),
+                        modifier = Modifier.padding(Spacing.xs),
                     )
                 }
             }
@@ -542,7 +543,7 @@ fun TvGuideGridContent(
                         MaterialTheme.colorScheme.background.copy(alpha = .5f),
                         shape = CircleShape,
                     ).size(64.dp)
-                    .padding(16.dp)
+                    .padding(Spacing.md)
                     .align(Alignment.BottomEnd),
             )
         }

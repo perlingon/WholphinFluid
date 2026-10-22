@@ -21,6 +21,7 @@ import com.github.damontecres.wholphin.data.model.Trailer
 import com.github.damontecres.wholphin.ui.components.ExpandableFaButton
 import com.github.damontecres.wholphin.ui.components.ExpandablePlayButton
 import com.github.damontecres.wholphin.ui.components.TrailerButton
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.ui.tryRequestFocus
 import kotlin.time.Duration
 
@@ -41,8 +42,8 @@ fun ExpandableDiscoverButtons(
 ) {
     val firstFocus = remember { FocusRequester() }
     LazyRow(
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
-        contentPadding = PaddingValues(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(Spacing.md),
+        contentPadding = PaddingValues(Spacing.sm),
         modifier =
             modifier
                 .focusGroup()

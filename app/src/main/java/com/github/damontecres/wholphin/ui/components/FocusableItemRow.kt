@@ -18,6 +18,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
+import com.github.damontecres.wholphin.ui.theme.Spacing
+import com.github.damontecres.wholphin.ui.theme.rowHeadline
 
 /**
  * Placeholder for [com.github.damontecres.wholphin.ui.cards.ItemRow]. It is [focusable] so it can be scrolled.
@@ -33,7 +35,7 @@ fun FocusableItemRow(
     titleContent = {
         Text(
             text = title,
-            style = MaterialTheme.typography.titleLarge,
+            style = MaterialTheme.typography.rowHeadline,
             color = MaterialTheme.colorScheme.onBackground,
         )
     },
@@ -42,7 +44,7 @@ fun FocusableItemRow(
             text = subtitle,
             style = MaterialTheme.typography.titleMedium,
             color = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.padding(start = 8.dp),
+            modifier = Modifier.padding(start = Spacing.sm),
         )
     },
     modifier = modifier,
@@ -64,13 +66,13 @@ fun FocusableItemRow(
         },
     )
     Column(
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(Spacing.sm),
         modifier =
             modifier
-                .padding(start = 8.dp)
+                .padding(start = Spacing.sm)
                 .focusable(interactionSource = interactionSource)
                 .background(background, shape = RoundedCornerShape(8.dp))
-                .padding(8.dp),
+                .padding(Spacing.sm),
     ) {
         titleContent.invoke()
         subtitleContent.invoke()

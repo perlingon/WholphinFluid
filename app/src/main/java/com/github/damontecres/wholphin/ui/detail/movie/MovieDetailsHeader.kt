@@ -29,6 +29,7 @@ import com.github.damontecres.wholphin.ui.components.TitleOrLogo
 import com.github.damontecres.wholphin.ui.components.VideoStreamDetails
 import com.github.damontecres.wholphin.ui.isNotNullOrBlank
 import com.github.damontecres.wholphin.ui.letNotEmpty
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.util.ExceptionHandler
 import kotlinx.coroutines.launch
 import org.jellyfin.sdk.model.api.PersonKind
@@ -46,7 +47,7 @@ fun MovieDetailsHeader(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     Column(
-        verticalArrangement = Arrangement.spacedBy(4.dp),
+        verticalArrangement = Arrangement.spacedBy(Spacing.xs),
         modifier = modifier,
     ) {
         // Title
@@ -60,7 +61,7 @@ fun MovieDetailsHeader(
         )
 
         Column(
-            verticalArrangement = Arrangement.spacedBy(4.dp),
+            verticalArrangement = Arrangement.spacedBy(Spacing.xs),
             modifier = Modifier.fillMaxWidth(.60f),
         ) {
             QuickDetails(
@@ -79,8 +80,8 @@ fun MovieDetailsHeader(
                 modifier =
                     Modifier.padding(
                         start = HeaderUtils.startPadding,
-                        top = 4.dp,
-                        bottom = 16.dp,
+                        top = Spacing.xs,
+                        bottom = Spacing.md,
                     ),
             )
             dto.taglines?.firstOrNull()?.let { tagline ->

@@ -14,6 +14,7 @@ import androidx.compose.ui.unit.dp
 import com.github.damontecres.wholphin.R
 import com.github.damontecres.wholphin.ui.components.BasicDialog
 import com.github.damontecres.wholphin.ui.setup.PinEntryCreate
+import com.github.damontecres.wholphin.ui.theme.Spacing
 
 enum class PinFlowState {
     ENTER_PIN_TO_REMOVE,
@@ -53,7 +54,7 @@ fun SetPinFlow(
                             if (it == currentPin) onRemovePin.invoke()
                         },
                         onConfirm = null,
-                        modifier = Modifier.padding(16.dp),
+                        modifier = Modifier.padding(Spacing.md),
                     )
                 }
 
@@ -74,7 +75,7 @@ fun SetPinFlow(
                                     ).show()
                             }
                         },
-                        modifier = Modifier.padding(16.dp),
+                        modifier = Modifier.padding(Spacing.md),
                     )
                 }
 
@@ -95,7 +96,7 @@ fun SetPinFlow(
                                 flowState = PinFlowState.ENTER_PIN
                             }
                         },
-                        modifier = Modifier.padding(16.dp),
+                        modifier = Modifier.padding(Spacing.md),
                     )
                 }
             }

@@ -36,6 +36,7 @@ import com.github.damontecres.wholphin.ui.PreviewTvSpec
 import com.github.damontecres.wholphin.ui.components.BasicDialog
 import com.github.damontecres.wholphin.ui.components.TextButton
 import com.github.damontecres.wholphin.ui.playback.isEnterKey
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.ui.theme.WholphinTheme
 
 @Composable
@@ -46,7 +47,7 @@ fun PinEntry(
 ) {
     var input by remember { mutableStateOf("") }
     Column(
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(Spacing.sm),
         modifier = modifier,
     ) {
         Text(
@@ -116,7 +117,7 @@ fun PinEntryCreate(
 ) {
     var input by remember { mutableStateOf("") }
     Column(
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(Spacing.sm),
         modifier =
             modifier
                 .onKeyEvent {
@@ -175,7 +176,7 @@ fun PinEntryCreate(
 fun PinArrowRow(modifier: Modifier = Modifier) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
         modifier = modifier,
     ) {
         val arrows =
@@ -203,20 +204,20 @@ fun PinEntryDots(
     modifier: Modifier = Modifier,
 ) {
     Row(
-        horizontalArrangement = Arrangement.spacedBy(2.dp),
+        horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
         modifier =
             modifier
                 .defaultMinSize(minWidth = 180.dp, minHeight = 40.dp)
                 .background(
                     MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.8f),
                     shape = CircleShape,
-                ).padding(vertical = 16.dp),
+                ).padding(vertical = Spacing.md),
     ) {
         repeat(count) {
             Box(
                 modifier =
                     Modifier
-                        .padding(horizontal = 8.dp)
+                        .padding(horizontal = Spacing.sm)
                         .clip(CircleShape)
                         .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 1f))
                         .size(8.dp),
@@ -237,7 +238,7 @@ fun PinEntryDialog(
         PinEntry(
             onTextChange = onTextChange,
             onClickServerAuth = onClickServerAuth,
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier.padding(Spacing.md),
         )
     }
 }

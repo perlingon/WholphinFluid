@@ -64,6 +64,7 @@ import com.github.damontecres.wholphin.data.filter.YearFilter
 import com.github.damontecres.wholphin.data.model.GetItemsFilter
 import com.github.damontecres.wholphin.ui.FontAwesome
 import com.github.damontecres.wholphin.ui.PreviewTvSpec
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.ui.theme.WholphinTheme
 import com.github.damontecres.wholphin.ui.tryRequestFocus
 import java.util.UUID
@@ -426,14 +427,14 @@ fun ExpandableFilterButton(
             Text(
                 text = filterCount.toString(),
                 style = MaterialTheme.typography.titleSmall,
-                modifier = Modifier.padding(end = 4.dp),
+                modifier = Modifier.padding(end = Spacing.xs),
             )
         }
         AnimatedVisibility(isFocused) {
             Text(
                 text = stringResource(R.string.filter),
                 style = MaterialTheme.typography.titleSmall,
-                modifier = Modifier.padding(start = 4.dp, end = 4.dp),
+                modifier = Modifier.padding(start = Spacing.xs, end = Spacing.xs),
             )
         }
     }

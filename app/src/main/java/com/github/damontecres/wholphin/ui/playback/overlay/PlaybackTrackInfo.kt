@@ -37,6 +37,7 @@ import androidx.tv.material3.Text
 import com.github.damontecres.wholphin.R
 import com.github.damontecres.wholphin.ui.components.Button
 import com.github.damontecres.wholphin.ui.ifElse
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.util.TrackSupport
 
 /**
@@ -66,7 +67,7 @@ fun PlaybackTrackInfo(
         ) {
             item {
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
                     modifier = Modifier,
                 ) {
                     val texts =
@@ -182,7 +183,7 @@ fun TrackSupportRow(
             ),
     ) {
         Row(
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
             modifier =
                 Modifier.ifElse(
                     track.selected,

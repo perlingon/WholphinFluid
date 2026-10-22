@@ -15,6 +15,7 @@ import androidx.tv.material3.Text
 import com.github.damontecres.wholphin.R
 import com.github.damontecres.wholphin.services.ServerReportService
 import com.github.damontecres.wholphin.ui.launchIO
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.util.DataLoadingState
 import com.github.damontecres.wholphin.util.LoadingState
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -42,8 +43,8 @@ fun ErrorMessage(
     viewModel: ErrorViewModel = hiltViewModel(),
 ) {
     Column(
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-        modifier = modifier.padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(Spacing.md),
+        modifier = modifier.padding(Spacing.md),
     ) {
         Text(
             text = stringResource(R.string.compose_error_message_title),

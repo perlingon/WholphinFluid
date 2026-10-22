@@ -69,6 +69,7 @@ import com.github.damontecres.wholphin.ui.dimAndBlur
 import com.github.damontecres.wholphin.ui.ifElse
 import com.github.damontecres.wholphin.ui.isNotNullOrBlank
 import com.github.damontecres.wholphin.ui.rememberInt
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.ui.tryRequestFocus
 import com.github.damontecres.wholphin.util.LoadingState
 import timber.log.Timber
@@ -109,18 +110,18 @@ private fun SwitchServerContentInternal(
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(24.dp),
+            verticalArrangement = Arrangement.spacedBy(Spacing.lg),
             modifier =
                 Modifier
                     .fillMaxWidth()
                     // Center the content like the Select User screen
                     .align(Alignment.Center)
-                    .padding(16.dp),
+                    .padding(Spacing.md),
         ) {
             // Match SwitchUser header height (title + subtitle) to align icons vertically across screens
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(Spacing.sm),
             ) {
                 Text(
                     text = stringResource(R.string.select_server),
@@ -151,8 +152,8 @@ private fun SwitchServerContentInternal(
                     }
                 }
                 LazyRow(
-                    horizontalArrangement = Arrangement.spacedBy(24.dp),
-                    contentPadding = PaddingValues(horizontal = 48.dp, vertical = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.lg),
+                    contentPadding = PaddingValues(horizontal = Spacing.xxl, vertical = Spacing.md),
                     modifier =
                         Modifier
                             .wrapContentWidth()
@@ -215,7 +216,7 @@ private fun SwitchServerContentInternal(
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .height(56.dp),
+                        .height(Spacing.xxxl),
                 // approximate TV button height
             )
         }
@@ -246,7 +247,7 @@ private fun SwitchServerContentInternal(
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .padding(start = 32.dp, end = 32.dp, bottom = 32.dp)
+                        .padding(start = Spacing.xl, end = Spacing.xl, bottom = Spacing.xl)
                         .align(Alignment.BottomCenter),
             )
         }
@@ -347,10 +348,10 @@ private fun AddServerDialog(
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(Spacing.sm),
             modifier =
                 Modifier
-                    .padding(16.dp)
+                    .padding(Spacing.md)
                     .fillMaxWidth(.4f),
         ) {
             if (!showEnterAddress) {

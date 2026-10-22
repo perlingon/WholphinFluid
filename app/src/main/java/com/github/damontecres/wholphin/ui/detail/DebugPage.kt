@@ -46,6 +46,7 @@ import com.github.damontecres.wholphin.data.model.ItemPlayback
 import com.github.damontecres.wholphin.preferences.UserPreferences
 import com.github.damontecres.wholphin.ui.launchDefault
 import com.github.damontecres.wholphin.ui.launchIO
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.util.ExceptionHandler
 import com.github.damontecres.wholphin.util.WholphinDispatchers
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -415,11 +416,11 @@ fun DebugPage(
     val itemPlaybacks by viewModel.itemPlaybacks.collectAsState()
     val logcat by viewModel.logcat.collectAsState()
 
-    val padding = remember { PaddingValues(bottom = 32.dp) }
+    val padding = remember { PaddingValues(bottom = Spacing.xl) }
 
     LazyColumn(
         state = columnState,
-        contentPadding = PaddingValues(16.dp),
+        contentPadding = PaddingValues(Spacing.md),
         verticalArrangement = Arrangement.spacedBy(0.dp),
         modifier =
             modifier
@@ -451,7 +452,7 @@ fun DebugPage(
     ) {
         item {
             Column(
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(Spacing.sm),
                 modifier =
                     Modifier
                         .fillMaxWidth()
@@ -465,7 +466,7 @@ fun DebugPage(
         }
         item {
             Column(
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(Spacing.sm),
                 modifier =
                     Modifier
                         .fillMaxWidth()
@@ -489,7 +490,7 @@ fun DebugPage(
         }
         item {
             Column(
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(Spacing.sm),
                 modifier =
                     Modifier
                         .fillMaxWidth()
@@ -501,7 +502,7 @@ fun DebugPage(
         }
         item {
             Column(
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(Spacing.sm),
                 modifier =
                     Modifier
                         .fillMaxWidth()
@@ -515,7 +516,7 @@ fun DebugPage(
         }
         item {
             Column(
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(Spacing.sm),
                 modifier =
                     Modifier
                         .fillMaxWidth()
@@ -531,7 +532,7 @@ fun DebugPage(
         }
         item {
             Column(
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(Spacing.sm),
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 SectionTitle("Logcat")

@@ -76,6 +76,7 @@ import com.github.damontecres.wholphin.ui.launchDefault
 import com.github.damontecres.wholphin.ui.launchIO
 import com.github.damontecres.wholphin.ui.letNotEmpty
 import com.github.damontecres.wholphin.ui.rememberPosition
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.ui.toBaseItems
 import com.github.damontecres.wholphin.ui.tryRequestFocus
 import com.github.damontecres.wholphin.util.ApiRequestPager
@@ -407,7 +408,7 @@ fun ArtistDetailsPage(
             val bringIntoViewRequester = remember { BringIntoViewRequester() }
             Box(modifier = modifier) {
                 LazyColumn(
-                    contentPadding = PaddingValues(bottom = 16.dp),
+                    contentPadding = PaddingValues(bottom = Spacing.md),
                     verticalArrangement = Arrangement.spacedBy(0.dp),
                     modifier =
                         Modifier
@@ -415,12 +416,12 @@ fun ArtistDetailsPage(
                 ) {
                     item {
                         Column(
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalArrangement = Arrangement.spacedBy(Spacing.sm),
                             modifier =
                                 Modifier
                                     .fillMaxWidth()
                                     .bringIntoViewRequester(bringIntoViewRequester)
-                                    .padding(bottom = 16.dp),
+                                    .padding(bottom = Spacing.md),
                         ) {
                             ArtistHeader(
                                 artist = artist,
@@ -484,7 +485,7 @@ fun ArtistDetailsPage(
                                 text = stringResource(R.string.popular_songs),
                                 style = MaterialTheme.typography.titleLarge,
                                 color = MaterialTheme.colorScheme.onBackground,
-                                modifier = Modifier.padding(start = 8.dp),
+                                modifier = Modifier.padding(start = Spacing.sm),
                             )
                         }
                         itemsIndexed(state.topSongs) { index, song ->
@@ -766,8 +767,8 @@ fun ArtistHeader(
 ) {
     val scope = rememberCoroutineScope()
     Row(
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
-        modifier = modifier.padding(top = 32.dp),
+        horizontalArrangement = Arrangement.spacedBy(Spacing.md),
+        modifier = modifier.padding(top = Spacing.xl),
     ) {
         AsyncImage(
             model = imageUrl,
@@ -779,7 +780,7 @@ fun ArtistHeader(
                     .clip(RoundedCornerShape(16.dp)),
         )
         Column(
-            verticalArrangement = Arrangement.spacedBy(4.dp),
+            verticalArrangement = Arrangement.spacedBy(Spacing.xs),
         ) {
             // Artist
             Text(
@@ -792,7 +793,7 @@ fun ArtistHeader(
                 modifier =
                     Modifier
                         .fillMaxWidth(.75f)
-                        .padding(start = 8.dp),
+                        .padding(start = Spacing.sm),
             )
             Text(
                 text = artist.name ?: "",
@@ -803,21 +804,21 @@ fun ArtistHeader(
                 modifier =
                     Modifier
                         .fillMaxWidth(.75f)
-                        .padding(start = 8.dp),
+                        .padding(start = Spacing.sm),
             )
 
             Column(
-                verticalArrangement = Arrangement.spacedBy(4.dp),
+                verticalArrangement = Arrangement.spacedBy(Spacing.xs),
                 modifier = Modifier.fillMaxWidth(.60f),
             ) {
                 QuickDetails(
                     artist.ui.quickDetails,
                     null,
-                    Modifier.padding(start = 8.dp),
+                    Modifier.padding(start = Spacing.sm),
                 )
 
                 artist.data.genres?.letNotEmpty {
-                    GenreText(it, Modifier.padding(start = 8.dp))
+                    GenreText(it, Modifier.padding(start = Spacing.sm))
                 }
 
                 // Description

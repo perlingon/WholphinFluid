@@ -33,6 +33,7 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Surface
 import androidx.tv.material3.Text
 import com.github.damontecres.wholphin.ui.ifElse
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.ui.tryRequestFocus
 import com.github.damontecres.wholphin.ui.util.rememberDelayedNestedScroll
 import org.jellyfin.sdk.model.api.LyricDto
@@ -73,7 +74,7 @@ fun LyricsContent(
         LazyColumn(
             state = listState,
             contentPadding = PaddingValues(),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
+            verticalArrangement = Arrangement.spacedBy(Spacing.xs),
             modifier =
                 Modifier
                     .fillMaxSize()
@@ -134,7 +135,7 @@ fun LyricsContent(
                             color = if (focused) MaterialTheme.colorScheme.onSurface else color,
                             modifier =
                                 Modifier
-                                    .padding(8.dp)
+                                    .padding(Spacing.sm)
                                     .ifElse(
                                         index == currentLyricPosition,
                                         Modifier.bringIntoViewRequester(bringIntoViewRequester),

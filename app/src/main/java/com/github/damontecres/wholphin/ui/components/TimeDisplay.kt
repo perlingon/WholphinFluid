@@ -10,6 +10,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.ui.util.LocalClock
 
 /**
@@ -26,6 +27,6 @@ fun BoxScope.TimeDisplay(modifier: Modifier = Modifier) {
         modifier =
             modifier
                 .align(Alignment.TopEnd)
-                .padding(vertical = 16.dp, horizontal = 24.dp),
+                .padding(vertical = Spacing.md, horizontal = Spacing.lg),
     )
 }

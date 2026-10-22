@@ -18,6 +18,7 @@ import com.github.damontecres.wholphin.ui.cards.PersonCard
 import com.github.damontecres.wholphin.ui.cards.SeasonCard
 import com.github.damontecres.wholphin.ui.cards.personRowCardWidth
 import com.github.damontecres.wholphin.ui.cards.rememberImageUrl
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import org.jellyfin.sdk.model.api.BaseItemKind
 import org.jellyfin.sdk.model.api.ImageType
 import java.time.OffsetDateTime
@@ -39,7 +40,7 @@ fun SearchPageCard(
                 item = item,
                 onClick = onClick,
                 onLongClick = onLongClick,
-                modifier = modifier.padding(horizontal = 8.dp),
+                modifier = modifier.padding(horizontal = Spacing.sm),
                 cardHeight = Cards.heightEpisode,
             )
         }

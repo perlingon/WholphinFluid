@@ -36,6 +36,7 @@ import com.github.damontecres.wholphin.data.model.BaseItem
 import com.github.damontecres.wholphin.ui.formatTime
 import com.github.damontecres.wholphin.ui.playback.ControllerViewState
 import com.github.damontecres.wholphin.ui.playback.PlaybackDialogType
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import org.jellyfin.sdk.model.api.MediaSegmentDto
@@ -66,7 +67,7 @@ fun PlaybackController(
     seekBarInteractionSource: MutableInteractionSource = remember { MutableInteractionSource() },
 ) {
     Column(
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(Spacing.sm),
         modifier = modifier,
     ) {
         Controller(
@@ -95,7 +96,7 @@ fun PlaybackController(
                     style = MaterialTheme.typography.titleLarge,
                     modifier =
                         Modifier
-                            .padding(start = 16.dp, top = 0.dp)
+                            .padding(start = Spacing.md, top = 0.dp)
                             .onFocusChanged {
                                 if (it.isFocused) onChangeState.invoke(nextState)
                             }.focusable(),
@@ -108,7 +109,7 @@ fun PlaybackController(
                     style = MaterialTheme.typography.titleLarge,
                     modifier =
                         Modifier
-                            .padding(start = 16.dp, top = 0.dp)
+                            .padding(start = Spacing.md, top = 0.dp)
                             .onFocusChanged {
                                 if (it.isFocused) onChangeState.invoke(nextState)
                             }.focusable(),
@@ -162,14 +163,14 @@ fun Controller(
     )
 
     Column(
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(Spacing.sm),
         modifier = modifier,
     ) {
         Column(
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(Spacing.sm),
             modifier =
                 Modifier
-                    .padding(start = 16.dp)
+                    .padding(start = Spacing.md)
                     .offset(y = verticalOffset),
         ) {
             title?.let {
@@ -220,7 +221,7 @@ fun Controller(
                     style = MaterialTheme.typography.labelLarge,
                     modifier =
                         Modifier
-                            .padding(end = 32.dp),
+                            .padding(end = Spacing.xl),
                 )
             }
         }

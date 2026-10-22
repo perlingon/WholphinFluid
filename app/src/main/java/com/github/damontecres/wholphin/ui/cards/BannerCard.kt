@@ -48,6 +48,7 @@ import com.github.damontecres.wholphin.ui.FontAwesome
 import com.github.damontecres.wholphin.ui.LocalImageUrlService
 import com.github.damontecres.wholphin.ui.enableMarquee
 import com.github.damontecres.wholphin.ui.nav.PrebakeBackdrop
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import org.jellyfin.sdk.model.api.ImageType
 
 /**
@@ -137,18 +138,18 @@ fun BannerCard(
                     textAlign = TextAlign.Center,
                     modifier =
                         Modifier
-                            .padding(16.dp)
+                            .padding(Spacing.md)
                             .align(Alignment.Center),
                 )
             }
             if (played || cornerText != null) {
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
                     verticalAlignment = Alignment.CenterVertically,
                     modifier =
                         Modifier
                             .align(Alignment.TopEnd)
-                            .padding(4.dp),
+                            .padding(Spacing.xs),
                 ) {
                     if (played && (playPercent <= 0 || playPercent >= 100)) {
                         WatchedIcon(Modifier.size(24.dp))
@@ -166,7 +167,7 @@ fun BannerCard(
                                 text = cornerText,
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurface,
-                                modifier = Modifier.padding(4.dp),
+                                modifier = Modifier.padding(Spacing.xs),
                             )
                         }
                     }
@@ -177,7 +178,7 @@ fun BannerCard(
                     modifier =
                         Modifier
                             .align(Alignment.TopStart)
-                            .padding(8.dp),
+                            .padding(Spacing.sm),
                     color = colorResource(android.R.color.holo_red_light),
                     text = stringResource(R.string.fa_heart),
                     fontSize = 16.sp,
@@ -224,7 +225,7 @@ fun BannerCardWithTitle(
     val aspectRationToUse = aspectRatio.coerceAtLeast(AspectRatios.MIN)
     val width = cardHeight * aspectRationToUse
     Column(
-        verticalArrangement = Arrangement.spacedBy(4.dp),
+        verticalArrangement = Arrangement.spacedBy(Spacing.xs),
         modifier = modifier.width(width),
     ) {
         BannerCard(
@@ -254,7 +255,7 @@ fun BannerCardWithTitle(
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 4.dp)
+                        .padding(horizontal = Spacing.xs)
                         .enableMarquee(focusedAfterDelay),
             )
             Text(
@@ -266,7 +267,7 @@ fun BannerCardWithTitle(
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 4.dp)
+                        .padding(horizontal = Spacing.xs)
                         .enableMarquee(focusedAfterDelay),
             )
         }

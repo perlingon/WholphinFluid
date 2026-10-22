@@ -44,6 +44,7 @@ import com.github.damontecres.wholphin.ui.findActivity
 import com.github.damontecres.wholphin.ui.preferences.PreferencesViewModel
 import com.github.damontecres.wholphin.ui.preferences.subtitle.SubtitleSettings.calculateEdgeSize
 import com.github.damontecres.wholphin.ui.preferences.subtitle.SubtitleSettings.toSubtitleStyle
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.util.Media3SubtitleOverride
 import timber.log.Timber
 
@@ -108,7 +109,7 @@ fun SubtitleStylePage(
                     verticalArrangement = Arrangement.SpaceBetween,
                     modifier =
                         Modifier
-                            .padding(16.dp)
+                            .padding(Spacing.md)
                             .fillMaxSize(),
                 ) {
                     val examples =

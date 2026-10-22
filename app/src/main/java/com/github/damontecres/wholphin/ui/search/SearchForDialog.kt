@@ -51,6 +51,7 @@ import com.github.damontecres.wholphin.ui.components.BasicDialog
 import com.github.damontecres.wholphin.ui.components.ErrorMessage
 import com.github.damontecres.wholphin.ui.components.SearchEditTextBox
 import com.github.damontecres.wholphin.ui.components.VoiceSearchButton
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import kotlinx.coroutines.delay
 import org.jellyfin.sdk.model.api.BaseItemKind
 
@@ -111,7 +112,7 @@ fun SearchForContent(
         }
     val title = titleRes?.let { stringResource(it) } ?: ""
     Column(
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(Spacing.sm),
         modifier = modifier,
     ) {
         Text(
@@ -142,7 +143,7 @@ fun SearchForContent(
             }
 
             Row(
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                horizontalArrangement = Arrangement.spacedBy(Spacing.md),
                 verticalAlignment = Alignment.CenterVertically,
                 modifier =
                     Modifier
@@ -188,7 +189,7 @@ fun SearchForContent(
         }
 
         LazyColumn(
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(Spacing.sm),
         ) {
             item {
                 SearchForResultsRow(
@@ -296,7 +297,7 @@ fun SearchForDialog(
             onClick = onClick,
             modifier =
                 Modifier
-                    .padding(8.dp)
+                    .padding(Spacing.sm)
                     .fillMaxWidth(.8f)
                     .fillMaxHeight(.66f),
         )

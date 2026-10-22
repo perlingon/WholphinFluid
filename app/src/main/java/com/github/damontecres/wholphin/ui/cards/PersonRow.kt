@@ -28,6 +28,8 @@ import com.github.damontecres.wholphin.data.model.Person
 import com.github.damontecres.wholphin.ui.ifElse
 import com.github.damontecres.wholphin.ui.rememberInt
 import com.github.damontecres.wholphin.ui.theme.FluidLayout
+import com.github.damontecres.wholphin.ui.theme.Spacing
+import com.github.damontecres.wholphin.ui.theme.rowHeadline
 
 @Composable
 fun PersonRow(
@@ -40,24 +42,24 @@ fun PersonRow(
     val firstFocus = remember { FocusRequester() }
     var position by rememberInt()
     Column(
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(Spacing.sm),
         modifier = modifier,
     ) {
         Text(
             text = stringResource(title),
-            style = MaterialTheme.typography.titleLarge,
+            style = MaterialTheme.typography.rowHeadline,
             color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.padding(start = 8.dp),
+            modifier = Modifier.padding(start = Spacing.sm),
         )
         LazyRow(
             state = rememberLazyListState(),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(Spacing.md),
             contentPadding = PaddingValues(
                     // The first card lines up with the headlines; the rest scroll full width
-                    start = FluidLayout.rowStart(8.dp),
-                    end = 8.dp,
-                    top = 8.dp,
-                    bottom = 8.dp,
+                    start = FluidLayout.rowStart(Spacing.sm),
+                    end = Spacing.sm,
+                    top = Spacing.sm,
+                    bottom = Spacing.sm,
                 ),
             modifier =
                 Modifier
@@ -96,27 +98,27 @@ fun DiscoverPersonRow(
 ) {
     val firstFocus = remember { FocusRequester() }
     Column(
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(Spacing.sm),
         modifier = modifier,
     ) {
         Text(
             text = stringResource(title),
-            style = MaterialTheme.typography.titleLarge,
+            style = MaterialTheme.typography.rowHeadline,
             color = MaterialTheme.colorScheme.onBackground,
         )
         LazyRow(
             state = rememberLazyListState(),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(Spacing.md),
             contentPadding = PaddingValues(
                     // The first card lines up with the headlines; the rest scroll full width
-                    start = FluidLayout.rowStart(8.dp),
-                    end = 8.dp,
-                    top = 8.dp,
-                    bottom = 8.dp,
+                    start = FluidLayout.rowStart(Spacing.sm),
+                    end = Spacing.sm,
+                    top = Spacing.sm,
+                    bottom = Spacing.sm,
                 ),
             modifier =
                 Modifier
-                    .padding(start = 16.dp)
+                    .padding(start = Spacing.md)
                     .fillMaxWidth()
                     .focusRestorer(firstFocus),
         ) {

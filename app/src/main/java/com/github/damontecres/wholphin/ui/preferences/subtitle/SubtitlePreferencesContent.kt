@@ -48,6 +48,7 @@ import com.github.damontecres.wholphin.ui.preferences.ComposablePreference
 import com.github.damontecres.wholphin.ui.preferences.PreferenceGroup
 import com.github.damontecres.wholphin.ui.preferences.PreferenceValidation
 import com.github.damontecres.wholphin.ui.preferences.PreferencesViewModel
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.ui.tryRequestFocus
 import com.github.damontecres.wholphin.util.ExceptionHandler
 import kotlinx.coroutines.launch
@@ -96,13 +97,13 @@ fun SubtitlePreferencesContent(
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 8.dp),
+                        .padding(vertical = Spacing.sm),
             )
             LazyColumn(
                 state = state,
                 horizontalAlignment = Alignment.Start,
                 verticalArrangement = Arrangement.spacedBy(0.dp),
-                contentPadding = PaddingValues(16.dp),
+                contentPadding = PaddingValues(Spacing.md),
             ) {
                 prefList.forEachIndexed { groupIndex, group ->
                     item {
@@ -114,7 +115,7 @@ fun SubtitlePreferencesContent(
                             modifier =
                                 Modifier
                                     .fillMaxWidth()
-                                    .padding(top = 8.dp, bottom = 4.dp),
+                                    .padding(top = Spacing.sm, bottom = Spacing.xs),
                         )
                     }
                     val groupPreferences =

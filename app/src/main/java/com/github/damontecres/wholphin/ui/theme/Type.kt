@@ -5,19 +5,41 @@ import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.isSpecified
 import androidx.tv.material3.Typography
 import com.github.damontecres.wholphin.R
 
 /**
- * The app's interface font. ABeeZee only has a regular weight, so bolder weights are synthesized.
+ * The app's interface font
  */
-val ABeeZee =
+val PlusJakartaSans =
     FontFamily(
-        Font(R.font.abeezee_regular, FontWeight.Normal, FontStyle.Normal),
-        Font(R.font.abeezee_italic, FontWeight.Normal, FontStyle.Italic),
+        Font(R.font.plus_jakarta_sans_regular, FontWeight.Normal, FontStyle.Normal),
+        Font(R.font.plus_jakarta_sans_italic, FontWeight.Normal, FontStyle.Italic),
+        Font(R.font.plus_jakarta_sans_medium, FontWeight.Medium, FontStyle.Normal),
+        Font(R.font.plus_jakarta_sans_semibold, FontWeight.SemiBold, FontStyle.Normal),
+        Font(R.font.plus_jakarta_sans_bold, FontWeight.Bold, FontStyle.Normal),
+        Font(R.font.plus_jakarta_sans_bold_italic, FontWeight.Bold, FontStyle.Italic),
+        Font(R.font.plus_jakarta_sans_extrabold, FontWeight.ExtraBold, FontStyle.Normal),
     )
 
-private fun TextStyle.withAppFont() = copy(fontFamily = ABeeZee)
+/**
+ * Scales every text style down from the Material defaults, which read large on a TV
+ */
+const val APP_FONT_SCALE = 0.92f
+
+private fun TextStyle.withAppFont() =
+    copy(
+        fontFamily = PlusJakartaSans,
+        fontSize = if (fontSize.isSpecified) fontSize * APP_FONT_SCALE else fontSize,
+        lineHeight = if (lineHeight.isSpecified) lineHeight * APP_FONT_SCALE else lineHeight,
+    )
+
+/**
+ * Headline above a row of cards: smaller than a page title, but bold
+ */
+val Typography.rowHeadline: TextStyle
+    get() = titleMedium.copy(fontWeight = FontWeight.Bold)
 
 val AppTypography =
     Typography().run {

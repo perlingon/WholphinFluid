@@ -24,6 +24,7 @@ import com.github.damontecres.wholphin.ui.components.OverviewText
 import com.github.damontecres.wholphin.ui.components.QuickDetails
 import com.github.damontecres.wholphin.ui.components.StreamLabel
 import com.github.damontecres.wholphin.ui.components.VideoStreamDetails
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import org.jellyfin.sdk.model.api.MediaType
 
 @OptIn(UnstableApi::class)
@@ -48,7 +49,7 @@ fun ImageDetailsHeader(
     val scope = rememberCoroutineScope()
 
     Column(
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(Spacing.sm),
         modifier =
             modifier
                 .bringIntoViewRequester(bringIntoViewRequester),
@@ -65,7 +66,7 @@ fun ImageDetailsHeader(
         }
         QuickDetails(image.image.ui.quickDetails, null)
         Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
         ) {
             StreamLabel("${position + 1} of $count")
             if (image.image.data.mediaType == MediaType.VIDEO) {

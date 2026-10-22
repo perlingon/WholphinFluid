@@ -82,6 +82,7 @@ import com.github.damontecres.wholphin.ui.discover.DiscoverRowData
 import com.github.damontecres.wholphin.ui.letNotEmpty
 import com.github.damontecres.wholphin.ui.nav.Destination
 import com.github.damontecres.wholphin.ui.rememberInt
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.ui.util.ResStringProvider
 import com.github.damontecres.wholphin.util.DataLoadingState
 import com.github.damontecres.wholphin.util.DiscoverRequestType
@@ -368,7 +369,7 @@ fun SeriesDetailsContent(
         ) {
             LazyColumn(
                 contentPadding = PaddingValues(bottom = 80.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
+                verticalArrangement = Arrangement.spacedBy(Spacing.md),
                 modifier = Modifier,
             ) {
                 item {
@@ -381,17 +382,17 @@ fun SeriesDetailsContent(
                             Modifier
                                 .fillMaxWidth()
                                 .bringIntoViewRequester(bringIntoViewRequester)
-                                .padding(top = HeaderUtils.topPadding, bottom = 16.dp),
+                                .padding(top = HeaderUtils.topPadding, bottom = Spacing.md),
                     )
                     Row(
-                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(Spacing.md),
                         modifier =
                             Modifier
                                 .padding(start = HeaderUtils.startPadding)
                                 .focusRequester(focusRequesters[HEADER_ROW])
                                 .focusRestorer(playFocusRequester)
                                 .focusGroup()
-                                .padding(bottom = 16.dp),
+                                .padding(bottom = Spacing.md),
                     ) {
                         ExpandablePlayButton(
                             title = R.string.play,
@@ -658,7 +659,7 @@ fun SeriesDetailsHeader(
     val scope = rememberCoroutineScope()
     val dto = series.data
     Column(
-        verticalArrangement = Arrangement.spacedBy(4.dp),
+        verticalArrangement = Arrangement.spacedBy(Spacing.xs),
         modifier = modifier,
     ) {
         TitleOrLogo(
@@ -670,7 +671,7 @@ fun SeriesDetailsHeader(
                     .padding(start = HeaderUtils.startPadding),
         )
         Column(
-            verticalArrangement = Arrangement.spacedBy(4.dp),
+            verticalArrangement = Arrangement.spacedBy(Spacing.xs),
             modifier = Modifier.fillMaxWidth(.60f),
         ) {
             QuickDetails(
@@ -687,7 +688,7 @@ fun SeriesDetailsHeader(
                 )
             }
             dto.genres?.letNotEmpty {
-                GenreText(it, Modifier.padding(start = HeaderUtils.startPadding, bottom = 4.dp))
+                GenreText(it, Modifier.padding(start = HeaderUtils.startPadding, bottom = Spacing.xs))
             }
             dto.overview?.let { overview ->
                 OverviewText(

@@ -35,6 +35,7 @@ import com.github.damontecres.wholphin.ui.components.DialogPopupContent
 import com.github.damontecres.wholphin.ui.components.ErrorMessage
 import com.github.damontecres.wholphin.ui.components.LoadingPage
 import com.github.damontecres.wholphin.ui.components.SelectedLeadingContent
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.ui.theme.WholphinTheme
 import com.github.damontecres.wholphin.ui.tryRequestFocus
 import com.github.damontecres.wholphin.util.LoadingState
@@ -59,7 +60,7 @@ fun RequestMovieDialog(
             request4kEnabled = request4kEnabled,
             movie = movie,
             onSubmit = onSubmit,
-            modifier = Modifier.padding(24.dp),
+            modifier = Modifier.padding(Spacing.lg),
         )
     }
 }
@@ -170,7 +171,7 @@ private fun RequestMovieWithOptions(
     val profiles = remember(is4k, data) { if (is4k) data.profiles4k else data.profiles }
     val folders = remember(is4k, data) { if (is4k) data.rootFolders4k else data.rootFolders }
     Column(
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(Spacing.sm),
         modifier = modifier,
     ) {
         Text(
@@ -179,7 +180,7 @@ private fun RequestMovieWithOptions(
             color = MaterialTheme.colorScheme.onSurface,
         )
         LazyColumn(
-            contentPadding = PaddingValues(vertical = 8.dp),
+            contentPadding = PaddingValues(vertical = Spacing.sm),
             modifier = Modifier,
         ) {
             item {
@@ -189,7 +190,7 @@ private fun RequestMovieWithOptions(
                     modifier =
                         Modifier
                             .fillMaxWidth()
-                            .padding(bottom = 8.dp),
+                            .padding(bottom = Spacing.sm),
                 ) {
                     if (requestEnabled && request4kEnabled) {
                         ClickSwitch(
@@ -398,7 +399,7 @@ fun MovieRequestPreview() {
             modifier =
                 Modifier
                     .width(320.dp)
-                    .padding(16.dp),
+                    .padding(Spacing.md),
         )
     }
 }

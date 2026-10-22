@@ -26,6 +26,7 @@ import androidx.tv.material3.MaterialTheme
 import com.github.damontecres.wholphin.preferences.AppThemeColors
 import com.github.damontecres.wholphin.ui.handleDPadKeyEvents
 import com.github.damontecres.wholphin.ui.theme.LocalTheme
+import com.github.damontecres.wholphin.ui.theme.Spacing
 
 /**
  * A TV capable control for choosing a value
@@ -75,14 +76,14 @@ fun SliderBar(
 
     Column(
         modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+        verticalArrangement = Arrangement.spacedBy(Spacing.md),
     ) {
         Canvas(
             modifier =
                 Modifier
                     .fillMaxWidth()
                     .height(animatedIndicatorHeight)
-                    .padding(horizontal = 4.dp)
+                    .padding(horizontal = Spacing.xs)
                     .then(handleSeekEventModifier)
                     .focusable(interactionSource = interactionSource),
             onDraw = {

@@ -25,6 +25,7 @@ import androidx.tv.material3.ProvideTextStyle
 import androidx.tv.material3.Text
 import com.github.damontecres.wholphin.ui.ifElse
 import com.github.damontecres.wholphin.ui.isNotNullOrBlank
+import com.github.damontecres.wholphin.ui.theme.Spacing
 
 @Composable
 fun TableRowComposable(
@@ -73,10 +74,10 @@ fun TableRowComposable(
                 .weight(valueWeight)
         ProvideTextStyle(textStyle) {
             Box(modifier = keyModifier) {
-                row.key.invoke(this, Modifier.padding(4.dp))
+                row.key.invoke(this, Modifier.padding(Spacing.xs))
             }
             Box(modifier = valueModifier) {
-                row.value.invoke(this, Modifier.padding(4.dp))
+                row.value.invoke(this, Modifier.padding(Spacing.xs))
             }
         }
     }

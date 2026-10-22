@@ -43,6 +43,7 @@ import com.github.damontecres.wholphin.ui.components.ViewOptions.Companion.ViewO
 import com.github.damontecres.wholphin.ui.components.ViewOptions.Companion.ViewOptionsShowTitles
 import com.github.damontecres.wholphin.ui.components.ViewOptions.Companion.ViewOptionsSpacing
 import com.github.damontecres.wholphin.ui.preferences.ComposablePreference
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.ui.tryRequestFocus
 import kotlinx.serialization.Serializable
 
@@ -79,7 +80,7 @@ fun CollectionViewOptionsDialog(
                     .background(
                         MaterialTheme.colorScheme.surfaceColorAtElevation(6.dp),
                         shape = RoundedCornerShape(8.dp),
-                    ).padding(16.dp),
+                    ).padding(Spacing.md),
         ) {
             Text(
                 text = stringResource(R.string.view_options),

@@ -70,6 +70,7 @@ import com.github.damontecres.wholphin.ui.formatBitrate
 import com.github.damontecres.wholphin.ui.isNotNullOrBlank
 import com.github.damontecres.wholphin.ui.playback.SimpleMediaStream
 import com.github.damontecres.wholphin.ui.roundMinutes
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.util.ExceptionHandler
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -259,7 +260,7 @@ fun DialogPopup(
                             this.clip = true
                             this.shape = RoundedCornerShape(28.0.dp)
                         }.drawBehind { drawRect(color = elevatedContainerColor) }
-                        .padding(PaddingValues(24.dp)),
+                        .padding(PaddingValues(Spacing.lg)),
             )
         }
     }
@@ -275,7 +276,7 @@ fun DialogPopupContent(
     dismissOnClick: Boolean = true,
 ) {
     Column(
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(Spacing.sm),
         modifier = modifier,
     ) {
         Text(
@@ -380,7 +381,7 @@ fun ScrollableDialog(
     ) {
         LazyColumn(
             state = columnState,
-            contentPadding = PaddingValues(16.dp),
+            contentPadding = PaddingValues(Spacing.md),
             verticalArrangement = Arrangement.spacedBy(itemSpacing),
             content = content,
             modifier =
@@ -472,8 +473,8 @@ fun ConfirmDialogContent(
     bodyColor: Color = MaterialTheme.colorScheme.onSurface,
 ) {
     LazyColumn(
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-        contentPadding = PaddingValues(16.dp),
+        verticalArrangement = Arrangement.spacedBy(Spacing.sm),
+        contentPadding = PaddingValues(Spacing.md),
         modifier = modifier,
     ) {
         item {
@@ -526,8 +527,8 @@ fun ConfirmDeleteDialog(
     ) {
         LazyColumn(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(Spacing.sm),
+            contentPadding = PaddingValues(Spacing.md),
             modifier = Modifier.wrapContentWidth(),
         ) {
             item {
@@ -545,13 +546,13 @@ fun ConfirmDeleteDialog(
                     textAlign = TextAlign.Center,
                     modifier =
                         Modifier
-                            .padding(bottom = 8.dp),
+                            .padding(bottom = Spacing.sm),
                 )
             }
 
             item {
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(32.dp),
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.xl),
                     modifier = Modifier,
                 ) {
                     Button(
@@ -569,7 +570,7 @@ fun ConfirmDeleteDialog(
                     ) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.padding(horizontal = 4.dp),
+                            modifier = Modifier.padding(horizontal = Spacing.xs),
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Delete,

@@ -21,6 +21,7 @@ import androidx.tv.material3.ListItemGlow
 import androidx.tv.material3.ListItemScale
 import androidx.tv.material3.ListItemShape
 import com.github.damontecres.wholphin.ui.preferences.PreferenceTitle
+import com.github.damontecres.wholphin.ui.theme.Spacing
 
 @Composable
 @NonRestartableComposable
@@ -69,7 +70,7 @@ fun HomeSettingsListItem(
 fun HomeSettingsLazyColumn(
     modifier: Modifier = Modifier,
     state: LazyListState = rememberLazyListState(),
-    contentPadding: PaddingValues = PaddingValues(8.dp),
+    contentPadding: PaddingValues = PaddingValues(Spacing.sm),
     verticalArrangement: Arrangement.Vertical = Arrangement.spacedBy(0.dp),
     content: LazyListScope.() -> Unit,
 ) {

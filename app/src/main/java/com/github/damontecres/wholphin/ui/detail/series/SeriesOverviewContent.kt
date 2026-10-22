@@ -65,6 +65,7 @@ import com.github.damontecres.wholphin.ui.logTab
 import com.github.damontecres.wholphin.ui.playback.isPlayKeyUp
 import com.github.damontecres.wholphin.ui.rememberInt
 import com.github.damontecres.wholphin.ui.theme.FluidLayout
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.ui.tryRequestFocus
 import com.github.damontecres.wholphin.ui.util.StringStringProvider
 import com.github.damontecres.wholphin.ui.util.rememberDelayedNestedScroll
@@ -146,18 +147,18 @@ fun SeriesOverviewContent(
                 .fillMaxWidth(),
     ) {
         Column(
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(Spacing.sm),
             modifier =
                 Modifier
                     .fillMaxSize()
-                    .padding(vertical = 16.dp)
+                    .padding(vertical = Spacing.md)
                     .focusGroup()
                     .nestedScroll(scrollConnection)
                     .verticalScroll(scrollState)
                     .onFocusChanged { pageHasFocus = it.hasFocus },
         ) {
             Column(
-                verticalArrangement = Arrangement.spacedBy(4.dp),
+                verticalArrangement = Arrangement.spacedBy(Spacing.xs),
                 modifier =
                     Modifier
                         .focusGroup()
@@ -168,7 +169,7 @@ fun SeriesOverviewContent(
                         if (preferences.appPreferences.interfacePreferences.showClock) {
                             PaddingValues(start = 0.dp, end = 184.dp)
                         } else {
-                            PaddingValues(start = 0.dp, end = 16.dp)
+                            PaddingValues(start = 0.dp, end = Spacing.md)
                         }
                     }
                 TabRow(
@@ -186,7 +187,7 @@ fun SeriesOverviewContent(
                         Modifier
                             .focusRequester(tabRowFocusRequester)
                             .padding(paddingValues)
-                            .padding(bottom = 4.dp)
+                            .padding(bottom = Spacing.xs)
                             .fillMaxWidth(),
                 )
                 TitleOrLogo(
@@ -231,8 +232,8 @@ fun SeriesOverviewContent(
                         var epPosition by rememberInt(position.episodeRowIndex)
                         LazyRow(
                             state = state,
-                            horizontalArrangement = Arrangement.spacedBy(16.dp),
-                            contentPadding = PaddingValues(start = FluidLayout.rowStart(16.dp), end = 16.dp),
+                            horizontalArrangement = Arrangement.spacedBy(Spacing.md),
+                            contentPadding = PaddingValues(start = FluidLayout.rowStart(Spacing.md), end = Spacing.md),
                             modifier =
                                 Modifier
                                     .focusRestorer(episodeRowFocusRequester)
@@ -337,7 +338,7 @@ fun SeriesOverviewContent(
                         onChooseVersion = { onChooseVersion.invoke(ep, it) },
                         modifier =
                             Modifier
-                                .padding(top = 4.dp)
+                                .padding(top = Spacing.xs)
                                 .fillMaxWidth(),
                     )
                 }
@@ -354,7 +355,7 @@ fun SeriesOverviewContent(
                 exit = fadeOut(),
             ) {
                 Column(
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(Spacing.sm),
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     if (castAndCrew.isNotEmpty()) {

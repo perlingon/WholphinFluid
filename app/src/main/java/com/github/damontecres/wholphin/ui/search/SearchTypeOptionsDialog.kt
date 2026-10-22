@@ -15,6 +15,7 @@ import com.github.damontecres.wholphin.R
 import com.github.damontecres.wholphin.ui.components.BasicDialog
 import com.github.damontecres.wholphin.ui.main.settings.TitleText
 import com.github.damontecres.wholphin.ui.preferences.SwitchColors
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.ui.titleStringRes
 import org.jellyfin.sdk.model.api.BaseItemKind
 
@@ -39,7 +40,7 @@ fun SearchTypeOptionsDialog(
             discoverEnabled = discoverEnabled,
             onClick = onClick,
             onClickDiscover = onClickDiscover,
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier.padding(Spacing.md),
         )
     }
 }

@@ -10,6 +10,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.media3.common.Player
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import org.jellyfin.sdk.model.api.TrickplayInfo
 
 /**
@@ -53,7 +54,7 @@ fun DpadSeekOverlay(
                     Modifier
                         .align(Alignment.BottomStart)
                         .offsetByPercent(xPercentage = seekProgressPercent)
-                        .padding(bottom = 8.dp),
+                        .padding(bottom = Spacing.sm),
             )
         }
         StaticSeekBarImpl(

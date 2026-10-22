@@ -35,6 +35,7 @@ import com.github.damontecres.wholphin.ui.components.Button
 import com.github.damontecres.wholphin.ui.components.EditTextBox
 import com.github.damontecres.wholphin.ui.components.TextButton
 import com.github.damontecres.wholphin.ui.isNotNullOrBlank
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.ui.theme.WholphinTheme
 import com.github.damontecres.wholphin.ui.tryRequestFocus
 import com.github.damontecres.wholphin.util.LoadingState
@@ -47,11 +48,11 @@ fun AddSeerrServerApiKey(
 ) {
     var error by remember(status) { mutableStateOf((status as? LoadingState.Error)?.localizedMessage) }
     Column(
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(Spacing.sm),
         modifier =
             modifier
                 .focusGroup()
-                .padding(16.dp)
+                .padding(Spacing.md)
                 .wrapContentSize(),
     ) {
         var url by remember { mutableStateOf("") }
@@ -77,7 +78,7 @@ fun AddSeerrServerApiKey(
                 modifier =
                     Modifier
                         .width(labelWidth)
-                        .padding(end = 8.dp),
+                        .padding(end = Spacing.sm),
             )
             EditTextBox(
                 value = url,
@@ -111,7 +112,7 @@ fun AddSeerrServerApiKey(
                 modifier =
                     Modifier
                         .width(labelWidth)
-                        .padding(end = 8.dp),
+                        .padding(end = Spacing.sm),
             )
             EditTextBox(
                 value = apiKey,
@@ -159,11 +160,11 @@ fun AddSeerrServerUsername(
 ) {
     var error by remember(status) { mutableStateOf((status as? LoadingState.Error)?.localizedMessage) }
     Column(
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(Spacing.sm),
         modifier =
             modifier
                 .focusGroup()
-                .padding(16.dp)
+                .padding(Spacing.md)
                 .wrapContentSize(),
     ) {
         var url by remember { mutableStateOf("") }
@@ -192,7 +193,7 @@ fun AddSeerrServerUsername(
                 modifier =
                     Modifier
                         .width(labelWidth)
-                        .padding(end = 8.dp),
+                        .padding(end = Spacing.sm),
             )
             EditTextBox(
                 value = url,
@@ -227,7 +228,7 @@ fun AddSeerrServerUsername(
                 modifier =
                     Modifier
                         .width(labelWidth)
-                        .padding(end = 8.dp),
+                        .padding(end = Spacing.sm),
             )
             EditTextBox(
                 value = username,
@@ -262,7 +263,7 @@ fun AddSeerrServerUsername(
                 modifier =
                     Modifier
                         .width(labelWidth)
-                        .padding(end = 8.dp),
+                        .padding(end = Spacing.sm),
             )
             EditTextBox(
                 value = password,

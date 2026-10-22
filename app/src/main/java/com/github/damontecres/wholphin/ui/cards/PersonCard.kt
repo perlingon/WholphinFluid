@@ -40,6 +40,7 @@ import com.github.damontecres.wholphin.ui.AspectRatios
 import com.github.damontecres.wholphin.ui.FontAwesome
 import com.github.damontecres.wholphin.ui.PreviewTvSpec
 import com.github.damontecres.wholphin.ui.enableMarquee
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.ui.theme.WholphinTheme
 import kotlinx.coroutines.delay
 import org.jellyfin.sdk.model.UUID
@@ -96,7 +97,7 @@ fun PersonCard(
     }
 
     Column(
-        verticalArrangement = Arrangement.spacedBy(4.dp), // Fixed base spacing
+        verticalArrangement = Arrangement.spacedBy(Spacing.xs), // Fixed base spacing
         modifier = modifier,
     ) {
         Card(
@@ -149,7 +150,7 @@ fun PersonCard(
                             textAlign = TextAlign.Center,
                             modifier =
                                 Modifier
-                                    .padding(8.dp)
+                                    .padding(Spacing.sm)
                                     .fillMaxWidth()
                                     .align(Alignment.Center),
                         )
@@ -172,7 +173,7 @@ fun PersonCard(
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 4.dp)
+                        .padding(horizontal = Spacing.xs)
                         .enableMarquee(focusedAfterDelay),
             )
             role?.let {
@@ -185,7 +186,7 @@ fun PersonCard(
                     modifier =
                         Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 4.dp)
+                            .padding(horizontal = Spacing.xs)
                             .enableMarquee(focusedAfterDelay),
                 )
             }

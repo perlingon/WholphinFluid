@@ -41,6 +41,7 @@ import com.github.damontecres.wholphin.ui.data.AddPlaylistViewModel
 import com.github.damontecres.wholphin.ui.detail.PlaylistDialog
 import com.github.damontecres.wholphin.ui.launchDefault
 import com.github.damontecres.wholphin.ui.launchIO
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.util.ExceptionHandler
 import com.github.damontecres.wholphin.util.LoadingState
 import com.github.damontecres.wholphin.util.WholphinDispatchers
@@ -187,13 +188,13 @@ fun SongDetailsPage(
             val buttonsFocusRequester = remember { FocusRequester() }
             RequestOrRestoreFocus(buttonsFocusRequester)
             Column(
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(Spacing.sm),
                 modifier =
                     modifier
                         .fillMaxWidth()
                         .verticalScroll(rememberScrollState())
                         .bringIntoViewRequester(bringIntoViewRequester)
-                        .padding(bottom = 32.dp),
+                        .padding(bottom = Spacing.xl),
             ) {
                 AlbumHeader(
                     album = song,

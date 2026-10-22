@@ -44,6 +44,7 @@ import com.github.damontecres.wholphin.ui.main.settings.HomeSettingsDestination.
 import com.github.damontecres.wholphin.ui.main.settings.HomeSettingsDestination.RowSettings
 import com.github.damontecres.wholphin.ui.rememberPosition
 import com.github.damontecres.wholphin.ui.search.SearchForDialog
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.util.ExceptionHandler
 import com.github.damontecres.wholphin.util.HomeRowLoadingState
 import kotlinx.coroutines.Job
@@ -95,7 +96,7 @@ fun HomeSettingsPage(
     }
 
     Row(
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
         modifier = modifier,
     ) {
         Box(
@@ -120,7 +121,7 @@ fun HomeSettingsPage(
                         val destModifier =
                             Modifier
                                 .fillMaxSize()
-                                .padding(8.dp)
+                                .padding(Spacing.sm)
                         when (dest) {
                             HomeSettingsDestination.RowList -> {
                                 HomeSettingsRowList(
@@ -394,7 +395,7 @@ fun HomeSettingsPage(
             onDismissRequest = { showRemovedNextUpDialog = false },
         ) {
             RemovedNextUpContent(
-                modifier = Modifier.padding(16.dp),
+                modifier = Modifier.padding(Spacing.md),
             )
         }
     }

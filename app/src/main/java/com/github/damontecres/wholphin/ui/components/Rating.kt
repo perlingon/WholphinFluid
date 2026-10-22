@@ -50,6 +50,7 @@ import com.github.damontecres.wholphin.ui.PreviewTvSpec
 import com.github.damontecres.wholphin.ui.isNotNullOrBlank
 import com.github.damontecres.wholphin.ui.playOnClickSound
 import com.github.damontecres.wholphin.ui.playSoundOnFocus
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.ui.theme.WholphinTheme
 import com.github.damontecres.wholphin.ui.tryRequestFocus
 import java.util.Locale
@@ -95,7 +96,7 @@ fun SimpleStarRating(
     starColor: Color = FilledStarColor,
 ) {
     Row(
-        horizontalArrangement = Arrangement.spacedBy(2.dp),
+        horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
         verticalAlignment = Alignment.CenterVertically,
         modifier = modifier,
     ) {
@@ -123,7 +124,7 @@ fun TomatoRating(
     threshold: Float = 60f,
 ) {
     Row(
-        horizontalArrangement = Arrangement.spacedBy(2.dp),
+        horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
         verticalAlignment = Alignment.CenterVertically,
         modifier = modifier,
     ) {
@@ -180,7 +181,7 @@ fun StarRating(
             modifier =
                 Modifier
                     .selectableGroup()
-                    .padding(4.dp)
+                    .padding(Spacing.xs)
                     .drawWithCache {
                         onDrawWithContent {
                             drawContent()

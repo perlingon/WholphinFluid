@@ -29,6 +29,7 @@ import com.github.damontecres.wholphin.ui.components.FilterByButton
 import com.github.damontecres.wholphin.ui.components.SortByButton
 import com.github.damontecres.wholphin.ui.data.MovieSortOptions
 import com.github.damontecres.wholphin.ui.data.SortAndDirection
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import kotlin.time.Duration
 
 @Composable
@@ -53,9 +54,9 @@ fun CollectionButtons(
         modifier = modifier,
     ) {
         LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(Spacing.md),
             verticalAlignment = Alignment.CenterVertically,
-            contentPadding = PaddingValues(8.dp),
+            contentPadding = PaddingValues(Spacing.sm),
             modifier =
                 Modifier
                     .focusGroup()
@@ -119,9 +120,9 @@ fun CollectionButtons(
             }
         }
         LazyRow(
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(Spacing.md),
             verticalAlignment = Alignment.CenterVertically,
-            contentPadding = PaddingValues(8.dp),
+            contentPadding = PaddingValues(Spacing.sm),
             modifier =
                 Modifier
                     .focusGroup(),

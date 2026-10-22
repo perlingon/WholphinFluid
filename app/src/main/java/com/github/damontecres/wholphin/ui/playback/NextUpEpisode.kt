@@ -52,6 +52,7 @@ import com.github.damontecres.wholphin.ui.PreviewTvSpec
 import com.github.damontecres.wholphin.ui.dot
 import com.github.damontecres.wholphin.ui.formatDuration
 import com.github.damontecres.wholphin.ui.formatTime
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.ui.theme.WholphinTheme
 import com.github.damontecres.wholphin.ui.tryRequestFocus
 import com.github.damontecres.wholphin.ui.util.Clock
@@ -82,11 +83,11 @@ fun NextUpEpisode(
         modifier = modifier,
     ) {
         Column(
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(Spacing.sm),
             modifier =
                 Modifier
                     .fillMaxSize()
-                    .padding(horizontal = 24.dp, vertical = 16.dp),
+                    .padding(horizontal = Spacing.lg, vertical = Spacing.md),
         ) {
             Text(
                 text = stringResource(R.string.next_up) + "...",
@@ -96,9 +97,9 @@ fun NextUpEpisode(
                 modifier = Modifier.fillMaxWidth(),
             )
             Row(
-                horizontalArrangement = Arrangement.spacedBy(32.dp),
+                horizontalArrangement = Arrangement.spacedBy(Spacing.xl),
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(8.dp),
+                modifier = Modifier.padding(Spacing.sm),
             ) {
                 NextUpCard(
                     imageUrl = imageUrl,
@@ -114,7 +115,7 @@ fun NextUpEpisode(
                             .focusRequester(focusRequester),
                 )
                 Column(
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(Spacing.sm),
                     modifier =
                         Modifier
                             .fillMaxHeight()
@@ -158,7 +159,7 @@ fun NextUpEpisode(
                             overflow = TextOverflow.Ellipsis,
                             modifier =
                                 Modifier
-                                    .padding(top = 4.dp)
+                                    .padding(top = Spacing.xs)
                                     .align(Alignment.Start),
                         )
                     }
@@ -203,7 +204,7 @@ fun NextUpCard(
                         text = timeLeft.toString(),
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.padding(12.dp),
+                        modifier = Modifier.padding(Spacing.md),
                     )
                 } else {
                     Icon(
@@ -251,7 +252,7 @@ private fun NextUpEpisodePreview() {
                     runtime = 32.minutes + 20.seconds,
                     modifier =
                         Modifier
-                            .padding(8.dp)
+                            .padding(Spacing.sm)
                             .fillMaxHeight(.4f)
                             .fillMaxWidth(.66f)
                             .align(Alignment.BottomCenter)

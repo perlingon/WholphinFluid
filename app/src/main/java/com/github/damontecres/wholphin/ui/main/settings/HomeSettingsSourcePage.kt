@@ -19,6 +19,7 @@ import androidx.tv.material3.Text
 import com.github.damontecres.wholphin.R
 import com.github.damontecres.wholphin.services.HomePageSettingsSource
 import com.github.damontecres.wholphin.ui.FontAwesome
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.ui.tryRequestFocus
 
 @Composable
@@ -42,7 +43,7 @@ fun HomeSettingsSourcePage(
             modifier = Modifier.fillMaxWidth(),
         )
         LazyColumn(
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(Spacing.sm),
             modifier =
                 modifier
                     .fillMaxHeight()

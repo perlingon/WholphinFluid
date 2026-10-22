@@ -59,6 +59,7 @@ import com.github.damontecres.wholphin.ui.AppColors
 import com.github.damontecres.wholphin.ui.CrossFadeFactory
 import com.github.damontecres.wholphin.ui.nav.TOP_SCRIM_ALPHA
 import com.github.damontecres.wholphin.ui.nav.TOP_SCRIM_END_FRACTION
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
 import javax.inject.Inject
@@ -187,14 +188,14 @@ fun AppScreensaverContent(
                             Modifier
                                 .align(Alignment.BottomStart)
                                 .size(width = 240.dp, height = 120.dp)
-                                .padding(16.dp),
+                                .padding(Spacing.md),
                     )
                 } else {
                     Box(
                         modifier =
                             Modifier
                                 .align(Alignment.BottomStart)
-                                .padding(16.dp)
+                                .padding(Spacing.md)
                                 .fillMaxWidth(.5f)
                                 .fillMaxHeight(.3f),
                     ) {
@@ -295,7 +296,7 @@ fun ScreensaverPlaceholder(
                 modifier =
                     Modifier
                         .align(align)
-                        .padding(40.dp),
+                        .padding(Spacing.xxl),
             )
         }
     }

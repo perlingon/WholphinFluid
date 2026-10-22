@@ -39,6 +39,7 @@ import com.github.damontecres.wholphin.preferences.AppSwitchPreference
 import com.github.damontecres.wholphin.preferences.PrefContentScale
 import com.github.damontecres.wholphin.ui.AspectRatio
 import com.github.damontecres.wholphin.ui.preferences.ComposablePreference
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.ui.tryRequestFocus
 import kotlinx.serialization.Serializable
 import org.jellyfin.sdk.model.api.BaseItemKind
@@ -96,12 +97,12 @@ fun ViewOptionsDialog(
                 textAlign = TextAlign.Center,
                 modifier =
                     Modifier
-                        .padding(vertical = 8.dp)
+                        .padding(vertical = Spacing.sm)
                         .fillMaxWidth(),
             )
             LazyColumn(
                 state = columnState,
-                contentPadding = PaddingValues(16.dp),
+                contentPadding = PaddingValues(Spacing.md),
                 verticalArrangement = Arrangement.spacedBy(0.dp),
                 modifier = Modifier.focusRequester(focusRequester),
             ) {

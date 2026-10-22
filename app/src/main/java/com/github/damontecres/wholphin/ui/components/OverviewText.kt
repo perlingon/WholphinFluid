@@ -22,6 +22,7 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.github.damontecres.wholphin.ui.playOnClickSound
 import com.github.damontecres.wholphin.ui.playSoundOnFocus
+import com.github.damontecres.wholphin.ui.theme.Spacing
 
 /**
  * Show the overview text for an item. Uses a fixed size and allows for clicking.
@@ -66,7 +67,7 @@ fun OverviewText(
             overflow = TextOverflow.Ellipsis,
             modifier =
                 Modifier
-                    .padding(8.dp)
+                    .padding(Spacing.sm)
                     .height(textBoxHeight),
         )
     }

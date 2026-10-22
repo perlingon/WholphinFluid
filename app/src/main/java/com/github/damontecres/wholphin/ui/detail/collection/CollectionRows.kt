@@ -20,6 +20,7 @@ import com.github.damontecres.wholphin.ui.Cards
 import com.github.damontecres.wholphin.ui.data.RowColumn
 import com.github.damontecres.wholphin.ui.main.HomePageContent
 import com.github.damontecres.wholphin.ui.rememberPosition
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.util.HomeRowLoadingState
 import org.jellyfin.sdk.model.api.BaseItemKind
 
@@ -42,7 +43,7 @@ fun CollectionRows(
             modifier =
                 Modifier
                     .fillMaxSize()
-                    .padding(top = 8.dp),
+                    .padding(top = Spacing.sm),
         ) {
             val cardViewOptions = state.viewOptions.cardViewOptions
             val homeRows =

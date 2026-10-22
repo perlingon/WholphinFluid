@@ -12,6 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.github.damontecres.wholphin.ui.PreviewTvSpec
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.ui.theme.WholphinTheme
 
 // .align(Alignment.BottomEnd)
@@ -27,14 +28,14 @@ fun RecordingMarker(
             Box(
                 modifier =
                     Modifier
-                        .padding(4.dp)
+                        .padding(Spacing.xs)
                         .size(16.dp)
                         .background(color, shape = CircleShape),
             )
             Box(
                 modifier =
                     Modifier
-                        .padding(start = 4.dp, top = 4.dp, bottom = 4.dp, end = 10.dp)
+                        .padding(start = Spacing.xs, top = Spacing.xs, bottom = Spacing.xs, end = Spacing.sm)
                         .offset(6.dp)
                         .size(16.dp)
                         .background(color.copy(alpha = .5f), shape = CircleShape),
@@ -43,7 +44,7 @@ fun RecordingMarker(
             Box(
                 modifier =
                     Modifier
-                        .padding(4.dp)
+                        .padding(Spacing.xs)
                         .size(16.dp)
                         .background(Color.Red, shape = CircleShape),
             )

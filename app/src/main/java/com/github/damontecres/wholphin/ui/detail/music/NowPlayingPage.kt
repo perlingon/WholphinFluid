@@ -71,6 +71,7 @@ import com.github.damontecres.wholphin.ui.playback.PlaybackKeyHandler
 import com.github.damontecres.wholphin.ui.playback.isUp
 import com.github.damontecres.wholphin.ui.playback.overlay.BottomDialog
 import com.github.damontecres.wholphin.ui.playback.overlay.BottomDialogItem
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.ui.tryRequestFocus
 import com.github.damontecres.wholphin.util.LoadingState
 import kotlinx.coroutines.delay
@@ -220,11 +221,11 @@ fun NowPlayingPage(
                     exit = exit,
                     modifier =
                         Modifier
-                            .padding(32.dp),
+                            .padding(Spacing.xl),
                 ) {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(Spacing.sm),
                         modifier = Modifier.fillMaxWidth(.5f),
                     ) {
                         AsyncImage(
@@ -262,7 +263,7 @@ fun NowPlayingPage(
                     exit = exit,
                     modifier =
                         Modifier
-                            .padding(horizontal = 32.dp)
+                            .padding(horizontal = Spacing.xl)
                             .align(Alignment.CenterStart),
                 ) {
                     val visualizerWidth by animateFloatAsState(if (musicPrefs.showLyrics && state.hasLyrics) .5f else 1f)
@@ -289,7 +290,7 @@ fun NowPlayingPage(
                     contentAlignment = Alignment.Center,
                     modifier =
                         Modifier
-                            .padding(horizontal = 32.dp, vertical = 100.dp)
+                            .padding(horizontal = Spacing.xl, vertical = 96.dp)
                             .fillMaxHeight(),
                 ) {
                     LyricsContent(
@@ -469,8 +470,8 @@ private fun RecordAudioRationaleDialog(
         onDismissRequest = onDismissRequest,
     ) {
         Column(
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(Spacing.md),
+            modifier = Modifier.padding(Spacing.md),
         ) {
             Text(
                 text = stringResource(R.string.visualizer_rationale),

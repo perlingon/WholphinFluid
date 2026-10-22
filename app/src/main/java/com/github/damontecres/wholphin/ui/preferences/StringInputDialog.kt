@@ -30,6 +30,7 @@ import com.github.damontecres.wholphin.R
 import com.github.damontecres.wholphin.ui.components.ConfirmDialog
 import com.github.damontecres.wholphin.ui.components.EditTextBox
 import com.github.damontecres.wholphin.ui.components.TextButton
+import com.github.damontecres.wholphin.ui.theme.Spacing
 
 @Composable
 fun StringInputDialog(
@@ -66,7 +67,7 @@ fun StringInputDialog(
             contentAlignment = Alignment.Center,
             modifier =
                 Modifier
-                    .padding(16.dp)
+                    .padding(Spacing.md)
                     .width(512.dp)
                     .background(
                         color = MaterialTheme.colorScheme.surfaceColorAtElevation(elevation),
@@ -74,10 +75,10 @@ fun StringInputDialog(
                     ),
         ) {
             Column(
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(Spacing.sm),
                 modifier =
                     Modifier
-                        .padding(16.dp),
+                        .padding(Spacing.md),
             ) {
                 Text(
                     text = input.title,

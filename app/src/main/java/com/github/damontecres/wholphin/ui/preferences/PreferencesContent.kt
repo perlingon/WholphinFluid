@@ -84,6 +84,7 @@ import com.github.damontecres.wholphin.ui.setup.UpdateViewModel
 import com.github.damontecres.wholphin.ui.setup.seerr.AddSeerServerDialog
 import com.github.damontecres.wholphin.ui.setup.seerr.SwitchSeerrViewModel
 import com.github.damontecres.wholphin.ui.showToast
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.ui.tryRequestFocus
 import com.github.damontecres.wholphin.util.DataLoadingState
 import com.github.damontecres.wholphin.util.ExceptionHandler
@@ -222,13 +223,13 @@ fun PreferencesContent(
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 8.dp),
+                        .padding(vertical = Spacing.sm),
             )
             LazyColumn(
                 state = state,
                 horizontalAlignment = Alignment.Start,
                 verticalArrangement = Arrangement.spacedBy(0.dp),
-                contentPadding = PaddingValues(16.dp),
+                contentPadding = PaddingValues(Spacing.md),
                 modifier = Modifier.fillMaxSize(),
             ) {
                 if (showUpdate) {
@@ -276,7 +277,7 @@ fun PreferencesContent(
                             modifier =
                                 Modifier
                                     .fillMaxWidth()
-                                    .padding(top = 8.dp, bottom = 4.dp),
+                                    .padding(top = Spacing.sm, bottom = Spacing.xs),
                         )
                     }
                     val groupPreferences =
@@ -575,7 +576,7 @@ fun PreferencesContent(
                                         },
                                         valueDisplay = { index, item ->
                                             Row(
-                                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                                horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
                                                 verticalAlignment = Alignment.CenterVertically,
                                             ) {
                                                 if (item.icon != null) {

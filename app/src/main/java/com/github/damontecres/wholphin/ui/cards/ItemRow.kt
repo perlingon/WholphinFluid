@@ -28,6 +28,8 @@ import androidx.tv.material3.Text
 import com.github.damontecres.wholphin.ui.nav.BackdropDebug
 import com.github.damontecres.wholphin.ui.rememberInt
 import com.github.damontecres.wholphin.ui.theme.FluidLayout
+import com.github.damontecres.wholphin.ui.theme.Spacing
+import com.github.damontecres.wholphin.ui.theme.rowHeadline
 import com.github.damontecres.wholphin.ui.tryRequestFocus
 
 @Composable
@@ -44,7 +46,7 @@ fun <T> ItemRow(
         onLongClick: () -> Unit,
     ) -> Unit,
     modifier: Modifier = Modifier,
-    horizontalPadding: Dp = 16.dp,
+    horizontalPadding: Dp = Spacing.card,
     showViewMore: Boolean = false,
     viewMoreCardContent: @Composable (Modifier) -> Unit = {},
 ) {
@@ -57,7 +59,8 @@ fun <T> ItemRow(
     val currentOnLongClickItem by rememberUpdatedState(onLongClickItem)
 
     Column(
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        // Headline to its cards
+        verticalArrangement = Arrangement.spacedBy(Spacing.item),
         modifier =
             modifier
                 // Development switch, see BackdropDebug
@@ -77,8 +80,8 @@ fun <T> ItemRow(
                     // The first card lines up with the headlines; the rest scroll full width
                     start = FluidLayout.rowStart(horizontalPadding),
                     end = horizontalPadding,
-                    top = 8.dp,
-                    bottom = 8.dp,
+                    top = Spacing.sm,
+                    bottom = Spacing.sm,
                 ),
             modifier =
                 Modifier
@@ -145,7 +148,7 @@ fun ItemRowTitle(
     modifier: Modifier = Modifier,
 ) = Text(
     text = title,
-    style = MaterialTheme.typography.titleLarge,
+    style = MaterialTheme.typography.rowHeadline,
     color = MaterialTheme.colorScheme.onBackground,
     // Row titles line up with the page's title, at the left margin
     modifier = modifier.padding(start = FluidLayout.headlineInset()),

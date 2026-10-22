@@ -58,6 +58,7 @@ import com.github.damontecres.wholphin.ui.playback.ControllerViewState
 import com.github.damontecres.wholphin.ui.playback.overlay.SeekBar
 import com.github.damontecres.wholphin.ui.preferences.MoveButton
 import com.github.damontecres.wholphin.ui.roundSeconds
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.ui.tryRequestFocus
 import kotlinx.coroutines.launch
 import kotlin.time.Duration
@@ -109,7 +110,7 @@ fun NowPlayingOverlay(
     Column(
         modifier =
             modifier
-                .padding(16.dp)
+                .padding(Spacing.md)
                 .fillMaxHeight(height),
     ) {
         SeekBar(
@@ -124,7 +125,7 @@ fun NowPlayingOverlay(
             modifier =
                 Modifier
                     .align(Alignment.CenterHorizontally)
-                    .padding(top = 8.dp)
+                    .padding(top = Spacing.sm)
                     .fillMaxWidth(.95f),
         )
         AnimatedVisibility(
@@ -159,11 +160,11 @@ fun NowPlayingOverlay(
             Text(
                 text = stringResource(R.string.queue),
                 style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(vertical = 8.dp),
+                modifier = Modifier.padding(vertical = Spacing.sm),
             )
             LazyColumn(
                 state = listState,
-                contentPadding = PaddingValues(bottom = 16.dp, start = 16.dp, end = 16.dp),
+                contentPadding = PaddingValues(bottom = Spacing.md, start = Spacing.md, end = Spacing.md),
                 modifier =
                     Modifier
                         .fillMaxSize()
@@ -188,7 +189,7 @@ fun NowPlayingOverlay(
                                 .background(
                                     color = MaterialTheme.colorScheme.surface.copy(alpha = .5f),
                                     shape = RoundedCornerShape(8.dp),
-                                ).padding(end = 8.dp)
+                                ).padding(end = Spacing.sm)
                                 .onFocusChanged {
                                     if (it.hasFocus) showButtons = index < 3
                                     controllerViewState.pulseControls()
@@ -216,7 +217,7 @@ fun NowPlayingOverlay(
                                     ),
                         )
                         Row(
-                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
                             verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier.wrapContentWidth(),
                         ) {

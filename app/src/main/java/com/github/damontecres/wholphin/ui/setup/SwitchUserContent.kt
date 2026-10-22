@@ -50,6 +50,7 @@ import com.github.damontecres.wholphin.ui.components.TextButton
 import com.github.damontecres.wholphin.ui.dimAndBlur
 import com.github.damontecres.wholphin.ui.isNotNullOrBlank
 import com.github.damontecres.wholphin.ui.nav.Destination
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.ui.tryRequestFocus
 import com.github.damontecres.wholphin.util.LoadingState
 import kotlinx.coroutines.launch
@@ -135,16 +136,16 @@ fun SwitchUserContent(
             ) {
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(24.dp),
+                    verticalArrangement = Arrangement.spacedBy(Spacing.lg),
                     modifier =
                         Modifier
                             .fillMaxWidth()
                             .align(Alignment.Center)
-                            .padding(16.dp),
+                            .padding(Spacing.md),
                 ) {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(Spacing.sm),
                     ) {
                         Text(
                             text = stringResource(R.string.select_user),
@@ -209,7 +210,7 @@ fun SwitchUserContent(
                             modifier =
                                 Modifier
                                     .fillMaxWidth()
-                                    .padding(start = 32.dp, end = 32.dp, bottom = 32.dp)
+                                    .padding(start = Spacing.xl, end = Spacing.xl, bottom = Spacing.xl)
                                     .align(Alignment.BottomCenter),
                         )
                     }
@@ -238,18 +239,18 @@ fun SwitchUserContent(
                 ),
         ) {
             Column(
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(Spacing.sm),
                 modifier =
                     Modifier
                         .focusGroup()
-                        .padding(16.dp)
+                        .padding(Spacing.md)
                         .fillMaxWidth(.4f),
             ) {
                 if (useQuickConnect) {
                     if (state.quickConnectStatus == null && state.switchUserState !is LoadingState.Error) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
                             modifier =
                                 Modifier
                                     .height(32.dp)
@@ -322,7 +323,7 @@ fun SwitchUserContent(
                     ) {
                         Text(
                             text = stringResource(R.string.username),
-                            modifier = Modifier.padding(end = 8.dp),
+                            modifier = Modifier.padding(end = Spacing.sm),
                         )
                         EditTextBox(
                             value = username,
@@ -353,7 +354,7 @@ fun SwitchUserContent(
                     ) {
                         Text(
                             text = stringResource(R.string.password),
-                            modifier = Modifier.padding(end = 8.dp),
+                            modifier = Modifier.padding(end = Spacing.sm),
                         )
                         LaunchedEffect(password) {
                             viewModel.clearSwitchUserState()
@@ -423,7 +424,7 @@ private fun UserStateError(
     when (val s = userState) {
         is LoadingState.Error -> {
             Column(
-                verticalArrangement = Arrangement.spacedBy(4.dp),
+                verticalArrangement = Arrangement.spacedBy(Spacing.xs),
                 modifier = modifier,
             ) {
                 s.message?.let {

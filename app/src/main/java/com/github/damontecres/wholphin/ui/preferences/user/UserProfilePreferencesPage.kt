@@ -54,6 +54,7 @@ import com.github.damontecres.wholphin.ui.preferences.ChoicePreference
 import com.github.damontecres.wholphin.ui.preferences.ClickPreference
 import com.github.damontecres.wholphin.ui.preferences.ComposablePreference
 import com.github.damontecres.wholphin.ui.preferences.PreferenceValidation
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.ui.tryRequestFocus
 import org.jellyfin.sdk.model.api.SubtitlePlaybackMode
 import timber.log.Timber
@@ -120,13 +121,13 @@ fun UserProfilePreferencesContent(
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 8.dp),
+                        .padding(vertical = Spacing.sm),
             )
             LazyColumn(
                 state = state,
                 horizontalAlignment = Alignment.Start,
                 verticalArrangement = Arrangement.spacedBy(0.dp),
-                contentPadding = PaddingValues(16.dp),
+                contentPadding = PaddingValues(Spacing.md),
                 modifier = Modifier,
             ) {
                 UserProfileSettings.Preferences.forEachIndexed { groupIndex, group ->
@@ -139,7 +140,7 @@ fun UserProfilePreferencesContent(
                             modifier =
                                 Modifier
                                     .fillMaxWidth()
-                                    .padding(top = 8.dp, bottom = 4.dp),
+                                    .padding(top = Spacing.sm, bottom = Spacing.xs),
                         )
                     }
                     val groupPreferences =
@@ -303,7 +304,7 @@ fun UserProfilePreferencesContent(
                 },
                 modifier =
                     Modifier
-                        .padding(16.dp)
+                        .padding(Spacing.md)
                         .fillMaxSize(),
             )
         }

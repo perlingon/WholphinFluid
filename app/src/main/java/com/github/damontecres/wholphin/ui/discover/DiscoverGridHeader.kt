@@ -24,6 +24,7 @@ import com.github.damontecres.wholphin.data.filter.FilterValueOption
 import com.github.damontecres.wholphin.ui.components.DiscoverFilterByButton
 import com.github.damontecres.wholphin.ui.components.DiscoverSortByButton
 import com.github.damontecres.wholphin.ui.components.GridTitle
+import com.github.damontecres.wholphin.ui.theme.Spacing
 
 @Composable
 fun DiscoverGridHeader(
@@ -49,7 +50,7 @@ fun DiscoverGridHeader(
         modifier = modifier,
     ) {
         Column(
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(Spacing.sm),
             modifier = Modifier.fillMaxWidth(),
         ) {
             if (showTitle) {
@@ -62,13 +63,13 @@ fun DiscoverGridHeader(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier =
                     Modifier
-                        .padding(start = 16.dp, end = endPadding)
+                        .padding(start = Spacing.md, end = endPadding)
                         .focusRestorer()
                         .fillMaxWidth(),
             ) {
                 if (sortOptions.isNotEmpty() || filterOptions.isNotEmpty()) {
                     Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.focusRestorer(),
                     ) {

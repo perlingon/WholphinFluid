@@ -45,6 +45,7 @@ import com.github.damontecres.wholphin.ui.Cards
 import com.github.damontecres.wholphin.ui.FontAwesome
 import com.github.damontecres.wholphin.ui.PreviewTvSpec
 import com.github.damontecres.wholphin.ui.enableMarquee
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.ui.theme.WholphinTheme
 import kotlinx.coroutines.delay
 
@@ -76,7 +77,7 @@ fun DiscoverItemCard(
     }
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(4.dp),
+        verticalArrangement = Arrangement.spacedBy(Spacing.xs),
         modifier = modifier.size(width, Dp.Unspecified),
     ) {
         Card(
@@ -168,11 +169,11 @@ fun DiscoverItemCard(
                             modifier =
                                 Modifier
                                     .align(Alignment.TopStart)
-                                    .padding(4.dp)
+                                    .padding(Spacing.xs)
                                     .background(
                                         color = color,
                                         shape = CircleShape,
-                                    ).padding(4.dp),
+                                    ).padding(Spacing.xs),
                         )
                     }
                 }
@@ -188,7 +189,7 @@ fun DiscoverItemCard(
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 4.dp)
+                        .padding(horizontal = Spacing.xs)
                         .enableMarquee(focusedAfterDelay),
             )
             Text(
@@ -200,7 +201,7 @@ fun DiscoverItemCard(
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 4.dp)
+                        .padding(horizontal = Spacing.xs)
                         .enableMarquee(focusedAfterDelay),
             )
         }
@@ -212,7 +213,7 @@ fun PendingIndicator(modifier: Modifier = Modifier) {
     Box(
         modifier =
             modifier
-                .padding(4.dp)
+                .padding(Spacing.xs)
                 .border(
                     width = .5.dp,
                     color = AppColors.Discover.Yellow,
@@ -237,7 +238,7 @@ fun AvailableIndicator(modifier: Modifier = Modifier) {
     Box(
         modifier =
             modifier
-                .padding(4.dp)
+                .padding(Spacing.xs)
                 .border(
                     width = .5.dp,
                     color = Color.White,
@@ -262,7 +263,7 @@ fun PartiallyAvailableIndicator(modifier: Modifier = Modifier) {
     Box(
         modifier =
             modifier
-                .padding(4.dp)
+                .padding(Spacing.xs)
                 .border(
                     width = .5.dp,
                     color = Color.White,
@@ -290,7 +291,7 @@ fun BlocklistedIndicator(modifier: Modifier = Modifier) {
     Box(
         modifier =
             modifier
-                .padding(4.dp)
+                .padding(Spacing.xs)
                 .border(
                     width = .5.dp,
                     color = Color.White,

@@ -32,6 +32,7 @@ import com.github.damontecres.wholphin.R
 import com.github.damontecres.wholphin.data.model.VideoFilter
 import com.github.damontecres.wholphin.ui.components.SliderBar
 import com.github.damontecres.wholphin.ui.components.SliderColors
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.ui.theme.WholphinTheme
 
 const val DRAG_THROTTLE_DELAY = 50L
@@ -48,8 +49,8 @@ fun ImageFilterSliders(
     modifier: Modifier = Modifier,
 ) {
     LazyColumn(
-        contentPadding = PaddingValues(8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        contentPadding = PaddingValues(Spacing.sm),
+        verticalArrangement = Arrangement.spacedBy(Spacing.sm),
         modifier = modifier,
     ) {
         item {
@@ -163,7 +164,7 @@ fun ImageFilterSliders(
                 contentAlignment = Alignment.Center,
             ) {
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
                     modifier = Modifier,
                 ) {
                     if (showSaveButton) {
@@ -205,7 +206,7 @@ fun SliderBarRow(
     colors: SliderColors = SliderColors.default(),
 ) {
     Row(
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
         verticalAlignment = Alignment.CenterVertically,
         modifier = modifier,
     ) {
@@ -260,7 +261,7 @@ fun ImageFilterDialog(
             modifier =
                 modifier
                     .wrapContentSize()
-                    .padding(8.dp)
+                    .padding(Spacing.sm)
                     .background(MaterialTheme.colorScheme.secondaryContainer.copy(alpha = .4f))
                     .fillMaxWidth(.4f),
         ) {
@@ -272,7 +273,7 @@ fun ImageFilterDialog(
                 onChange = onChange,
                 onClickSave = onClickSave,
                 onClickSaveGallery = onClickSaveGallery,
-                modifier = Modifier.padding(8.dp),
+                modifier = Modifier.padding(Spacing.sm),
             )
         }
     }
@@ -290,7 +291,7 @@ private fun ImageFilterSlidersPreview() {
             onClickSaveGallery = {},
             showSaveButton = true,
             showSaveGalleryButton = true,
-            modifier = Modifier.padding(8.dp),
+            modifier = Modifier.padding(Spacing.sm),
         )
     }
 }

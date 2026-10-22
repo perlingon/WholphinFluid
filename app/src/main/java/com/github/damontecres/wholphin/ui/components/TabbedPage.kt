@@ -26,6 +26,7 @@ import com.github.damontecres.wholphin.services.BackdropService
 import com.github.damontecres.wholphin.services.RememberedTabService
 import com.github.damontecres.wholphin.services.UserPreferencesService
 import com.github.damontecres.wholphin.ui.launchIO
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.ui.util.ResStringProvider
 import com.github.damontecres.wholphin.ui.util.StringProvider
 import dagger.assisted.Assisted
@@ -173,7 +174,7 @@ fun TabbedPage(
                 selectedTabIndex = selectedTabIndex,
                 modifier =
                     Modifier
-                        .padding(top = 16.dp, bottom = 16.dp, end = endPadding),
+                        .padding(top = Spacing.md, bottom = Spacing.md, end = endPadding),
                 tabs = tabs,
                 onClick = updateSelectedTabIndex,
             )
@@ -218,7 +219,7 @@ fun <T> KeyedTabbedPage(
                 selectedTabKey = selectedTabKey,
                 modifier =
                     Modifier
-                        .padding(top = 16.dp, bottom = 16.dp, end = endPadding),
+                        .padding(top = Spacing.md, bottom = Spacing.md, end = endPadding),
                 tabs = tabs,
                 onClick = updateSelectedTabKey,
             )

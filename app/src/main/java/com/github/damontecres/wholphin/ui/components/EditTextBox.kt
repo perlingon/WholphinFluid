@@ -47,6 +47,7 @@ import androidx.tv.material3.LocalContentColor
 import androidx.tv.material3.MaterialTheme
 import com.github.damontecres.wholphin.R
 import com.github.damontecres.wholphin.ui.PreviewTvSpec
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.ui.theme.WholphinTheme
 
 /**
@@ -110,14 +111,14 @@ fun EditTextBox(
                         else -> colors.unfocusedContainerColor
                     }
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
                     verticalAlignment = Alignment.CenterVertically,
                     modifier =
                         Modifier
                             .background(
                                 containerColor,
                                 shape = if (maxLines > 1) RoundedCornerShape(8.dp) else CircleShape,
-                            ).padding(8.dp),
+                            ).padding(Spacing.sm),
                 ) {
                     CompositionLocalProvider(
                         androidx.compose.material3.LocalContentColor provides MaterialTheme.colorScheme.onSurfaceVariant,
@@ -291,8 +292,8 @@ fun EditTextBox(
                         colors = colors,
                         contentPadding =
                             PaddingValues(
-                                horizontal = 8.dp,
-                                vertical = 10.dp,
+                                horizontal = Spacing.sm,
+                                vertical = Spacing.sm,
                             ),
                         container = {
                             Container(
@@ -360,7 +361,7 @@ fun SearchEditTextBox(
 @Composable
 private fun EditTextBoxPreview() {
     WholphinTheme {
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
             EditTextBox(
                 state = rememberTextFieldState("string"),
             )
