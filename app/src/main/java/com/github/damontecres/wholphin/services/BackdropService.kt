@@ -285,8 +285,22 @@ class BackdropService
                     } else {
                         palette.swatches.filter { it.isWhitish }.sumOf { it.population }.toFloat() / totalPopulation
                     }
-                // An accent: the most vivid colour, even when it covers only a small part
-                val accent = (mostVivid ?: muted)?.takeIf { whiteShare > WHITE_HEAVY_SHARE && !it.isWhitish }
+                // An image that is nearly one hue: no colour is clearly different from the most
+                // common one (brick walls, sepia, single-tone grades)
+                val singleHue =
+                    mostCommon != null && byCoverage.none { hueDistance(it, mostCommon) >= DISTINCT_HUE_RANGE }
+                // An accent, even when it covers only a small part. On very white images the most
+                // vivid colour. On single-hue images the most saturated colour that is not white
+                val accent =
+                    when {
+                        whiteShare > WHITE_HEAVY_SHARE -> (mostVivid ?: muted)?.takeIf { !it.isWhitish }
+                        singleHue ->
+                            palette.swatches
+                                .filterNot { it.isWhitish || it == mostCommon }
+                                .maxByOrNull { it.hsl[1] }
+                                ?.takeIf { it.hsl[1] >= VIVID_MIN_SATURATION }
+                        else -> null
+                    }
 
                 // Primary (Bottom-Right)
                 val primaryColor =
@@ -321,10 +335,11 @@ class BackdropService
                     }
 
                 Timber.v(
-                    "Vivid colour covers %s of the image, useVivid=%s, white covers %s, accent=%s",
+                    "Vivid colour covers %s of the image, useVivid=%s, white covers %s, single hue=%s, accent=%s",
                     vividShare,
                     useVivid,
                     whiteShare,
+                    singleHue,
                     accent != null,
                 )
                 Timber.v(
