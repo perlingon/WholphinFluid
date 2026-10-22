@@ -34,7 +34,7 @@ object FluidLayout {
     @Composable
     fun leftMargin(): Dp {
         val vw = LocalConfiguration.current.screenWidthDp.dp
-        val leftShare = 0.5f
+        val leftShare = 0.3f
         val leftMin = vw * 0f
         val leftMax = vw * 0.2f
         return (extraWidth() * leftShare).coerceIn(leftMin, leftMax)
