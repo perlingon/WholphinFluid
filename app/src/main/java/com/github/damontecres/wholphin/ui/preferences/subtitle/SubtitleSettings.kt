@@ -386,11 +386,11 @@ object SubtitleSettings {
     }
 
     /**
-     * The font used for text subtitles. ABeeZee has no bold weight, so bold is synthesized.
+     * The font used for text subtitles, same as the interface font
      */
     private fun subtitleTypeface(context: Context): Typeface =
         try {
-            ResourcesCompat.getFont(context, R.font.abeezee)
+            ResourcesCompat.getFont(context, R.font.plus_jakarta_sans)
         } catch (ex: Resources.NotFoundException) {
             Timber.w(ex, "Could not load subtitle font")
             null
