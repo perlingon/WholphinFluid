@@ -151,12 +151,12 @@ fun Backdrop(
     // Strength of the colour glows behind the image: 1 = upstream's look, higher = more colour.
     // Kept local so Live Edit picks up changes
     // The theme scales this: full strength on Vivid, down to a fraction on Darkest
-    val glowIntensity = 6f * LocalFluidTheme.current.glow
+    val glowIntensity = 5.1f * LocalFluidTheme.current.glow
 
     // Brightest a glow colour may be, 0 to 1 (1 = no cap). Brighter colours are darkened down
     // to this, keeping their hue and saturation, so a white or yellow poster cannot wash the
     // background out
-    val glowMaxBrightness = 0.2f
+    val glowMaxBrightness = 0.8f
     // Darkest a glow colour may be, 0 to 1 (0 = no cap). Darker colours are lifted up to this,
     // keeping their hue and saturation, so a near-black poster still gives a hint of colour
     val glowMinBrightness = 0.1f
@@ -516,8 +516,8 @@ fun Backdrop(
                         listOf(
                             0f to 0f,
                             0.77f to 0f,
-                            0.85f to 0.25f,
-                            1f to 0.7f,
+                            0.85f to 0.15f,
+                            1f to 0.4f,
                         ),
                     blendMode = BlendMode.Overlay,
                 )

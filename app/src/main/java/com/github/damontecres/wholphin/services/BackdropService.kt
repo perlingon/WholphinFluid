@@ -193,12 +193,12 @@ class BackdropService
         private val VIVID_HUE_RANGE = 30f
 
         // Swatches less saturated than this (0-1) are not counted as vivid
-        private val VIVID_MIN_SATURATION = 0.3f
+        private val VIVID_MIN_SATURATION = 0.27f
 
         // Swatches lighter than this (0-1) and less saturated than WHITE_MAX_SATURATION count as
         // white. Images with lots of white (lab coats, office ceilings) would otherwise give
         // white or grey glows, so the colours are picked from the rest of the image instead
-        private val WHITE_MIN_LIGHTNESS = 0.75f
+        private val WHITE_MIN_LIGHTNESS = 0.80f
         private val WHITE_MAX_SATURATION = 0.25f
 
         // When picking the second most common colour, prefer one whose hue is at least this many
@@ -207,7 +207,7 @@ class BackdropService
 
         // When white covers more than this share of the image, its most vivid colour is used as
         // an accent for the top-left glow, so the gradient gets some real colour
-        private val WHITE_HEAVY_SHARE = 0.3f
+        private val WHITE_HEAVY_SHARE = 0.35f
 
         private val Palette.Swatch.isWhitish: Boolean
             get() = hsl[2] >= WHITE_MIN_LIGHTNESS && hsl[1] <= WHITE_MAX_SATURATION
