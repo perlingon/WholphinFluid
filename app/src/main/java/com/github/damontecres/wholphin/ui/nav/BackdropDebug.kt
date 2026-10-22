@@ -9,7 +9,10 @@ package com.github.damontecres.wholphin.ui.nav
  */
 object BackdropDebug {
     // Hides the card rows
-    val hideRows = false
+    val hideRows = true
+
+    // Hides the logo, title and details of the focused item at the top of the page
+    val hideInfo = true
 
     // Hides the sharp backdrop image, leaving only the baked background
     val hideImage = false
@@ -18,4 +21,8 @@ object BackdropDebug {
     // they sit and how big they are without changing any of their settings.
     // The main blurred copy magenta, tiles in order: magenta, cyan, yellow, green, then repeating
     val outlineCopies = false
+
+    // Draws a red arrow on each edge of the sharp image that was found to be one flat colour, so
+    // its reflection tiles were left out of the background. Points out of the image
+    val showFlatEdges = true
 }
