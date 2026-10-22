@@ -241,7 +241,7 @@ class PlaybackViewModel
                     ?: preferences.appPreferences.playbackPreferences.playerBackend
             val playerBackend =
                 when (requestBackend) {
-                    // WholphinFluid: MPV is hidden, so MPV choices fall back to ExoPlayer
+                    // Nema: MPV is hidden, so MPV choices fall back to ExoPlayer
                     PlayerBackend.UNRECOGNIZED,
                     PlayerBackend.EXO_PLAYER,
                     PlayerBackend.MPV,

@@ -1,4 +1,4 @@
-# WholphinFluid project board guide
+# Nema project board guide
 
 ## GitHub project structure
 

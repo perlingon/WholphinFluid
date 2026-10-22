@@ -1,142 +1,64 @@
-# Wholphin - an OSS Android TV client for Jellyfin
-
-> "Never half-phin two jellies. Always wholphin one jelly."
-
-Wholphin is an open-source Android TV client for Jellyfin. It aims to provide a different app UI that's inspired by Plex for users interested in migrating to Jellyfin.
-
-This is not a fork of the [official client](https://github.com/jellyfin/jellyfin-androidtv). Wholphin's user interface and controls have been written completely from scratch. Wholphin supports playing media using either ExoPlayer or MPV.
-
 <p align="center">
-<a href="https://github.com/damontecres/Wholphin/releases">
-<img alt="Current Release" src="https://img.shields.io/github/release/damontecres/wholphin.svg"/>
-</a>
-<a href="https://translate.codeberg.org/engage/wholphin/">
-<img src="https://translate.codeberg.org/widget/wholphin/wholphin/svg-badge.svg" alt="Translation status" />
-</a>
-<br/>
-<a href="https://play.google.com/store/apps/details?id=com.github.damontecres.wholphin">
-<img width="180" alt="Get Wholphin on Google Play" src="https://github.com/user-attachments/assets/2550a4cb-ce46-47a1-ae24-f33a169234b7"/>
-</a>
-<a href="https://www.amazon.com/gp/product/B0G8RQQR9T/ref=mas_pm_wholphin">
-<img width="180" alt="Get Wholphin on Amazon AppStore" src="https://github.com/user-attachments/assets/1f3a3b26-4b4f-44b1-9741-f4c895c8a53b"/>
-</a>
-
-
+<img alt="Nema" src="branding/nema-readme-header.png" width="800"/>
 </p>
 
-![v0_5_1_home](https://github.com/user-attachments/assets/62bb1703-abdf-4154-9054-e00b6ceb57b5)
+<p align="center"><em>A new Jellyfin thread, spun from Wholphin.</em></p>
 
-## Features
+# Nema
 
-### User interface
+Nema is a Jellyfin client for Android TV. It is a fork of [Wholphin](https://github.com/damontecres/Wholphin), the open-source Android TV client by damontecres, tuned for a calmer, more cinematic living-room experience.
 
-- Customize the home page to see the content you are interested in
-    - Use poster or thumb images, show/hide titles, add/remove/re-order different types of rows!
-    - Option to combine the Continue Watching & Next Up into a single row
-    - Pin collections, playlists, favorites, genres, and studios
-    - Remove series from next up
-- A navigation drawer for quick access to libraries, favorites, search, and settings from almost anywhere in the app
-- Integration with [Seerr](https://github.com/seerr-team/seerr) to discover new movies and TV shows
-    - Note: only available when installed from [GitHub](https://github.com/damontecres/Wholphin/releases/latest) or the [Play store](https://play.google.com/store/apps/details?id=com.github.damontecres.wholphin)
-- Customize library display
-  - Option to show Movie/TV Show titles
-  - Choose image types & size
-  - Choose from grid or list layouts
-- Play theme music, if available
-- Customize subtitle style for plain text subtitles with separate HDR settings
-- Search & download subtitles (requires compatible server plugin such as [OpenSubtitles](https://github.com/jellyfin/jellyfin-plugin-opensubtitles))
-- Multiple app color themes
-- Protect user profile switches with PIN code or require server login
-- Change the user interface language per user
-- In-app & Android OS screensaver support
+The name comes from the nematocyst, the stinging thread of a jellyfish: Greek *nēma* means thread. It nods to the Jellyfin family, to a fork as a thread pulled from something larger, and, said out loud, to the end of *cinema*.
 
-### Playback
+> Nema was previously called WholphinFluid. The repository URL still uses the old name.
 
-- Different media playback engines:
-  - **ExoPlayer** w/ optional extra audio, SSA/ASS, & AV1 software decoding
-  - **MPV** for direct playing anything with great SSA/ASS subtitle support
-- Plex inspired playback controls:
-  - Using D-Pad left/right for seeking during playback
-  - Quickly access video chapters & queue during playback
-  - Optionally skip back a few seconds when resuming playback
-- Live TV & DVR support
-- Music & music video support
-- Cinema mode/pre-roll intro support (requires compatible server plugin such as [Intros](https://github.com/jellyfin/jellyfin-plugin-intros))
-- Auto play next episodes with pass out protection
-- Option for automatic refresh rate & resolution switching on supported displays
-- Trickplay (video preview) support
-- Subtly show playback position along the bottom of the screen while seeking w/ D-Pad
+## What's different from Wholphin
 
-### Roadmap
+- **Themes:** four themes (Vivid, Muted, Dark and Darkest) plus a separate highlight colour for focus and accents, with gold as the default
+- **Typography:** ABeeZee for the interface and for subtitles
+- **Subtitles:** settings to ignore embedded subtitle colours and styling
+- **Video adjust:** Kodi-style zoom, pixel ratio and position controls during playback, for ultrawide screens and odd aspect ratios
+- **Player:** ExoPlayer only; the MPV option is hidden
+- **Backdrops:** a blurred backdrop with colour glows and film grain behind the home screen
+- **Installs next to Wholphin:** Nema has its own app ID, so both can be installed on the same box
 
-See [here for the roadmap](https://github.com/damontecres/Wholphin/wiki#roadmap)
+Work in progress is tracked in the [roadmap](ROADMAP.md).
 
 ## Installation
 
-Using [Google Play](https://play.google.com/store/apps/details?id=com.github.damontecres.wholphin) or [Amazon appstore](https://www.amazon.com/gp/product/B0G8RQQR9T/ref=mas_pm_wholphin) are the fastest way to install. But you can follow these instructions to install without needing an app store
+Nema has no store listing yet. Build it from source with the release build type, see the [developer's guide](DEVELOPMENT.md). The release build installs as **Nema** alongside Wholphin; the `fast` build type installs as **Nema Fast** for quick testing on a device.
 
-Downloader Code: `8668671`
-
-1. Enable side-loading "unknown" apps
-    - https://androidtvnews.com/unknown-sources-chromecast-google-tv/
-    - https://www.xda-developers.com/how-to-sideload-apps-android-tv/
-    - https://developer.android.com/distribute/marketing-tools/alternative-distribution#unknown-sources
-    - https://www.aftvnews.com/how-to-enable-apps-from-unknown-sources-on-an-amazon-fire-tv-or-fire-tv-stick/
-2. Install the APK on your Android TV device with one of these options:
-    - Install a browser program such as [Downloader](https://www.aftvnews.com/downloader/), use it to get the latest apk with short code `8668671` or URL: http://aftv.news/8668671
-    - Download the latest APK release from the [releases page](https://github.com/damontecres/Wholphin/releases/latest) or http://aftv.news/8668671
-        - Put the APK on an SD Card/USB stick/network share and use a file manager app from the Google Play Store / Amazon AppStore (e.g. `FX File Explorer`). Android's preinstalled file manager probably will not work!
-        - Use `Send files to TV` from the Google Play Store on your phone & TV
-        - (Expert) Use [ADB](https://developer.android.com/studio/command-line/adb) to install the APK from your computer ([guide](https://fossbytes.com/side-load-apps-android-tv/#h-how-to-sideload-apps-on-your-android-tv-using-adb))
-
-### Upgrading the app
-
-After the initial install above, the app will automatically check for updates. The updates can be installed in settings.
-
-The first time you attempt an update, the OS should guide you through enabling the required additional permissions for the app to install updates.
-
-Note: if installed via an app store, the app store will handle updates.
+For Wholphin itself, see the [Wholphin releases](https://github.com/damontecres/Wholphin/releases/latest).
 
 ## Compatibility
 
-Requires Android 6+ (or Fire TV OS 6+) and Jellyfin server `10.10.x` or `10.11.x` (tested on primarily `10.11`).
+Requires Android 6+ (or Fire TV OS 6+) and Jellyfin server `10.10.x` or `10.11.x`, as upstream Wholphin.
 
-The app is tested on a variety of Android TV/Fire TV OS devices, but if you encounter issues, please file an issue!
+## Brand
 
-Seerr integration is generally tested with the latest stable version. Older versions may not work as expected. The Seerr server should configured with integration to your Jellyfin server for full compatibility.
+The logo is a strip of film bent into a lowercase n, whose tail runs on as a single thread under the rest of the name. It is set in gold on near-black.
+
+| | |
+|---|---|
+| Gold gradient | `#F6D98C` → `#DDA94A` → `#A86F22` |
+| Lettering | `#F7F2E8` |
+| Background | `#222222` → `#000000`, with film grain |
+| Typeface | [ABeeZee](https://fonts.google.com/specimen/ABeeZee) |
+
+Logo files, the app icon and posters are in [`branding/`](branding).
 
 ## Contributions
 
-Issues and pull requests are always welcome! Please check before submitting that your issue or pull request is not a duplicate.
-
-If you plan to contribute, please read the [contributing guide](CONTRIBUTING.md)!
-
-You can [help translate Wholphin](https://translate.codeberg.org/engage/wholphin/)!
+Issues and pull requests are welcome. Please read the [contributing guide](CONTRIBUTING.md), which comes from upstream Wholphin and applies here too. Fixes that are not specific to Nema are best sent to [Wholphin](https://github.com/damontecres/Wholphin) first.
 
 ## Acknowledgements
 
+- Thanks to damontecres and the Wholphin contributors. Nema is built on their work, and nearly everything good in it starts there
 - Thanks to the Jellyfin team for creating and maintaining such a great open-source media server
 - Thanks to the official Jellyfin Android TV client developers, some code for creating the device direct play profile is adapted from there
 - Thanks to the Jellyfin Kotlin SDK developers for making it easier to interact with the Jellyfin server API
 - Thanks to numerous other libraries that make app development even possible
 
-## Additional screenshots
+## License
 
-### Customized home page
-![customize_home_example](https://github.com/user-attachments/assets/9a4f04b7-9604-4ea7-b352-50f2b15dc2f1)
-
-### Movie library browsing
-![v0_5_1_library](https://github.com/user-attachments/assets/fad0424b-0631-4438-a8bc-d4fbb95a5bf3)
-
-### Movie page
-![v0_5_1_movie](https://github.com/user-attachments/assets/849aad34-49d5-4864-8de7-005bbcb68ac6)
-
-### Series page
-![v0_5_1_series](https://github.com/user-attachments/assets/655389e1-6a6f-43bc-85e1-e2feffb20429)
-
-### Genres in library
-![v0_5_1_genres](https://github.com/user-attachments/assets/5bbcbeb6-edc9-42c7-a1d8-d92fa432a498)
-
-
-### Playlist
-![v0_5_1_playlist](https://github.com/user-attachments/assets/98268f7d-479d-41c6-b47b-3e67bbe661bc)
+Nema is licensed under the GNU General Public License v2, as Wholphin is. See [LICENSE](LICENSE).

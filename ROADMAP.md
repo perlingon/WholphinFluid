@@ -1,4 +1,4 @@
-# WholphinFluid roadmap
+# Nema roadmap
 
 Work is tracked as GitHub issues, grouped by milestone. Labels describe the area. The issue list is the source of truth; this page is an overview.
 
@@ -7,7 +7,7 @@ Board: https://github.com/users/perlingon/projects/1 · Milestones: https://gith
 ## Alpha (Proof of concept)
 
 - [x] [#2](https://github.com/perlingon/WholphinFluid/issues/2) Build a release APK and compare performance (`performance`)
-- [ ] [#3](https://github.com/perlingon/WholphinFluid/issues/3) Test Crop and Fill width in WholphinFluid (`Video playback`)
+- [ ] [#3](https://github.com/perlingon/WholphinFluid/issues/3) Test Crop and Fill width in Nema (`Video playback`)
 - [ ] [#4](https://github.com/perlingon/WholphinFluid/issues/4) Panscan knob for playback (`Video playback`)
 - [ ] [#5](https://github.com/perlingon/WholphinFluid/issues/5) Subtitles: styling and on-by-default setting (`design`)
 - [ ] [#6](https://github.com/perlingon/WholphinFluid/issues/6) Home screen header height (`design`)
@@ -21,7 +21,7 @@ Board: https://github.com/users/perlingon/projects/1 · Milestones: https://gith
 ## First official release
 
 - [ ] [#10](https://github.com/perlingon/WholphinFluid/issues/10) App font (`design`)
-- [ ] [#11](https://github.com/perlingon/WholphinFluid/issues/11) Name, app icon and banner (`design`)
+- [x] [#11](https://github.com/perlingon/WholphinFluid/issues/11) Name, app icon and banner (`design`)
 - [ ] [#12](https://github.com/perlingon/WholphinFluid/issues/12) Widgets for new titles in collections (`enhancement`, `widgets`)
 - [ ] [#14](https://github.com/perlingon/WholphinFluid/issues/14) Research rows on the Google TV home screen (`widgets`, `needs-research`)
 - [ ] [#25](https://github.com/perlingon/WholphinFluid/issues/25) Media detail page: split crew from cast and show top cast only (`design`, `enhancement`)

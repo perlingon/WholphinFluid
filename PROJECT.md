@@ -1,8 +1,8 @@
-# Project plan for WholphinFluid
+# Project plan for Nema
 
 ## Purpose
 
-WholphinFluid is a fork of Wholphin focused on a fluid, modern Android TV experience for Jellyfin. This project board is intended to keep work organized around design, features, product polish, and maintenance.
+Nema (formerly WholphinFluid) is a fork of Wholphin focused on a fluid, modern Android TV experience for Jellyfin. This project board is intended to keep work organized around design, features, product polish, and maintenance.
 
 ## Goals
 
