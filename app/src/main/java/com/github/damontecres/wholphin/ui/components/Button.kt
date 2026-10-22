@@ -34,6 +34,7 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.ProvideTextStyle
 import androidx.tv.material3.Surface
 import androidx.tv.material3.Text
+import com.github.damontecres.wholphin.ui.theme.Spacing
 
 /**
  * This is a re-implementation of [androidx.tv.material3.Button] with altered sizing, padding, colors, etc
@@ -121,10 +122,10 @@ fun TextButton(
     enabled: Boolean = true,
     contentPadding: PaddingValues =
         PaddingValues(
-            start = 8.dp,
-            top = 4.dp,
-            end = 8.dp,
-            bottom = 4.dp,
+            start = Spacing.sm,
+            top = Spacing.xs,
+            end = Spacing.sm,
+            bottom = Spacing.xs,
         ),
     contentHeight: Dp = 32.dp,
     interactionSource: MutableInteractionSource? = null,
@@ -149,10 +150,10 @@ fun TextButton(
     enabled: Boolean = true,
     contentPadding: PaddingValues =
         PaddingValues(
-            start = 8.dp,
-            top = 4.dp,
-            end = 8.dp,
-            bottom = 4.dp,
+            start = Spacing.sm,
+            top = Spacing.xs,
+            end = Spacing.sm,
+            bottom = Spacing.xs,
         ),
     contentHeight: Dp = 32.dp,
     interactionSource: MutableInteractionSource? = null,
@@ -171,8 +172,8 @@ fun TextButton(
 
 val DefaultButtonPadding =
     PaddingValues(
-        start = 4.dp,
-        top = 4.dp,
-        end = 4.dp,
-        bottom = 4.dp,
+        start = Spacing.xs,
+        top = Spacing.xs,
+        end = Spacing.xs,
+        bottom = Spacing.xs,
     )

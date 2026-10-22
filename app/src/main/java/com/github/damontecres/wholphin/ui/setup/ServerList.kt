@@ -34,6 +34,7 @@ import com.github.damontecres.wholphin.R
 import com.github.damontecres.wholphin.data.model.JellyfinServer
 import com.github.damontecres.wholphin.ui.Cards
 import com.github.damontecres.wholphin.ui.components.CircularProgress
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import org.jellyfin.sdk.model.api.PublicSystemInfo
 import java.util.UUID
 
@@ -124,7 +125,7 @@ fun ServerIconCard(
     Column(
         modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(24.dp),
+        verticalArrangement = Arrangement.spacedBy(Spacing.lg),
     ) {
         // Circular card with colored background
         Surface(
@@ -172,7 +173,7 @@ fun ServerIconCard(
                         // Show warning icon with server letter below
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(4.dp),
+                            verticalArrangement = Arrangement.spacedBy(Spacing.xs),
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Warning,
@@ -227,7 +228,7 @@ fun ServerIconCard(
             modifier =
                 Modifier
                     .width(cardSize)
-                    .padding(horizontal = 4.dp),
+                    .padding(horizontal = Spacing.xs),
         )
     }
 }
@@ -251,7 +252,7 @@ fun AddServerCard(
     Column(
         modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(24.dp),
+        verticalArrangement = Arrangement.spacedBy(Spacing.lg),
     ) {
         // Circular card with colored background
         Surface(
@@ -308,7 +309,7 @@ fun AddServerCard(
             modifier =
                 Modifier
                     .width(cardSize)
-                    .padding(horizontal = 4.dp),
+                    .padding(horizontal = Spacing.xs),
         )
     }
 }

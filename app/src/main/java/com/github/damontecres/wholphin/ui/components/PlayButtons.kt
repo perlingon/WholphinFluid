@@ -61,6 +61,7 @@ import com.github.damontecres.wholphin.ui.data.ChooseVersionParams
 import com.github.damontecres.wholphin.ui.data.SortAndDirection
 import com.github.damontecres.wholphin.ui.ifElse
 import com.github.damontecres.wholphin.ui.theme.PreviewInteractionSource
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.ui.theme.WholphinTheme
 import com.github.damontecres.wholphin.ui.tryRequestFocus
 import org.jellyfin.sdk.model.api.ItemSortBy
@@ -104,8 +105,8 @@ fun ExpandablePlayButtons(
     var chooseVersion by remember { mutableStateOf<DialogParams?>(null) }
 
     LazyRow(
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
-        contentPadding = PaddingValues(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(Spacing.md),
+        contentPadding = PaddingValues(Spacing.sm),
         modifier =
             modifier
                 .focusGroup()
@@ -318,17 +319,17 @@ fun ExpandablePlayButton(
             contentAlignment = Alignment.Center,
             modifier =
                 Modifier
-                    .padding(start = 2.dp)
+                    .padding(start = Spacing.xs)
                     .height(MinButtonSize),
         ) {
             icon.invoke(this)
         }
         AnimatedVisibility(isFocused) {
-            Spacer(Modifier.size(8.dp))
+            Spacer(Modifier.size(Spacing.sm))
             Text(
                 text = stringResource(title),
                 style = MaterialTheme.typography.titleSmall,
-                modifier = Modifier.padding(end = 4.dp),
+                modifier = Modifier.padding(end = Spacing.xs),
             )
         }
     }
@@ -379,7 +380,7 @@ fun ExpandableFaButton(
             Text(
                 text = stringResource(title),
                 style = MaterialTheme.typography.titleSmall,
-                modifier = Modifier.padding(end = 4.dp),
+                modifier = Modifier.padding(end = Spacing.xs),
             )
         }
     }
@@ -455,7 +456,7 @@ fun DeleteButton(
                 tint = if (iconTint.isSpecified) iconTint else LocalContentColor.current,
                 modifier =
                     Modifier
-                        .padding(start = 2.dp)
+                        .padding(start = Spacing.xs)
                         .size(24.dp),
             )
         },
@@ -505,8 +506,8 @@ private fun ViewOptionsPreview() {
     val source = remember { PreviewInteractionSource() }
     WholphinTheme {
         Column(
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(Spacing.md),
+            modifier = Modifier.padding(Spacing.md),
         ) {
             ExpandablePlayButton(
                 title = R.string.play,

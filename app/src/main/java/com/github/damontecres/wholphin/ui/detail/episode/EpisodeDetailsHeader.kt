@@ -29,6 +29,7 @@ import com.github.damontecres.wholphin.ui.components.QuickDetails
 import com.github.damontecres.wholphin.ui.components.SeriesName
 import com.github.damontecres.wholphin.ui.components.VideoStreamDetails
 import com.github.damontecres.wholphin.ui.isNotNullOrBlank
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import org.jellyfin.sdk.model.api.PersonKind
 
 @Composable
@@ -44,14 +45,14 @@ fun EpisodeDetailsHeader(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     Column(
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(Spacing.sm),
         modifier = modifier,
     ) {
         SeriesName(dto.seriesName, Modifier.fillMaxWidth(.75f))
         EpisodeName(dto, Modifier.fillMaxWidth(.75f))
 
         Column(
-            verticalArrangement = Arrangement.spacedBy(4.dp),
+            verticalArrangement = Arrangement.spacedBy(Spacing.xs),
             modifier = Modifier.fillMaxWidth(.60f),
         ) {
             val padding = 8.dp

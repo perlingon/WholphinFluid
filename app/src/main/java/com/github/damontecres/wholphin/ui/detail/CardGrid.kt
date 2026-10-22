@@ -71,6 +71,7 @@ import com.github.damontecres.wholphin.ui.ifElse
 import com.github.damontecres.wholphin.ui.playback.isBackwardButton
 import com.github.damontecres.wholphin.ui.playback.isForwardButton
 import com.github.damontecres.wholphin.ui.playback.isPlayKeyUp
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.ui.tryRequestFocus
 import com.github.damontecres.wholphin.util.ExceptionHandler
 import com.github.damontecres.wholphin.util.WholphinDispatchers
@@ -246,7 +247,7 @@ fun <T : CardGridItem> CardGrid(
     } else {
         var longPressing by remember { mutableStateOf(false) }
         Row(
-//        horizontalArrangement = Arrangement.spacedBy(8.dp),
+//        horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
             modifier =
                 modifier
                     .fillMaxSize()
@@ -321,7 +322,7 @@ fun <T : CardGridItem> CardGrid(
                         horizontalArrangement = Arrangement.spacedBy(spacing),
                         verticalArrangement = Arrangement.spacedBy(spacing),
                         state = gridState,
-                        contentPadding = PaddingValues(vertical = 16.dp),
+                        contentPadding = PaddingValues(vertical = Spacing.md),
                         modifier =
                             Modifier
                                 .fillMaxSize()
@@ -418,7 +419,7 @@ fun <T : CardGridItem> CardGrid(
 //                            max(savedFocusedIndex, focusedIndexOnExit) + 1
 //                        }
                             Text(
-                                modifier = Modifier.padding(4.dp),
+                                modifier = Modifier.padding(Spacing.xs),
                                 color = MaterialTheme.colorScheme.onBackground,
                                 text = "$index / ${pager.size}",
                             )
@@ -451,7 +452,7 @@ fun <T : CardGridItem> CardGrid(
                     modifier =
                         Modifier
                             .align(Alignment.CenterVertically)
-                            .padding(start = 16.dp),
+                            .padding(start = Spacing.md),
                     // Add end padding to push away from edge
                     letterClicked = jumpToLetter,
                 )
@@ -459,7 +460,7 @@ fun <T : CardGridItem> CardGrid(
                 // Spacer ensures card sizes do not change if the alphabet buttons are not shown
                 Spacer(
                     Modifier
-                        .padding(start = 16.dp)
+                        .padding(start = Spacing.md)
                         .width(letterHorizontalPadding * 2 + letterButtonSize),
                 )
             }
@@ -496,7 +497,7 @@ fun JumpButton(
 ) {
     Button(
         modifier = modifier.width(40.dp),
-        contentPadding = PaddingValues(4.dp),
+        contentPadding = PaddingValues(Spacing.xs),
         onClick = {
             jumpClick.invoke(jumpAmount)
         },

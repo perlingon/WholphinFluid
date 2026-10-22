@@ -41,6 +41,7 @@ import com.github.damontecres.wholphin.ui.components.ErrorMessage
 import com.github.damontecres.wholphin.ui.components.LoadingPage
 import com.github.damontecres.wholphin.ui.formatDateTime
 import com.github.damontecres.wholphin.ui.launchDefault
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.ui.toBaseItems
 import com.github.damontecres.wholphin.ui.tryRequestFocus
 import com.github.damontecres.wholphin.util.DataLoadingState
@@ -185,7 +186,7 @@ fun RemovedNextUpContent(
                     val focusRequester = remember { FocusRequester() }
                     LaunchedEffect(Unit) { focusRequester.tryRequestFocus() }
                     LazyColumn(
-                        contentPadding = PaddingValues(horizontal = 8.dp),
+                        contentPadding = PaddingValues(horizontal = Spacing.sm),
                         modifier =
                             Modifier
                                 .fillMaxWidth()
@@ -217,7 +218,7 @@ fun RemovedListItem(
     modifier: Modifier = Modifier,
 ) {
     Row(
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
         verticalAlignment = Alignment.CenterVertically,
         modifier = modifier,
     ) {

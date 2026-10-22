@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.dp
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Switch
 import androidx.tv.material3.Text
+import com.github.damontecres.wholphin.ui.theme.Spacing
 
 /**
  * A labeled [Switch], but the entire composable is focusable & clickable
@@ -55,7 +56,7 @@ fun SwitchWithLabel(
                             onStateChange(!checked)
                         }
                     },
-                ).padding(8.dp),
+                ).padding(Spacing.sm),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
@@ -64,7 +65,7 @@ fun SwitchWithLabel(
             style = MaterialTheme.typography.labelLarge,
         )
 
-        Spacer(modifier = Modifier.padding(start = 8.dp))
+        Spacer(modifier = Modifier.padding(start = Spacing.sm))
         Switch(
             checked = checked,
             enabled = enabled,

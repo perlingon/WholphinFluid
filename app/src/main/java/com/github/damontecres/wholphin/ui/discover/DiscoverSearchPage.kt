@@ -54,6 +54,7 @@ import com.github.damontecres.wholphin.ui.nav.Destination
 import com.github.damontecres.wholphin.ui.rememberInt
 import com.github.damontecres.wholphin.ui.search.SearchCombinedResults
 import com.github.damontecres.wholphin.ui.search.SearchResult
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.ui.tryRequestFocus
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
@@ -196,7 +197,7 @@ fun DiscoverSearchPage(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier =
                     Modifier
-                        .padding(start = 16.dp, end = 16.dp)
+                        .padding(start = Spacing.md, end = Spacing.md)
                         .focusGroup()
                         .focusRestorer()
                         .focusRequester(textFieldFocusRequester),
@@ -212,7 +213,7 @@ fun DiscoverSearchPage(
                             triggerImmediateSearch(spokenText)
                         },
                         voiceInputManager = viewModel.voiceInputManager,
-                        modifier = Modifier.padding(end = 12.dp),
+                        modifier = Modifier.padding(end = Spacing.md),
                     )
                 }
 

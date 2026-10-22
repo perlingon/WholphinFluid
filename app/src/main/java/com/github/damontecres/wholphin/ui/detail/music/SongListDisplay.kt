@@ -36,6 +36,7 @@ import com.github.damontecres.wholphin.ui.enableMarquee
 import com.github.damontecres.wholphin.ui.formatDuration
 import com.github.damontecres.wholphin.ui.letNotEmpty
 import com.github.damontecres.wholphin.ui.roundSeconds
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.ui.theme.WholphinTheme
 import org.jellyfin.sdk.model.extensions.ticks
 import kotlin.time.Duration
@@ -183,7 +184,7 @@ fun MusicQueueMarker(
         Box(
             modifier =
                 modifier
-                    .padding(horizontal = 8.dp)
+                    .padding(horizontal = Spacing.sm)
                     .clip(CircleShape)
                     .background(LocalContentColor.current)
                     .size(8.dp),
@@ -195,7 +196,7 @@ fun MusicQueueMarker(
 @Composable
 fun SongListItemPreview() {
     WholphinTheme {
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(Spacing.sm)) {
             SongListItem(
                 title = "Song title",
                 artist = "Artists",

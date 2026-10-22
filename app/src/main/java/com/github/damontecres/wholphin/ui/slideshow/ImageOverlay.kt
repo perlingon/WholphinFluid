@@ -24,6 +24,7 @@ import com.github.damontecres.wholphin.ui.FontAwesome
 import com.github.damontecres.wholphin.ui.components.DialogItem
 import com.github.damontecres.wholphin.ui.components.DialogParams
 import com.github.damontecres.wholphin.ui.components.DialogPopup
+import com.github.damontecres.wholphin.ui.theme.Spacing
 
 @androidx.annotation.OptIn(UnstableApi::class)
 @Composable
@@ -108,10 +109,10 @@ fun ImageOverlay(
             PaddingValues(
                 start = horizontalPadding,
                 end = horizontalPadding,
-                top = 16.dp,
-                bottom = 16.dp,
+                top = Spacing.md,
+                bottom = Spacing.md,
             ),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(Spacing.sm),
         modifier = modifier,
     ) {
         item {

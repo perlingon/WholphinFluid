@@ -65,6 +65,7 @@ import com.github.damontecres.wholphin.ui.ifElse
 import com.github.damontecres.wholphin.ui.launchIO
 import com.github.damontecres.wholphin.ui.rememberInt
 import com.github.damontecres.wholphin.ui.roundMinutes
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.ui.tryRequestFocus
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -127,10 +128,10 @@ fun CollectionFolderList(
                 },
         )
         Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
             modifier =
                 Modifier
-                    .padding(top = topPadding, bottom = 16.dp)
+                    .padding(top = topPadding, bottom = Spacing.md)
                     .onFocusChanged {
                         contentHashFocus = it.hasFocus
                     },
@@ -150,7 +151,7 @@ fun CollectionFolderList(
                             .background(
                                 color = Color.Transparent, // MaterialTheme.colorScheme.surfaceColorAtElevation(1.dp),
                                 shape = RoundedCornerShape(16.dp),
-                            ).padding(8.dp),
+                            ).padding(Spacing.sm),
                 )
             }
             CollectionFolderContent(
@@ -196,7 +197,7 @@ fun CollectionFolderList(
                     modifier =
                         Modifier
                             .align(Alignment.CenterVertically)
-                            .padding(start = 16.dp),
+                            .padding(start = Spacing.md),
                     letterClicked = {
                         scope.launchIO {
                             val position = letterPosition.invoke(it)
@@ -222,7 +223,7 @@ fun CollectionFolderListDetails(
             item?.imageUrlOverride ?: imageUrlService.getItemImageUrl(item, ImageType.PRIMARY, useSeriesForPrimary = true)
         }
     Column(
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(Spacing.sm),
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = modifier,
     ) {
@@ -414,7 +415,7 @@ fun ListItemMovie(
         supportingContent = supportingContent,
         trailingContent = {
             Row(
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(

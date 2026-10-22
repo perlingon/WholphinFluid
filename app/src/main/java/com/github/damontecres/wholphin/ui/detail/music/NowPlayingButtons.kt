@@ -46,6 +46,7 @@ import com.github.damontecres.wholphin.ui.playback.overlay.PlaybackButton
 import com.github.damontecres.wholphin.ui.playback.overlay.PlaybackButtons
 import com.github.damontecres.wholphin.ui.playback.overlay.buttonSpacing
 import com.github.damontecres.wholphin.ui.theme.PreviewInteractionSource
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.ui.theme.WholphinTheme
 import kotlin.time.Duration.Companion.seconds
 
@@ -166,7 +167,7 @@ fun ShuffleButton(
                 containerColor = AppColors.TransparentBlack25,
                 focusedContainerColor = selectedColor,
             ),
-        contentPadding = PaddingValues(4.dp),
+        contentPadding = PaddingValues(Spacing.xs),
         interactionSource = interactionSource,
         modifier =
             modifier
@@ -213,7 +214,7 @@ fun RepeatButton(
                 containerColor = AppColors.TransparentBlack25,
                 focusedContainerColor = selectedColor,
             ),
-        contentPadding = PaddingValues(4.dp),
+        contentPadding = PaddingValues(Spacing.xs),
         interactionSource = interactionSource,
         modifier =
             modifier

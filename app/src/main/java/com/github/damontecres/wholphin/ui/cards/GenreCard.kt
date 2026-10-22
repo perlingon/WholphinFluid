@@ -31,6 +31,7 @@ import com.github.damontecres.wholphin.ui.AspectRatios
 import com.github.damontecres.wholphin.ui.PreviewTvSpec
 import com.github.damontecres.wholphin.ui.components.Genre
 import com.github.damontecres.wholphin.ui.setup.rememberIdColor
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.ui.theme.WholphinTheme
 import java.util.UUID
 
@@ -112,7 +113,7 @@ fun GenreCard(
                     textAlign = TextAlign.Center,
                     modifier =
                         Modifier
-                            .padding(16.dp)
+                            .padding(Spacing.md)
                             .align(Alignment.Center),
                 )
             }

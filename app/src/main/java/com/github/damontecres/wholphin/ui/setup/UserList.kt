@@ -57,6 +57,7 @@ import com.github.damontecres.wholphin.ui.PreviewTvSpec
 import com.github.damontecres.wholphin.ui.components.DialogItem
 import com.github.damontecres.wholphin.ui.components.DialogPopup
 import com.github.damontecres.wholphin.ui.isNotNullOrBlank
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.ui.theme.WholphinTheme
 import com.github.damontecres.wholphin.ui.toServerString
 import com.github.damontecres.wholphin.ui.tryRequestFocus
@@ -81,7 +82,7 @@ fun UserList(
     Column(
         modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(24.dp),
+        verticalArrangement = Arrangement.spacedBy(Spacing.lg),
     ) {
         // Horizontal scrollable list of user icons - centered
         Box(
@@ -94,8 +95,8 @@ fun UserList(
                 LaunchedEffect(Unit) { focusRequester.tryRequestFocus() }
             }
             LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(24.dp), // Spacing to accommodate 20% scale
-                contentPadding = PaddingValues(horizontal = 48.dp, vertical = 16.dp), // Increased padding to accommodate 20% scale
+                horizontalArrangement = Arrangement.spacedBy(Spacing.lg), // Spacing to accommodate 20% scale
+                contentPadding = PaddingValues(horizontal = Spacing.xxl, vertical = Spacing.md), // Increased padding to accommodate 20% scale
                 modifier =
                     Modifier
                         .wrapContentWidth()
@@ -126,7 +127,7 @@ fun UserList(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 8.dp),
+                    .padding(vertical = Spacing.sm),
         ) {
             Button(
                 onClick = { onSwitchServer.invoke() },
@@ -140,7 +141,7 @@ fun UserList(
                     Text(
                         text = stringResource(R.string.fa_arrow_left_arrow_right),
                         fontFamily = FontAwesome,
-                        modifier = Modifier.padding(end = 8.dp),
+                        modifier = Modifier.padding(end = Spacing.sm),
                     )
                     Text(
                         text = stringResource(R.string.switch_servers),
@@ -205,7 +206,7 @@ private fun UserIconCard(
     Column(
         modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(24.dp),
+        verticalArrangement = Arrangement.spacedBy(Spacing.lg),
     ) {
         // Circular card with colored background
         Surface(
@@ -291,7 +292,7 @@ private fun UserIconCard(
             modifier =
                 Modifier
                     .width(cardSize)
-                    .padding(horizontal = 4.dp),
+                    .padding(horizontal = Spacing.xs),
         )
     }
 }
@@ -374,7 +375,7 @@ private fun AddUserCard(
     Column(
         modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(24.dp), // Increased to accommodate 20% scale
+        verticalArrangement = Arrangement.spacedBy(Spacing.lg), // Increased to accommodate 20% scale
     ) {
         // Circular card with colored background
         Surface(
@@ -428,7 +429,7 @@ private fun AddUserCard(
             modifier =
                 Modifier
                     .width(cardSize)
-                    .padding(horizontal = 4.dp),
+                    .padding(horizontal = Spacing.xs),
         )
     }
 }

@@ -24,6 +24,7 @@ import com.github.damontecres.wholphin.ui.components.OverviewText
 import com.github.damontecres.wholphin.ui.components.QuickDetailsText
 import com.github.damontecres.wholphin.ui.components.StreamLabel
 import com.github.damontecres.wholphin.ui.components.TitleOrLogo
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import kotlin.time.Duration.Companion.milliseconds
 
 @OptIn(ExperimentalCoilApi::class)
@@ -37,7 +38,7 @@ fun TvGuideHeader(
         modifier = modifier,
     ) {
         Column(
-            verticalArrangement = Arrangement.spacedBy(4.dp),
+            verticalArrangement = Arrangement.spacedBy(Spacing.xs),
             horizontalAlignment = Alignment.Start,
         ) {
             TitleOrLogo(
@@ -50,7 +51,7 @@ fun TvGuideHeader(
                         .fillMaxWidth(.75f),
             )
             Column(
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(Spacing.sm),
                 modifier = Modifier.fillMaxWidth(.6f),
             ) {
                 program?.subtitle?.let {
@@ -60,14 +61,14 @@ fun TvGuideHeader(
                     )
                 }
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.padding(start = HeaderUtils.startPadding),
                 ) {
                     program?.quickDetails?.let {
                         QuickDetailsText(
                             it,
-                            modifier = Modifier.padding(vertical = 4.dp),
+                            modifier = Modifier.padding(vertical = Spacing.xs),
                         )
                     }
                     if (program?.isRepeat == true) {

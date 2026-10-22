@@ -88,6 +88,7 @@ import com.github.damontecres.wholphin.ui.playback.playable
 import com.github.damontecres.wholphin.ui.playback.scale
 import com.github.damontecres.wholphin.ui.rememberPosition
 import com.github.damontecres.wholphin.ui.theme.FluidLayout
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.ui.tryRequestFocus
 import com.github.damontecres.wholphin.ui.util.ScrollToTopBringIntoViewSpec
 import com.github.damontecres.wholphin.util.HomeRowLoadingState
@@ -384,7 +385,8 @@ fun HomePageContent(
                         val rowModifier =
                             Modifier
                                 .animateItem(placementSpec = null)
-                                .padding(bottom = 8.dp)
+                                // Together with the rows' own top and bottom padding, the gap between rows
+                                .padding(bottom = Spacing.item)
                         CompositionLocalProvider(
                             LocalBringIntoViewSpec provides defaultBringIntoViewSpec,
                         ) {
@@ -532,7 +534,7 @@ fun HomePageContent(
                 Box(
                     modifier =
                         Modifier
-                            .padding(if (showClock) 40.dp else 20.dp)
+                            .padding(if (showClock) Spacing.xxl else Spacing.lg)
                             .size(40.dp)
                             .align(Alignment.TopEnd),
                 ) {
@@ -600,7 +602,7 @@ fun HomePageHeader(
     modifier: Modifier = Modifier,
 ) {
     // Gap between the logo (or title) and the lines below it
-    val titleGap = 20.dp
+    val titleGap = Spacing.block
     // The whole block is as wide as the space left of the backdrop image (see FluidLayout)
     Column(
         verticalArrangement = Arrangement.spacedBy(titleGap),
@@ -613,7 +615,7 @@ fun HomePageHeader(
             modifier = Modifier.fillMaxWidth(),
         )
         Column(
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(Spacing.sm),
             modifier =
                 Modifier
                     .fillMaxWidth(),

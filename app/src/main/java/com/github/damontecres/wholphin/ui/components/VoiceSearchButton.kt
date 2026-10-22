@@ -54,6 +54,7 @@ import androidx.tv.material3.Text
 import androidx.tv.material3.surfaceColorAtElevation
 import com.github.damontecres.wholphin.R
 import com.github.damontecres.wholphin.ui.FontAwesome
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import kotlinx.coroutines.delay
 
 private const val ERROR_AUTO_DISMISS_DELAY_MS = 3000L
@@ -312,7 +313,7 @@ private fun VoiceSearchOverlay(
                 Modifier
                     .fillMaxWidth(0.85f)
                     .wrapContentHeight()
-                    .padding(vertical = 48.dp)
+                    .padding(vertical = Spacing.xxl)
                     .clip(MaterialTheme.shapes.large)
                     .background(MaterialTheme.colorScheme.surfaceColorAtElevation(3.dp)),
             contentAlignment = Alignment.Center,
@@ -372,7 +373,7 @@ private fun VoiceSearchOverlay(
 
                 Column(
                     modifier = Modifier.weight(1f).focusRequester(statusFocusRequester),
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(Spacing.md),
                 ) {
                     Text(
                         text = statusText,
@@ -384,7 +385,7 @@ private fun VoiceSearchOverlay(
                     if (errorMessage != null && isRetryable) {
                         OutlinedButton(
                             onClick = onRetry,
-                            modifier = Modifier.padding(top = 16.dp),
+                            modifier = Modifier.padding(top = Spacing.md),
                             shape = ButtonDefaults.shape(RoundedCornerShape(50)),
                             colors =
                                 OutlinedButtonDefaults.colors(

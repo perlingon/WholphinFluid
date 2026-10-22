@@ -49,6 +49,7 @@ import com.github.damontecres.wholphin.ui.playback.ControllerViewState
 import com.github.damontecres.wholphin.ui.playback.calculateSeekAccelerationMultiplier
 import com.github.damontecres.wholphin.ui.playback.isDpadLeft
 import com.github.damontecres.wholphin.ui.playback.isDpadRight
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import kotlinx.coroutines.FlowPreview
 import timber.log.Timber
 import kotlin.time.Duration
@@ -210,13 +211,13 @@ private fun SeekBarDisplay(
         targetValue = 6.dp.times((if (isFocused) 2f else 1f)),
     )
 
-    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(16.dp)) {
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
         Canvas(
             modifier =
                 Modifier
                     .fillMaxWidth()
                     .height(animatedIndicatorHeight)
-                    .padding(horizontal = 4.dp)
+                    .padding(horizontal = Spacing.xs)
                     .onPreviewKeyEvent { event ->
                         if (!isDpadLeft(event) && !isDpadRight(event)) {
                             Timber.v("Ignoring %s", event)

@@ -19,6 +19,7 @@ import com.github.damontecres.wholphin.data.model.HomeRowViewOptions.Companion.g
 import com.github.damontecres.wholphin.preferences.PrefContentScale
 import com.github.damontecres.wholphin.ui.AspectRatio
 import com.github.damontecres.wholphin.ui.components.ViewOptionImageType
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.ui.tryRequestFocus
 import org.jellyfin.sdk.model.api.BaseItemKind
 import org.jellyfin.sdk.model.api.CollectionType
@@ -292,7 +293,7 @@ fun HomeRowPresetsContent(
     Column(modifier = modifier) {
         TitleText(stringResource(R.string.display_presets))
         HomeSettingsLazyColumn(
-            contentPadding = PaddingValues(8.dp),
+            contentPadding = PaddingValues(Spacing.sm),
             modifier =
                 modifier
                     .fillMaxHeight()

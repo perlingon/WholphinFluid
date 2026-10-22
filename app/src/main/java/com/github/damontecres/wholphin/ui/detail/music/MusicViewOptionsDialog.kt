@@ -32,6 +32,7 @@ import com.github.damontecres.wholphin.R
 import com.github.damontecres.wholphin.preferences.AppPreference
 import com.github.damontecres.wholphin.preferences.AppPreferences
 import com.github.damontecres.wholphin.ui.preferences.ComposablePreference
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.ui.tryRequestFocus
 
 @Composable
@@ -69,7 +70,7 @@ fun MusicViewOptionsDialog(
         }
         LazyColumn(
             state = columnState,
-            contentPadding = PaddingValues(16.dp),
+            contentPadding = PaddingValues(Spacing.md),
             verticalArrangement = Arrangement.spacedBy(0.dp),
             modifier =
                 Modifier

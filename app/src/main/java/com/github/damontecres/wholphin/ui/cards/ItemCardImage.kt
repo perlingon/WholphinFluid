@@ -43,6 +43,7 @@ import com.github.damontecres.wholphin.ui.gt
 import com.github.damontecres.wholphin.ui.isNotNullOrBlank
 import com.github.damontecres.wholphin.ui.logCoilError
 import com.github.damontecres.wholphin.ui.nav.PrebakeBackdrop
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import org.jellyfin.sdk.model.api.ImageType
 
 /**
@@ -174,7 +175,7 @@ fun BoxScope.ItemCardImageFallback(
                 fontSize = 14.sp,
                 modifier =
                     Modifier
-                        .padding(8.dp)
+                        .padding(Spacing.sm)
                         .align(Alignment.Center),
             )
         } else {
@@ -207,12 +208,12 @@ fun ItemCardImageOverlay(
 ) {
     Box(modifier = modifier.fillMaxSize()) {
         Row(
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
             verticalAlignment = Alignment.CenterVertically,
             modifier =
                 Modifier
                     .align(Alignment.TopStart)
-                    .padding(4.dp),
+                    .padding(Spacing.xs),
         ) {
             if (numberOfVersions > 1) {
                 Box(
@@ -228,7 +229,7 @@ fun ItemCardImageOverlay(
                         color = MaterialTheme.colorScheme.onSurface,
                         style = MaterialTheme.typography.bodyMedium,
 //                            fontSize = 16.sp,
-                        modifier = Modifier.padding(4.dp),
+                        modifier = Modifier.padding(Spacing.xs),
                     )
                 }
             }
@@ -237,11 +238,11 @@ fun ItemCardImageOverlay(
             }
         }
         Row(
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
             verticalAlignment = Alignment.CenterVertically,
             modifier =
                 Modifier
-                    .padding(4.dp)
+                    .padding(Spacing.xs)
                     .align(Alignment.TopEnd),
         ) {
             if (watched && (watchedPercent == null || watchedPercent <= 0.0 || watchedPercent >= 100.0)) {
@@ -261,7 +262,7 @@ fun ItemCardImageOverlay(
                         color = MaterialTheme.colorScheme.onSurface,
                         style = MaterialTheme.typography.bodyMedium,
 //                            fontSize = 16.sp,
-                        modifier = Modifier.padding(4.dp),
+                        modifier = Modifier.padding(Spacing.xs),
                     )
                 }
             }

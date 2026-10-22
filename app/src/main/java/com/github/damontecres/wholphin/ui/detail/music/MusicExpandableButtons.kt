@@ -21,6 +21,7 @@ import com.github.damontecres.wholphin.R
 import com.github.damontecres.wholphin.ui.components.DeleteButton
 import com.github.damontecres.wholphin.ui.components.ExpandableFaButton
 import com.github.damontecres.wholphin.ui.components.ExpandablePlayButton
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import kotlin.time.Duration
 
 @Composable
@@ -35,8 +36,8 @@ fun MusicExpandableButtons(
 ) {
     val firstFocus = remember { FocusRequester() }
     LazyRow(
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
-        contentPadding = PaddingValues(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(Spacing.md),
+        contentPadding = PaddingValues(Spacing.sm),
         modifier =
             modifier
                 .focusGroup()

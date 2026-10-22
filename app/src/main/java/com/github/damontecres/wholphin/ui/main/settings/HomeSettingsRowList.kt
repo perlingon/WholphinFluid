@@ -41,6 +41,7 @@ import com.github.damontecres.wholphin.services.HomeRowConfigDisplay
 import com.github.damontecres.wholphin.ui.FontAwesome
 import com.github.damontecres.wholphin.ui.components.Button
 import com.github.damontecres.wholphin.ui.rememberInt
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.ui.tryRequestFocus
 import kotlinx.coroutines.launch
 
@@ -224,7 +225,7 @@ fun HomeRowConfigContent(
         modifier = modifier,
     ) {
         Row(
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(Spacing.md),
             verticalAlignment = Alignment.CenterVertically,
             modifier =
                 Modifier
@@ -238,7 +239,7 @@ fun HomeRowConfigContent(
                 modifier = Modifier.weight(1f),
             )
             Row(
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
                 modifier = Modifier.wrapContentWidth(),
             ) {
                 Button(
@@ -288,7 +289,7 @@ fun TitleText(
         modifier =
             modifier
                 .fillMaxWidth()
-                .padding(top = 8.dp, bottom = 4.dp),
+                .padding(top = Spacing.sm, bottom = Spacing.xs),
     )
 }
 
@@ -306,6 +307,6 @@ fun SubTitleText(
         modifier =
             modifier
                 .fillMaxWidth()
-                .padding(top = 8.dp, bottom = 4.dp),
+                .padding(top = Spacing.sm, bottom = Spacing.xs),
     )
 }

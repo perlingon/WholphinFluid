@@ -36,6 +36,7 @@ import com.github.damontecres.wholphin.ui.playback.audioStreamCount
 import com.github.damontecres.wholphin.ui.playback.embeddedSubtitleCount
 import com.github.damontecres.wholphin.ui.playback.externalSubtitlesCount
 import com.github.damontecres.wholphin.ui.theme.PlusJakartaSans
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.ui.theme.WholphinTheme
 import com.github.damontecres.wholphin.ui.util.StreamFormatting.concatWithSpace
 import com.github.damontecres.wholphin.ui.util.StreamFormatting.formatAudioCodec
@@ -72,7 +73,7 @@ fun VideoStreamDetails(
 ) {
     val resources = LocalResources.current
     Row(
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
         modifier = modifier,
     ) {
         val video =
@@ -174,14 +175,14 @@ fun StreamLabel(
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(2.dp),
+        horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
         modifier =
             modifier
                 .background(
                     MaterialTheme.colorScheme.secondaryContainer.copy(alpha = .5f),
 //                    MaterialTheme.colorScheme.surfaceVariant,
                     shape = RoundedCornerShape(4.dp),
-                ).padding(vertical = 4.dp, horizontal = 6.dp),
+                ).padding(vertical = Spacing.xs, horizontal = Spacing.sm),
     ) {
         ProvideTextStyle(
             TextStyle(
@@ -222,14 +223,14 @@ fun StreamLabel(
 private fun StreamLabelPreview() {
     WholphinTheme(appThemeColors = AppThemeColors.PURPLE) {
         Column(
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+            verticalArrangement = Arrangement.spacedBy(Spacing.md),
         ) {
             Row(
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
                 modifier =
                     Modifier
                         .background(MaterialTheme.colorScheme.background)
-                        .padding(8.dp),
+                        .padding(Spacing.sm),
             ) {
                 StreamLabel("1080p")
                 StreamLabel("HDR")
@@ -241,11 +242,11 @@ private fun StreamLabelPreview() {
                 StreamLabel("PGS", count = 2)
             }
             Row(
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
                 modifier =
                     Modifier
                         .background(MaterialTheme.colorScheme.background)
-                        .padding(8.dp)
+                        .padding(Spacing.sm)
                         .fillMaxWidth(.7f),
             ) {
                 StreamLabel("1080p")

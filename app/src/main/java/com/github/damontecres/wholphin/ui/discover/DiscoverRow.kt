@@ -33,6 +33,7 @@ import com.github.damontecres.wholphin.ui.components.ErrorMessage
 import com.github.damontecres.wholphin.ui.ifElse
 import com.github.damontecres.wholphin.ui.rememberInt
 import com.github.damontecres.wholphin.ui.theme.FluidLayout
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.ui.theme.rowHeadline
 import com.github.damontecres.wholphin.ui.tryRequestFocus
 import com.github.damontecres.wholphin.util.DataLoadingState
@@ -57,7 +58,7 @@ fun DiscoverRow(
         DataLoadingState.Pending,
         -> {
             Column(
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(Spacing.sm),
                 modifier = modifier,
             ) {
                 Text(
@@ -97,7 +98,7 @@ fun DiscoverItemRow(
     onCardFocus: (Int) -> Unit,
     enableViewMore: Boolean,
     modifier: Modifier = Modifier,
-    horizontalPadding: Dp = 16.dp,
+    horizontalPadding: Dp = Spacing.card,
     onClickViewMore: () -> Unit = {},
 ) {
     val state = rememberLazyListState()
@@ -110,7 +111,7 @@ fun DiscoverItemRow(
     val currentOnCardFocus by rememberUpdatedState(onCardFocus)
 
     Column(
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(Spacing.sm),
         modifier =
             modifier.focusProperties {
                 onEnter = {
@@ -127,8 +128,8 @@ fun DiscoverItemRow(
                     // The first card lines up with the headlines; the rest scroll full width
                     start = FluidLayout.rowStart(horizontalPadding),
                     end = horizontalPadding,
-                    top = 8.dp,
-                    bottom = 8.dp,
+                    top = Spacing.sm,
+                    bottom = Spacing.sm,
                 ),
             modifier =
                 Modifier

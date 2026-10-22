@@ -55,6 +55,7 @@ import com.github.damontecres.wholphin.ui.launchDefault
 import com.github.damontecres.wholphin.ui.launchIO
 import com.github.damontecres.wholphin.ui.main.settings.MoveDirection
 import com.github.damontecres.wholphin.ui.nav.NavDrawerItem
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.ui.theme.WholphinTheme
 import com.github.damontecres.wholphin.util.ExceptionHandler
 import com.github.damontecres.wholphin.util.WholphinDispatchers
@@ -161,13 +162,13 @@ fun NavDrawerPreferenceDialog(
         Column(
             modifier =
                 Modifier
-                    .padding(16.dp),
+                    .padding(Spacing.md),
         ) {
             Text(
                 text = stringResource(R.string.nav_drawer_pins),
                 style = MaterialTheme.typography.titleLarge,
                 color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.padding(bottom = 8.dp),
+                modifier = Modifier.padding(bottom = Spacing.sm),
             )
             val listState = rememberLazyListState()
 
@@ -222,7 +223,7 @@ fun NavDrawerPreferenceListItem(
         modifier = modifier,
     ) {
         Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
             verticalAlignment = Alignment.CenterVertically,
             modifier =
                 Modifier
@@ -248,7 +249,7 @@ fun NavDrawerPreferenceListItem(
                 modifier = Modifier.weight(1f),
             )
             Row(
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
                 modifier = Modifier.wrapContentWidth(),
             ) {
                 MoveButton(R.string.fa_caret_up, moveUpAllowed, onMoveUp)

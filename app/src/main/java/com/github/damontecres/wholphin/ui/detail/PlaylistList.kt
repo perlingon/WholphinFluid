@@ -61,6 +61,7 @@ import com.github.damontecres.wholphin.ui.components.EditTextBox
 import com.github.damontecres.wholphin.ui.components.ErrorMessage
 import com.github.damontecres.wholphin.ui.components.SearchEditTextBox
 import com.github.damontecres.wholphin.ui.isNotNullOrBlank
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.ui.tryRequestFocus
 import kotlinx.coroutines.delay
 import org.jellyfin.sdk.model.api.MediaType
@@ -76,7 +77,7 @@ fun PlaylistList(
 ) {
     var showCreateDialog by remember { mutableStateOf(false) }
     LazyColumn(
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(Spacing.sm),
         modifier = modifier,
     ) {
         items(playlists) { playlist ->
@@ -155,10 +156,10 @@ fun PlaylistList(
             LaunchedEffect(Unit) { focusRequester.tryRequestFocus() }
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(Spacing.sm),
                 modifier =
                     Modifier
-                        .padding(16.dp)
+                        .padding(Spacing.md)
                         .fillMaxWidth(.4f),
             ) {
                 Text(
@@ -244,14 +245,14 @@ fun PlaylistDialog(
         dialogWindowProvider?.window?.setGravity(Gravity.TOP)
 
         Column(
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(Spacing.sm),
             modifier =
                 Modifier
                     .graphicsLayer {
                         this.clip = true
                         this.shape = RoundedCornerShape(24.0.dp)
                     }.drawBehind { drawRect(color = elevatedContainerColor) }
-                    .padding(PaddingValues(16.dp)),
+                    .padding(PaddingValues(Spacing.md)),
         ) {
             Text(
                 text = title,

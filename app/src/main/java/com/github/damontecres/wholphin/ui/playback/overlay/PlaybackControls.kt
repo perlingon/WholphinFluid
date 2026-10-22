@@ -80,6 +80,7 @@ import com.github.damontecres.wholphin.ui.seekBack
 import com.github.damontecres.wholphin.ui.seekForward
 import com.github.damontecres.wholphin.ui.skipStringRes
 import com.github.damontecres.wholphin.ui.theme.LocalTheme
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.ui.theme.WholphinTheme
 import com.github.damontecres.wholphin.ui.tryRequestFocus
 import com.github.damontecres.wholphin.util.ExceptionHandler
@@ -184,7 +185,7 @@ fun PlaybackControls(
         Box(
             modifier =
                 Modifier
-                    .padding(horizontal = 8.dp)
+                    .padding(horizontal = Spacing.sm)
                     .fillMaxWidth(),
         ) {
             LeftPlaybackButtons(
@@ -219,7 +220,7 @@ fun PlaybackControls(
                         modifier =
                             Modifier
                                 .align(Alignment.CenterVertically)
-                                .padding(end = 32.dp),
+                                .padding(end = Spacing.xl),
                     )
                 }
                 RightPlaybackButtons(
@@ -309,7 +310,7 @@ fun SeekTimecodes(
                     style = MaterialTheme.typography.labelLarge,
                     modifier =
                         Modifier
-                            .padding(8.dp),
+                            .padding(Spacing.sm),
                 )
             }
             CompositionLocalProvider(LocalLayoutDirection provides currentLayoutDirection) {
@@ -319,7 +320,7 @@ fun SeekTimecodes(
                     style = MaterialTheme.typography.labelLarge,
                     modifier =
                         Modifier
-                            .padding(8.dp),
+                            .padding(Spacing.sm),
                 )
             }
         }
@@ -479,7 +480,7 @@ fun PlaybackButton(
                 containerColor = AppColors.TransparentBlack25,
                 focusedContainerColor = selectedColor,
             ),
-        contentPadding = PaddingValues(4.dp),
+        contentPadding = PaddingValues(Spacing.xs),
         interactionSource = interactionSource,
         modifier =
             modifier
@@ -520,7 +521,7 @@ fun PlaybackFaButton(
                 containerColor = AppColors.TransparentBlack25,
                 focusedContainerColor = selectedColor,
             ),
-        contentPadding = PaddingValues(4.dp),
+        contentPadding = PaddingValues(Spacing.xs),
         interactionSource = interactionSource,
         modifier =
             modifier
@@ -584,7 +585,7 @@ fun <T> BottomDialog(
             modifier =
                 Modifier
                     .wrapContentSize()
-                    .padding(8.dp)
+                    .padding(Spacing.sm)
                     .background(
                         MaterialTheme.colorScheme.surfaceColorAtElevation(1.dp),
                         shape = RoundedCornerShape(8.dp),

@@ -54,9 +54,9 @@ private fun ThemePreview() {
     Column {
         LazyVerticalGrid(
             columns = GridCells.Fixed(3),
-            contentPadding = PaddingValues(16.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+            contentPadding = PaddingValues(Spacing.md),
+            horizontalArrangement = Arrangement.spacedBy(Spacing.md),
+            verticalArrangement = Arrangement.spacedBy(Spacing.md),
         ) {
             items(themes) {
                 ThemeExample(it)
@@ -71,7 +71,7 @@ private fun SectionTitle(text: String) {
         text = text,
         color = Color.White,
         fontWeight = FontWeight.SemiBold,
-        modifier = Modifier.padding(top = 8.dp),
+        modifier = Modifier.padding(top = Spacing.sm),
     )
 }
 
@@ -84,11 +84,11 @@ private fun ThemeExample(theme: AppThemeColors) {
                 Text(
                     text = theme.toString(),
                     color = Color.White,
-                    modifier = Modifier.padding(8.dp),
+                    modifier = Modifier.padding(Spacing.sm),
                 )
                 Column(
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.padding(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(Spacing.sm),
+                    modifier = Modifier.padding(Spacing.sm),
                 ) {
                     SectionTitle("Cards")
                     Row(
@@ -151,7 +151,7 @@ private fun ThemeExample(theme: AppThemeColors) {
                         )
                     }
                     SectionTitle("Controls")
-                    Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(Spacing.md)) {
                         SliderPreference(
                             preference = AppPreference.AutoPlayNextDelay,
                             title = "Slider",
@@ -170,7 +170,7 @@ private fun ThemeExample(theme: AppThemeColors) {
                             interactionSource = source,
                         )
                     }
-                    Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(Spacing.md)) {
                         SwitchPreference(
                             title = "Switch",
                             value = false,
@@ -189,7 +189,7 @@ private fun ThemeExample(theme: AppThemeColors) {
                             interactionSource = source,
                         )
                     }
-                    Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(Spacing.md)) {
                         SwitchPreference(
                             title = "Switch",
                             value = true,
@@ -211,7 +211,7 @@ private fun ThemeExample(theme: AppThemeColors) {
                     SectionTitle("Nav drawer")
                     val navScope = NavScope(true)
                     Row(
-                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(Spacing.md),
                         modifier = Modifier.background(MaterialTheme.colorScheme.surfaceColorAtElevation(1.dp)),
                     ) {
                         navScope.apply {
@@ -235,7 +235,7 @@ private fun ThemeExample(theme: AppThemeColors) {
                         }
                     }
                     Row(
-                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(Spacing.md),
                         modifier = Modifier.background(MaterialTheme.colorScheme.surfaceColorAtElevation(1.dp)),
                     ) {
                         navScope.apply {
@@ -260,7 +260,7 @@ private fun ThemeExample(theme: AppThemeColors) {
                     }
                     SectionTitle("Playback controls")
                     Row(
-                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(Spacing.md),
                         modifier = Modifier.background(MaterialTheme.colorScheme.surfaceVariant),
                     ) {
                         PlaybackButton(

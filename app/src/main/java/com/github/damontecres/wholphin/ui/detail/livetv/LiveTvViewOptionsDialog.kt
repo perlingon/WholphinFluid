@@ -35,6 +35,7 @@ import com.github.damontecres.wholphin.preferences.AppPreference
 import com.github.damontecres.wholphin.preferences.AppPreferences
 import com.github.damontecres.wholphin.preferences.liveTvPreferences
 import com.github.damontecres.wholphin.ui.preferences.ComposablePreference
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.ui.tryRequestFocus
 
 @Composable
@@ -75,12 +76,12 @@ fun LiveTvViewOptionsDialog(
                 textAlign = TextAlign.Center,
                 modifier =
                     Modifier
-                        .padding(vertical = 8.dp)
+                        .padding(vertical = Spacing.sm)
                         .fillMaxWidth(),
             )
             LazyColumn(
                 state = columnState,
-                contentPadding = PaddingValues(16.dp),
+                contentPadding = PaddingValues(Spacing.md),
                 verticalArrangement = Arrangement.spacedBy(0.dp),
                 modifier = Modifier.focusRequester(focusRequester),
             ) {

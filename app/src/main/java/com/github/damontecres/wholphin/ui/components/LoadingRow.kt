@@ -20,6 +20,7 @@ import com.github.damontecres.wholphin.ui.cards.ItemRow
 import com.github.damontecres.wholphin.ui.cards.SeasonCard
 import com.github.damontecres.wholphin.ui.data.RowColumn
 import com.github.damontecres.wholphin.ui.ifElse
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.ui.theme.rowHeadline
 import com.github.damontecres.wholphin.util.RowLoadingState
 
@@ -34,7 +35,7 @@ fun LoadingRow(
     onClickPosition: (RowColumn) -> Unit,
     modifier: Modifier = Modifier,
     showIfEmpty: Boolean = true,
-    horizontalPadding: Dp = 16.dp,
+    horizontalPadding: Dp = Spacing.card,
     cardContent: @Composable (
         index: Int,
         item: BaseItem?,
@@ -109,8 +110,8 @@ fun LoadingRowPlaceholder(
     messageColor: Color = MaterialTheme.colorScheme.onBackground,
 ) {
     Column(
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-        modifier = modifier.padding(bottom = 32.dp),
+        verticalArrangement = Arrangement.spacedBy(Spacing.sm),
+        modifier = modifier.padding(bottom = Spacing.xl),
     ) {
         Text(
             text = title,

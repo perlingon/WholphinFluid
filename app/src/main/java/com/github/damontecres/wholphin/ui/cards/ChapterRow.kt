@@ -18,6 +18,7 @@ import androidx.tv.material3.Text
 import com.github.damontecres.wholphin.R
 import com.github.damontecres.wholphin.data.model.Chapter
 import com.github.damontecres.wholphin.ui.theme.FluidLayout
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.ui.theme.rowHeadline
 
 @Composable
@@ -28,24 +29,24 @@ fun ChapterRow(
     onLongClick: ((Chapter) -> Unit)? = null,
 ) {
     Column(
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(Spacing.sm),
         modifier = modifier,
     ) {
         Text(
             text = stringResource(R.string.chapters),
             style = MaterialTheme.typography.rowHeadline,
             color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.padding(start = 8.dp),
+            modifier = Modifier.padding(start = Spacing.sm),
         )
         LazyRow(
             state = rememberLazyListState(),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(Spacing.md),
             contentPadding = PaddingValues(
                     // The first card lines up with the headlines; the rest scroll full width
-                    start = FluidLayout.rowStart(16.dp),
-                    end = 16.dp,
-                    top = 8.dp,
-                    bottom = 8.dp,
+                    start = FluidLayout.rowStart(Spacing.md),
+                    end = Spacing.md,
+                    top = Spacing.sm,
+                    bottom = Spacing.sm,
                 ),
             modifier =
                 Modifier

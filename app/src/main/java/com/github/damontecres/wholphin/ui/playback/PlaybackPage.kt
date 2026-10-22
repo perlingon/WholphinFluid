@@ -93,6 +93,7 @@ import com.github.damontecres.wholphin.ui.playback.overlay.rememberSeekBarState
 import com.github.damontecres.wholphin.ui.preferences.subtitle.SubtitleSettings.applyTo
 import com.github.damontecres.wholphin.ui.preferences.subtitle.SubtitleSettings.calculateEdgeSize
 import com.github.damontecres.wholphin.ui.seasonEpisode
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.ui.tryRequestFocus
 import com.github.damontecres.wholphin.util.ExceptionHandler
 import com.github.damontecres.wholphin.util.LoadingState
@@ -415,7 +416,7 @@ fun PlaybackPageContent(
                         modifier =
                             Modifier
                                 .align(Alignment.BottomCenter)
-                                .padding(bottom = 16.dp)
+                                .padding(bottom = Spacing.md)
                                 .fillMaxWidth(.95f),
                     )
                 }
@@ -439,7 +440,7 @@ fun PlaybackPageContent(
                     modifier =
                         Modifier
                             .align(Alignment.BottomCenter)
-                            .padding(bottom = 70.dp),
+                            .padding(bottom = 72.dp),
                 )
                 // Show a small progress bar along the bottom of the screen
                 if (prefs.dpadSeekMode == DpadSeekMode.SEEKBAR_MINIMAL) {
@@ -625,7 +626,7 @@ fun PlaybackPageContent(
             showSegment,
             modifier =
                 Modifier
-                    .padding(40.dp)
+                    .padding(Spacing.xxl)
                     .align(Alignment.BottomEnd),
         ) {
             state.currentSegment?.let { segment ->
@@ -705,7 +706,7 @@ fun PlaybackPageContent(
                     runtime = it.data.runTimeTicks?.ticks,
                     modifier =
                         Modifier
-                            .padding(8.dp)
+                            .padding(Spacing.sm)
 //                                    .height(128.dp)
                             .fillMaxHeight(1 - playerSize)
                             .fillMaxWidth(.66f)
@@ -737,7 +738,7 @@ fun PlaybackPageContent(
                     usePlatformDefaultWidth = false,
                 ),
         ) {
-            Box(modifier = Modifier.padding(24.dp)) {
+            Box(modifier = Modifier.padding(Spacing.lg)) {
                 DownloadSubtitlesContent(
                     state = subtitleSearchState.status,
                     language = subtitleSearchState.language,

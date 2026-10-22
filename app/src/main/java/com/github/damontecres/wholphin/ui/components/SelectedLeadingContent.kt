@@ -12,6 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.LocalContentColor
+import com.github.damontecres.wholphin.ui.theme.Spacing
 
 /**
  * Shows a dot indicator
@@ -27,7 +28,7 @@ fun BoxScope.SelectedLeadingContent(
         Box(
             modifier =
                 modifier
-                    .padding(horizontal = 4.dp)
+                    .padding(horizontal = Spacing.xs)
                     .clip(CircleShape)
                     .align(Alignment.Center)
                     .background(LocalContentColor.current)

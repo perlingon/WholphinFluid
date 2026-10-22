@@ -17,6 +17,7 @@ import com.github.damontecres.wholphin.ui.components.HeaderUtils
 import com.github.damontecres.wholphin.ui.components.OverviewText
 import com.github.damontecres.wholphin.ui.components.QuickDetails
 import com.github.damontecres.wholphin.ui.components.VideoStreamDetails
+import com.github.damontecres.wholphin.ui.theme.Spacing
 
 @Composable
 fun FocusedEpisodeHeader(
@@ -30,7 +31,7 @@ fun FocusedEpisodeHeader(
     val context = LocalContext.current
     val dto = ep?.data
     Column(
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(Spacing.sm),
         modifier = modifier,
     ) {
         EpisodeName(dto, modifier = Modifier.padding(start = HeaderUtils.startPadding))

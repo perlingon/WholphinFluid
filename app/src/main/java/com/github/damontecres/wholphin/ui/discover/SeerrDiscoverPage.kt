@@ -48,6 +48,7 @@ import com.github.damontecres.wholphin.ui.listToDotString
 import com.github.damontecres.wholphin.ui.main.HomePageHeader
 import com.github.damontecres.wholphin.ui.nav.Destination
 import com.github.damontecres.wholphin.ui.rememberPosition
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.ui.tryRequestFocus
 import com.github.damontecres.wholphin.ui.util.EmptyStringProvider
 import com.github.damontecres.wholphin.ui.util.ResProviderStringProvider
@@ -503,8 +504,8 @@ fun SeerrDiscoverPage(
             LocalBringIntoViewSpec provides ScrollToTopBringIntoViewSpec(spaceAbovePx),
         ) {
             LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 40.dp),
+                verticalArrangement = Arrangement.spacedBy(Spacing.sm),
+                contentPadding = PaddingValues(start = Spacing.md, end = Spacing.md, bottom = Spacing.xxl),
                 modifier =
                     Modifier
                         .focusRestorer()

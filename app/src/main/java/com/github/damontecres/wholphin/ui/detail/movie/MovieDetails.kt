@@ -61,6 +61,7 @@ import com.github.damontecres.wholphin.ui.discover.DiscoverRowData
 import com.github.damontecres.wholphin.ui.letNotEmpty
 import com.github.damontecres.wholphin.ui.nav.Destination
 import com.github.damontecres.wholphin.ui.rememberInt
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.ui.util.ResStringProvider
 import com.github.damontecres.wholphin.util.DataLoadingState
 import com.github.damontecres.wholphin.util.DiscoverRequestType
@@ -321,8 +322,8 @@ fun MovieDetailsContent(
 
     Box(modifier = modifier) {
         LazyColumn(
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-            contentPadding = PaddingValues(bottom = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(Spacing.md),
+            contentPadding = PaddingValues(bottom = Spacing.sm),
             modifier = Modifier.fillMaxSize(),
         ) {
             item {
@@ -342,7 +343,7 @@ fun MovieDetailsContent(
                         modifier =
                             Modifier
                                 .fillMaxWidth()
-                                .padding(top = HeaderUtils.topPadding, bottom = 16.dp),
+                                .padding(top = HeaderUtils.topPadding, bottom = Spacing.md),
                     )
                     ExpandablePlayButtons(
                         title = movie.title ?: "",
@@ -382,7 +383,7 @@ fun MovieDetailsContent(
                         modifier =
                             Modifier
                                 .fillMaxWidth()
-                                .padding(bottom = 16.dp)
+                                .padding(bottom = Spacing.md)
                                 .focusRequester(focusRequesters[HEADER_ROW]),
                     )
                 }

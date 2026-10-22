@@ -68,6 +68,7 @@ import com.github.damontecres.wholphin.ui.isNotNullOrBlank
 import com.github.damontecres.wholphin.ui.launchIO
 import com.github.damontecres.wholphin.ui.nav.Destination
 import com.github.damontecres.wholphin.ui.rememberPosition
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.ui.theme.WholphinTheme
 import com.github.damontecres.wholphin.ui.tryRequestFocus
 import com.github.damontecres.wholphin.ui.util.ResStringProvider
@@ -356,7 +357,7 @@ fun PersonPageContent(
     }
     var focusedOnHeader by remember { mutableStateOf(true) }
     LazyColumn(
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+        verticalArrangement = Arrangement.spacedBy(Spacing.md),
         userScrollEnabled = !focusedOnHeader,
         modifier = modifier,
     ) {
@@ -375,7 +376,7 @@ fun PersonPageContent(
                     Modifier
                         .fillMaxWidth()
                         .heightIn(max = 480.dp)
-                        .padding(top = 16.dp, bottom = 40.dp)
+                        .padding(top = Spacing.md, bottom = Spacing.xxl)
                         .focusRequester(headerFocusRequester)
                         .onFocusChanged {
                             focusedOnHeader = it.hasFocus
@@ -493,7 +494,7 @@ fun PersonHeader(
     val bringIntoViewRequester = remember { BringIntoViewRequester() }
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(32.dp),
+        horizontalArrangement = Arrangement.spacedBy(Spacing.xl),
         modifier = modifier.bringIntoViewRequester(bringIntoViewRequester),
     ) {
         AsyncImage(
@@ -506,16 +507,16 @@ fun PersonHeader(
                     .clip(RoundedCornerShape(10)),
         )
         Column(
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(Spacing.sm),
             modifier =
                 Modifier
 //                    .fillMaxWidth(.7f)
                     .weight(3f)
-                    .padding(top = 16.dp, end = 32.dp)
+                    .padding(top = Spacing.md, end = Spacing.xl)
                     .background(
                         MaterialTheme.colorScheme.surfaceColorAtElevation(1.dp),
                         RoundedCornerShape(10),
-                    ).padding(16.dp),
+                    ).padding(Spacing.md),
         ) {
             Text(
                 text = name,
@@ -523,7 +524,7 @@ fun PersonHeader(
                 style = MaterialTheme.typography.displaySmall,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.padding(bottom = 8.dp),
+                modifier = Modifier.padding(bottom = Spacing.sm),
             )
             birthdate?.let {
                 val age = if (deathdate == null) birthdate.until(LocalDate.now())?.years else null
@@ -593,7 +594,7 @@ fun PersonHeader(
                 maxLines = 3,
                 onClick = overviewOnClick,
                 interactionSource = interactionSource,
-                modifier = Modifier.padding(top = 8.dp),
+                modifier = Modifier.padding(top = Spacing.sm),
             )
             ExpandableFaButton(
                 title = if (favorite) R.string.remove_favorite else R.string.add_favorite,

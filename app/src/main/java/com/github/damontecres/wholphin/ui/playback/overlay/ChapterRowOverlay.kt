@@ -35,6 +35,7 @@ import com.github.damontecres.wholphin.ui.cards.ChapterCard
 import com.github.damontecres.wholphin.ui.components.HiddenFocusBox
 import com.github.damontecres.wholphin.ui.ifElse
 import com.github.damontecres.wholphin.ui.playback.ControllerViewState
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.ui.theme.rowHeadline
 import com.github.damontecres.wholphin.ui.tryRequestFocus
 import kotlin.time.Duration.Companion.milliseconds
@@ -81,7 +82,7 @@ fun ChapterRowOverlay(
         focusRequester.tryRequestFocus()
     }
     Column(
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(Spacing.sm),
         modifier = modifier,
     ) {
         HiddenFocusBox(hiddenFocusRequester) {
@@ -93,8 +94,8 @@ fun ChapterRowOverlay(
         )
         LazyRow(
             state = listState,
-            contentPadding = PaddingValues(16.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            contentPadding = PaddingValues(Spacing.md),
+            horizontalArrangement = Arrangement.spacedBy(Spacing.md),
             modifier =
                 Modifier
                     .fillMaxWidth()
@@ -149,7 +150,7 @@ fun ChapterRowOverlay(
                 style = MaterialTheme.typography.rowHeadline,
                 modifier =
                     Modifier
-                        .padding(bottom = 8.dp)
+                        .padding(bottom = Spacing.sm)
                         .onFocusChanged {
                             if (it.isFocused) onChangeState.invoke(OverlayViewState.QUEUE)
                         }.focusable(),

@@ -62,6 +62,7 @@ import com.github.damontecres.wholphin.ui.launchIO
 import com.github.damontecres.wholphin.ui.nav.Destination
 import com.github.damontecres.wholphin.ui.rememberInt
 import com.github.damontecres.wholphin.ui.showToast
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.ui.toServerString
 import com.github.damontecres.wholphin.ui.tryRequestFocus
 import com.github.damontecres.wholphin.util.ApiRequestPager
@@ -1054,7 +1055,7 @@ fun CollectionFolderViewContent(
                                     modifier =
                                         Modifier
                                             .align(Alignment.Center)
-                                            .padding(16.dp),
+                                            .padding(Spacing.md),
                                 ) {
                                     CircularProgress(
                                         Modifier
@@ -1062,7 +1063,7 @@ fun CollectionFolderViewContent(
                                                 MaterialTheme.colorScheme.background.copy(alpha = .25f),
                                                 shape = CircleShape,
                                             ).size(64.dp)
-                                            .padding(4.dp),
+                                            .padding(Spacing.xs),
                                     )
                                 }
                             }

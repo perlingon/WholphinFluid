@@ -15,6 +15,7 @@ import androidx.compose.ui.unit.dp
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.github.damontecres.wholphin.ui.formatDuration
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import org.jellyfin.sdk.model.api.TrickplayInfo
 import kotlin.time.Duration.Companion.seconds
 
@@ -26,7 +27,7 @@ fun TrickplayPreview(
     modifier: Modifier = Modifier,
 ) {
     Column(
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(Spacing.sm),
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = modifier,
     ) {
@@ -57,7 +58,7 @@ fun TrickplayPreview(
                     .background(
                         Color.Black.copy(alpha = 0.6f),
                         shape = RoundedCornerShape(4.dp),
-                    ).padding(horizontal = 8.dp, vertical = 4.dp),
+                    ).padding(horizontal = Spacing.sm, vertical = Spacing.xs),
         )
     }
 }

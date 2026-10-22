@@ -59,6 +59,7 @@ import com.github.damontecres.wholphin.ui.components.TextButton
 import com.github.damontecres.wholphin.ui.dimAndBlur
 import com.github.damontecres.wholphin.ui.formatBytes
 import com.github.damontecres.wholphin.ui.launchIO
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.ui.theme.WholphinTheme
 import com.github.damontecres.wholphin.util.ExceptionHandler
 import com.github.damontecres.wholphin.util.LoadingState
@@ -237,7 +238,7 @@ fun InstallUpdatePageContent(
     modifier: Modifier = Modifier,
 ) {
     Row(
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
+        horizontalArrangement = Arrangement.spacedBy(Spacing.md),
         modifier = modifier,
     ) {
         val scrollAmount = 100f
@@ -259,8 +260,8 @@ fun InstallUpdatePageContent(
             }
         LazyColumn(
             state = columnState,
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            contentPadding = PaddingValues(Spacing.md),
+            verticalArrangement = Arrangement.spacedBy(Spacing.sm),
             modifier =
                 Modifier
                     .focusable(interactionSource = columnInteractionSource)
@@ -290,7 +291,7 @@ fun InstallUpdatePageContent(
         }
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+            verticalArrangement = Arrangement.spacedBy(Spacing.md),
             modifier =
                 Modifier
                     .fillMaxWidth()
@@ -298,7 +299,7 @@ fun InstallUpdatePageContent(
                     .background(
                         MaterialTheme.colorScheme.surfaceColorAtElevation(1.dp),
                         shape = RoundedCornerShape(16.dp),
-                    ).padding(16.dp),
+                    ).padding(Spacing.md),
         ) {
             Text(
                 text = stringResource(R.string.update_available),
@@ -358,12 +359,12 @@ fun DownloadDialog(
         elevation = 6.dp,
     ) {
         Column(
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(Spacing.sm),
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier.padding(Spacing.md),
         ) {
             Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier,
             ) {
@@ -379,7 +380,7 @@ fun DownloadDialog(
                         modifier =
                             Modifier
                                 .size(48.dp)
-                                .padding(8.dp),
+                                .padding(Spacing.sm),
                     )
                 } else {
                     CircularProgressIndicator(
@@ -387,7 +388,7 @@ fun DownloadDialog(
                         modifier =
                             Modifier
                                 .size(48.dp)
-                                .padding(8.dp),
+                                .padding(Spacing.sm),
                     )
                 }
             }

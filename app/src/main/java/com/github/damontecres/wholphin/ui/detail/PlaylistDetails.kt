@@ -112,6 +112,7 @@ import com.github.damontecres.wholphin.ui.nav.Destination
 import com.github.damontecres.wholphin.ui.roundMinutes
 import com.github.damontecres.wholphin.ui.roundSeconds
 import com.github.damontecres.wholphin.ui.showToast
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.ui.toServerString
 import com.github.damontecres.wholphin.ui.tryRequestFocus
 import com.github.damontecres.wholphin.ui.util.LocalClock
@@ -656,7 +657,7 @@ fun PlaylistDetailsContent(
         modifier = modifier,
     ) {
         Column(
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+            verticalArrangement = Arrangement.spacedBy(Spacing.md),
             modifier =
                 Modifier
                     .fillMaxSize(),
@@ -669,7 +670,7 @@ fun PlaylistDetailsContent(
                 }
             GridTitle(title)
             Row(
-                horizontalArrangement = Arrangement.spacedBy(24.dp),
+                horizontalArrangement = Arrangement.spacedBy(Spacing.lg),
                 modifier =
                     Modifier
                         .fillMaxWidth(),
@@ -712,7 +713,7 @@ fun PlaylistDetailsContent(
                     onMoveItem = onMoveItem,
                     modifier =
                         Modifier
-                            .padding(start = 16.dp)
+                            .padding(start = Spacing.md)
                             .weight(1f)
                             .focusRequester(focusRequester)
                             .focusProperties {
@@ -739,11 +740,11 @@ fun PlaylistDetailsHeader(
     modifier: Modifier = Modifier,
 ) {
     Column(
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(Spacing.sm),
         modifier = modifier,
     ) {
         Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
             modifier = Modifier,
         ) {
             ExpandablePlayButton(
@@ -760,7 +761,7 @@ fun PlaylistDetailsHeader(
             )
         }
         Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
             modifier = Modifier,
         ) {
             FilterByButton(
@@ -833,10 +834,10 @@ fun PlaylistItems(
         LoadingState.Success -> {
             if (items.isNotEmpty()) {
                 LazyColumn(
-                    contentPadding = PaddingValues(8.dp),
+                    contentPadding = PaddingValues(Spacing.sm),
                     modifier =
                         modifier
-                            .padding(bottom = 32.dp)
+                            .padding(bottom = Spacing.xl)
                             .fillMaxHeight()
                             .background(
                                 MaterialTheme.colorScheme
@@ -928,7 +929,7 @@ fun PlaylistItem(
     val density = LocalDensity.current
     val imageWidthPx = remember(imageWidth, density) { with(density) { imageWidth.roundToPx() } }
     Row(
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
+        horizontalArrangement = Arrangement.spacedBy(Spacing.md),
         verticalAlignment = Alignment.CenterVertically,
         modifier =
             modifier
@@ -996,7 +997,7 @@ fun PlaylistItem(
             leadingContent = {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.md),
                 ) {
                     Text(
                         text = "${index + 1}.",
@@ -1037,7 +1038,7 @@ fun PlaylistItem(
         )
         val contentHeight = 24.dp
         Row(
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.wrapContentWidth(),
         ) {
@@ -1088,8 +1089,8 @@ fun ConfirmMediaTypeDialog(
         elevation = 3.dp,
     ) {
         LazyColumn(
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(Spacing.sm),
+            contentPadding = PaddingValues(Spacing.md),
             modifier = Modifier.wrapContentSize(),
         ) {
             item {

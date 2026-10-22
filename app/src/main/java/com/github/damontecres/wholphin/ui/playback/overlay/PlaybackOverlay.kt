@@ -59,6 +59,7 @@ import com.github.damontecres.wholphin.ui.playback.AnalyticsState
 import com.github.damontecres.wholphin.ui.playback.ControllerViewState
 import com.github.damontecres.wholphin.ui.playback.CurrentPlayback
 import com.github.damontecres.wholphin.ui.playback.PlaybackDialogType
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import org.jellyfin.sdk.model.api.ImageType
 import org.jellyfin.sdk.model.api.MediaSegmentDto
 import org.jellyfin.sdk.model.api.TrickplayInfo
@@ -208,7 +209,7 @@ fun PlaybackOverlay(
                         onChangeState = onChangeState,
                         modifier =
                             Modifier
-                                .padding(bottom = 8.dp)
+                                .padding(bottom = Spacing.sm)
                                 .onGloballyPositioned {
                                     controllerHeight = with(density) { it.size.height.toDp() }
                                 },
@@ -226,7 +227,7 @@ fun PlaybackOverlay(
                             onChangeState = onChangeState,
                             modifier =
                                 Modifier
-                                    .padding(horizontal = 8.dp)
+                                    .padding(horizontal = Spacing.sm)
                                     .fillMaxWidth(),
                         )
                     }
@@ -249,7 +250,7 @@ fun PlaybackOverlay(
                             onClickPlaylist = onClickPlaylist,
                             modifier =
                                 Modifier
-                                    .padding(8.dp)
+                                    .padding(Spacing.sm)
                                     .fillMaxWidth(),
                         )
                     }
@@ -277,7 +278,7 @@ fun PlaybackOverlay(
                             .fillMaxWidth(.95f),
                 ) {
                     Column(
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(Spacing.sm),
                         horizontalAlignment = Alignment.CenterHorizontally,
                         modifier =
                             Modifier
@@ -313,7 +314,7 @@ fun PlaybackOverlay(
                 modifier =
                     Modifier
                         .size(width = 240.dp, height = 120.dp)
-                        .padding(16.dp),
+                        .padding(Spacing.md),
             )
         }
         AnimatedVisibility(
@@ -349,9 +350,9 @@ fun PlaybackOverlay(
                     Modifier
                         .align(Alignment.TopStart)
                         .heightIn(max = height)
-                        .padding(bottom = 16.dp)
+                        .padding(bottom = Spacing.md)
                         .background(AppColors.TransparentBlack50)
-                        .padding(8.dp)
+                        .padding(Spacing.sm)
                         .onFocusChanged {
                             if (it.hasFocus) {
                                 // If Debug overlay gains focus, do not hide the controls

@@ -27,6 +27,7 @@ import com.github.damontecres.wholphin.ui.cards.SeasonCard
 import com.github.damontecres.wholphin.ui.components.HiddenFocusBox
 import com.github.damontecres.wholphin.ui.ifElse
 import com.github.damontecres.wholphin.ui.playback.ControllerViewState
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.ui.theme.rowHeadline
 import com.github.damontecres.wholphin.ui.tryRequestFocus
 
@@ -43,7 +44,7 @@ fun QueueRowOverlay(
     val hiddenFocusRequester = remember { FocusRequester() }
     LaunchedEffect(Unit) { focusRequester.tryRequestFocus() }
     Column(
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(Spacing.sm),
         modifier = modifier,
     ) {
         HiddenFocusBox(hiddenFocusRequester) {
@@ -56,10 +57,10 @@ fun QueueRowOverlay(
         LazyRow(
             contentPadding =
                 PaddingValues(
-                    horizontal = 16.dp,
-                    vertical = 8.dp,
+                    horizontal = Spacing.md,
+                    vertical = Spacing.sm,
                 ),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(Spacing.md),
             modifier =
                 Modifier
                     .fillMaxWidth()

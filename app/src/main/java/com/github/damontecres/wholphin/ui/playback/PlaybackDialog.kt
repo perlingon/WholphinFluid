@@ -48,6 +48,7 @@ import com.github.damontecres.wholphin.ui.indexOfFirstOrNull
 import com.github.damontecres.wholphin.ui.playback.overlay.BottomDialog
 import com.github.damontecres.wholphin.ui.playback.overlay.BottomDialogItem
 import com.github.damontecres.wholphin.ui.playback.overlay.PlaybackAction
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.ui.tryRequestFocus
 import kotlinx.coroutines.launch
 import kotlin.time.Duration
@@ -281,7 +282,7 @@ fun PlaybackDialog(
                     modifier =
                         Modifier
                             .wrapContentSize()
-                            .padding(16.dp)
+                            .padding(Spacing.md)
                             .background(
                                 AppColors.TransparentBlack50,
                                 shape = RoundedCornerShape(16.dp),
@@ -290,7 +291,7 @@ fun PlaybackDialog(
                     VideoAdjust(
                         transform = settings.videoTransform,
                         onChange = onChangeVideoTransform,
-                        modifier = Modifier.padding(12.dp),
+                        modifier = Modifier.padding(Spacing.md),
                     )
                 }
             }
@@ -316,7 +317,7 @@ fun PlaybackDialog(
                     SubtitleDelay(
                         delay = settings.subtitleDelay,
                         onChangeDelay = onChangeSubtitleDelay,
-                        modifier = Modifier.padding(8.dp),
+                        modifier = Modifier.padding(Spacing.sm),
                     )
                 }
             }
@@ -367,7 +368,7 @@ fun SubtitleChoiceBottomDialog(
             modifier =
                 Modifier
                     .wrapContentSize()
-                    .padding(8.dp)
+                    .padding(Spacing.sm)
                     .background(
                         MaterialTheme.colorScheme.surfaceColorAtElevation(3.dp),
                         shape = RoundedCornerShape(8.dp),
@@ -525,7 +526,7 @@ fun StreamChoiceBottomDialog(
             modifier =
                 Modifier
                     .wrapContentSize()
-                    .padding(8.dp)
+                    .padding(Spacing.sm)
                     .background(
                         MaterialTheme.colorScheme.surfaceColorAtElevation(3.dp),
                         shape = RoundedCornerShape(8.dp),

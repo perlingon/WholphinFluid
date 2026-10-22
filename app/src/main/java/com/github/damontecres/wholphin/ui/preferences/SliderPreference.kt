@@ -24,6 +24,7 @@ import androidx.tv.material3.ProvideTextStyle
 import androidx.tv.material3.contentColorFor
 import com.github.damontecres.wholphin.preferences.AppSliderPreference
 import com.github.damontecres.wholphin.ui.components.SliderBar
+import com.github.damontecres.wholphin.ui.theme.Spacing
 
 @Composable
 fun SliderPreference(
@@ -53,16 +54,16 @@ fun SliderPreference(
                 .defaultMinSize(minHeight = 72.dp)
                 .fillMaxWidth()
                 .background(background, shape = RoundedCornerShape(8.dp))
-                .padding(PaddingValues(horizontal = 16.dp, vertical = 12.dp)),
+                .padding(PaddingValues(horizontal = Spacing.md, vertical = Spacing.md)),
     ) {
-        PreferenceTitle(title, color = contentColor, modifier = Modifier.padding(bottom = 8.dp))
+        PreferenceTitle(title, color = contentColor, modifier = Modifier.padding(bottom = Spacing.sm))
 
         ProvideTextStyle(PreferenceSummaryStyle.copy(color = contentColor)) {
             additionalSummary?.invoke(this)
         }
 
         Row(
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(Spacing.md),
             verticalAlignment = Alignment.CenterVertically,
             modifier =
                 Modifier

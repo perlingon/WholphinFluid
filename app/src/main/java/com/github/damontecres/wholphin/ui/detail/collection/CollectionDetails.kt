@@ -53,6 +53,7 @@ import com.github.damontecres.wholphin.ui.data.SortAndDirection
 import com.github.damontecres.wholphin.ui.detail.PlaylistDialog
 import com.github.damontecres.wholphin.ui.main.HomePageHeader
 import com.github.damontecres.wholphin.ui.nav.Destination
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.ui.tryRequestFocus
 import com.github.damontecres.wholphin.util.HomeRowLoadingState
 import com.github.damontecres.wholphin.util.LoadingState
@@ -310,7 +311,7 @@ fun CollectionDetailsContent(
     }
 
     Column(
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(Spacing.sm),
         modifier = modifier,
     ) {
         SharedTransitionLayout {
@@ -345,7 +346,7 @@ fun CollectionDetailsContent(
                                         .padding(
                                             start = HeaderUtils.startPadding,
                                             top = HeaderUtils.topPadding,
-                                            bottom = 8.dp,
+                                            bottom = Spacing.sm,
                                         ).height(HeaderUtils.height),
                             )
                         }
@@ -357,7 +358,7 @@ fun CollectionDetailsContent(
                         focusedItem = state.collection
                     }
                     Column(
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(Spacing.sm),
                         modifier =
                             Modifier
                                 .sharedBounds(
@@ -365,7 +366,7 @@ fun CollectionDetailsContent(
                                     animatedVisibilityScope = this@AnimatedContent,
                                     enter = slideInVertically { -it / 2 } + fadeIn(),
                                     exit = slideOutVertically { -it / 2 } + fadeOut(),
-                                ).padding(bottom = 16.dp)
+                                ).padding(bottom = Spacing.md)
                                 .fillMaxWidth()
                                 .onFocusChanged {
                                     if (it.hasFocus) {

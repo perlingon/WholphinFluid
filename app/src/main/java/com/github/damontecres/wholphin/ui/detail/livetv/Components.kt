@@ -30,6 +30,7 @@ import coil3.compose.AsyncImage
 import com.github.damontecres.wholphin.R
 import com.github.damontecres.wholphin.ui.FontAwesome
 import com.github.damontecres.wholphin.ui.formatSeasonEpisode
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import java.time.LocalDateTime
 
 @Composable
@@ -77,7 +78,7 @@ fun Program(
             ),
         modifier =
             modifier
-                .padding(2.dp)
+                .padding(Spacing.xs)
                 .fillMaxSize(),
     ) {
         Row(
@@ -92,15 +93,15 @@ fun Program(
                     modifier =
                         Modifier
                             .align(Alignment.CenterVertically)
-                            .padding(start = 2.dp),
+                            .padding(start = Spacing.xs),
                 )
             }
             Column(
-                verticalArrangement = Arrangement.spacedBy(4.dp),
+                verticalArrangement = Arrangement.spacedBy(Spacing.xs),
                 modifier =
                     Modifier
                         .fillMaxSize()
-                        .padding(start = 2.dp, end = 4.dp, top = 4.dp, bottom = 4.dp),
+                        .padding(start = Spacing.xs, end = Spacing.xs, top = Spacing.xs, bottom = Spacing.xs),
             ) {
                 Text(
                     text = title,
@@ -162,18 +163,18 @@ fun Channel(
         modifier =
             modifier
                 .background(MaterialTheme.colorScheme.background)
-                .padding(2.dp)
+                .padding(Spacing.xs)
                 .fillMaxSize(),
     ) {
         Box(
             modifier =
                 Modifier
-                    .padding(4.dp)
+                    .padding(Spacing.xs)
                     .fillMaxSize(),
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
                 modifier = Modifier.fillMaxSize(),
             ) {
                 Text(
@@ -219,7 +220,7 @@ fun Channel(
                     fontFamily = FontAwesome,
                     modifier =
                         Modifier
-                            .padding(2.dp)
+                            .padding(Spacing.xs)
                             .align(Alignment.TopEnd),
                 )
             }

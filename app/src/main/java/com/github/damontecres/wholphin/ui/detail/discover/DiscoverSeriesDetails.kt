@@ -64,6 +64,7 @@ import com.github.damontecres.wholphin.ui.listToDotString
 import com.github.damontecres.wholphin.ui.nav.Destination
 import com.github.damontecres.wholphin.ui.rememberInt
 import com.github.damontecres.wholphin.ui.roundMinutes
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.ui.tryRequestFocus
 import com.github.damontecres.wholphin.util.DataLoadingState
 import com.github.damontecres.wholphin.util.ExceptionHandler
@@ -274,7 +275,7 @@ fun DiscoverSeriesDetailsContent(
                             modifier =
                                 Modifier
                                     .fillMaxWidth()
-                                    .padding(top = HeaderUtils.topPadding, bottom = 16.dp),
+                                    .padding(top = HeaderUtils.topPadding, bottom = Spacing.md),
                         )
                         ExpandableDiscoverButtons(
                             availability = availability,
@@ -298,7 +299,7 @@ fun DiscoverSeriesDetailsContent(
                             modifier =
                                 Modifier
                                     .fillMaxWidth()
-                                    .padding(bottom = 16.dp)
+                                    .padding(bottom = Spacing.md)
                                     .focusRequester(focusRequesters[HEADER_ROW]),
                         )
                     }
@@ -436,7 +437,7 @@ fun DiscoverSeriesDetailsHeader(
             }
         }
     Column(
-        verticalArrangement = Arrangement.spacedBy(4.dp),
+        verticalArrangement = Arrangement.spacedBy(Spacing.xs),
         modifier = modifier,
     ) {
         TitleOrLogo(
@@ -449,7 +450,7 @@ fun DiscoverSeriesDetailsHeader(
                     .padding(start = HeaderUtils.startPadding),
         )
         Column(
-            verticalArrangement = Arrangement.spacedBy(4.dp),
+            verticalArrangement = Arrangement.spacedBy(Spacing.xs),
             modifier = Modifier.fillMaxWidth(.60f),
         ) {
             val resources = LocalResources.current
@@ -475,7 +476,7 @@ fun DiscoverSeriesDetailsHeader(
 
             QuickDetailsText(details, Modifier.padding(start = HeaderUtils.startPadding))
             series.genres?.mapNotNull { it.name }?.letNotEmpty {
-                GenreText(it, Modifier.padding(start = HeaderUtils.startPadding, bottom = 4.dp))
+                GenreText(it, Modifier.padding(start = HeaderUtils.startPadding, bottom = Spacing.xs))
             }
             series.overview?.let { overview ->
                 OverviewText(

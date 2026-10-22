@@ -32,6 +32,7 @@ import com.github.damontecres.wholphin.ui.AspectRatios
 import com.github.damontecres.wholphin.ui.components.ViewOptionImageType
 import com.github.damontecres.wholphin.ui.enableMarquee
 import com.github.damontecres.wholphin.ui.nav.PrebakeBackdrop
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import kotlinx.coroutines.delay
 
 /**
@@ -71,7 +72,7 @@ fun GridCard(
     }
 
     Column(
-        verticalArrangement = Arrangement.spacedBy(4.dp),
+        verticalArrangement = Arrangement.spacedBy(Spacing.xs),
         modifier = modifier,
     ) {
         Card(
@@ -118,7 +119,7 @@ fun GridCard(
                     modifier =
                         Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 4.dp)
+                            .padding(horizontal = Spacing.xs)
                             .enableMarquee(focusedAfterDelay),
                 )
                 Text(
@@ -130,7 +131,7 @@ fun GridCard(
                     modifier =
                         Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = 4.dp)
+                            .padding(horizontal = Spacing.xs)
                             .enableMarquee(focusedAfterDelay),
                 )
             }

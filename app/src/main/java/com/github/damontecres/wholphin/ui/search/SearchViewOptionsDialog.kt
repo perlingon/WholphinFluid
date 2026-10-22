@@ -24,6 +24,7 @@ import androidx.tv.material3.Text
 import androidx.tv.material3.surfaceColorAtElevation
 import com.github.damontecres.wholphin.R
 import com.github.damontecres.wholphin.ui.preferences.SwitchColors
+import com.github.damontecres.wholphin.ui.theme.Spacing
 
 @Composable
 fun SearchViewOptionsDialog(
@@ -48,9 +49,9 @@ fun SearchViewOptionsDialog(
                     .background(
                         MaterialTheme.colorScheme.surfaceColorAtElevation(3.dp),
                         RoundedCornerShape(28.dp),
-                    ).padding(24.dp),
+                    ).padding(Spacing.lg),
         ) {
-            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
                 Text(
                     text = stringResource(R.string.view_options),
                     style = MaterialTheme.typography.headlineSmall,

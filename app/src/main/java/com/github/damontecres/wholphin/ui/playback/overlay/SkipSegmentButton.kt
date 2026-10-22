@@ -26,6 +26,7 @@ import com.github.damontecres.wholphin.ui.PreviewTvSpec
 import com.github.damontecres.wholphin.ui.components.Button
 import com.github.damontecres.wholphin.ui.skipStringRes
 import com.github.damontecres.wholphin.ui.theme.PreviewInteractionSource
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.ui.theme.WholphinTheme
 import org.jellyfin.sdk.model.api.MediaSegmentType
 
@@ -64,10 +65,10 @@ fun SkipSegmentButton(
         enabled = true,
         contentPadding =
             PaddingValues(
-                start = 8.dp,
-                top = 4.dp,
-                end = 8.dp,
-                bottom = 4.dp,
+                start = Spacing.sm,
+                top = Spacing.xs,
+                end = Spacing.sm,
+                bottom = Spacing.xs,
             ),
         contentHeight = 32.dp,
         interactionSource = interactionSource,
@@ -85,7 +86,7 @@ fun SkipSegmentButtonPreview() {
         SkipSegmentButton(
             type = MediaSegmentType.INTRO,
             onClick = {},
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier.padding(Spacing.md),
             interactionSource = source,
         )
     }

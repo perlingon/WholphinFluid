@@ -28,6 +28,7 @@ import com.github.damontecres.wholphin.ui.formatDate
 import com.github.damontecres.wholphin.ui.formatDuration
 import com.github.damontecres.wholphin.ui.isNotNullOrBlank
 import com.github.damontecres.wholphin.ui.letNotEmpty
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.ui.util.StreamFormatting.formatAudioCodec
 import com.github.damontecres.wholphin.ui.util.StreamFormatting.formatSubtitleCodec
 import com.github.damontecres.wholphin.util.languageName
@@ -86,7 +87,7 @@ fun ItemDetailsDialog(
         itemSpacing = 8.dp,
     ) {
         item {
-            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
                 Text(
                     text = info.title,
                     style = MaterialTheme.typography.headlineSmall,
@@ -124,7 +125,7 @@ fun ItemDetailsDialog(
         info.files.forEachIndexed { index, source ->
             source.mediaStreams?.letNotEmpty { mediaStreams ->
                 item {
-                    Spacer(Modifier.height(8.dp))
+                    Spacer(Modifier.height(Spacing.sm))
                     HorizontalDivider()
                 }
 
@@ -174,7 +175,7 @@ fun ItemDetailsDialog(
                 val audioStreams = mediaStreams.filter { it.type == MediaStreamType.AUDIO }
                 itemsIndexed(audioStreams.chunked(3)) { groupIndex, streamGroup ->
                     Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
                         modifier = Modifier.fillMaxWidth(),
                     ) {
                         streamGroup.forEachIndexed { index, stream ->
@@ -200,7 +201,7 @@ fun ItemDetailsDialog(
                 val subtitleStreams = mediaStreams.filter { it.type == MediaStreamType.SUBTITLE }
                 itemsIndexed(subtitleStreams.chunked(3)) { groupIndex, streamGroup ->
                     Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
                         modifier = Modifier.fillMaxWidth(),
                     ) {
                         streamGroup.forEachIndexed { index, stream ->
@@ -223,7 +224,7 @@ fun ItemDetailsDialog(
                 }
                 if (index != info.files.lastIndex) {
                     item {
-                        Spacer(Modifier.height(8.dp))
+                        Spacer(Modifier.height(Spacing.sm))
                     }
                 }
             }
@@ -239,8 +240,8 @@ private fun MediaInfoSection(
     additional: List<Pair<String, String>> = listOf(),
 ) {
     Column(
-        verticalArrangement = Arrangement.spacedBy(2.dp),
-        modifier = modifier.padding(vertical = 4.dp),
+        verticalArrangement = Arrangement.spacedBy(Spacing.xs),
+        modifier = modifier.padding(vertical = Spacing.xs),
     ) {
         Text(
             text = title,
@@ -248,8 +249,8 @@ private fun MediaInfoSection(
             color = MaterialTheme.colorScheme.onSurface,
         )
         Row(
-            horizontalArrangement = Arrangement.spacedBy(24.dp),
-            modifier = Modifier.padding(start = 12.dp),
+            horizontalArrangement = Arrangement.spacedBy(Spacing.lg),
+            modifier = Modifier.padding(start = Spacing.md),
         ) {
             Column(modifier = Modifier.weight(1f, fill = false)) {
                 items.forEach { (label, value) ->

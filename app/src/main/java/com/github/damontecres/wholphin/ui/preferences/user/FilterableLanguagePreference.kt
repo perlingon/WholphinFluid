@@ -27,6 +27,7 @@ import com.github.damontecres.wholphin.R
 import com.github.damontecres.wholphin.ui.components.SearchEditTextBox
 import com.github.damontecres.wholphin.ui.components.SelectedLeadingContent
 import com.github.damontecres.wholphin.ui.isNotNullOrBlank
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.ui.tryRequestFocus
 import com.github.damontecres.wholphin.util.WholphinDispatchers
 import kotlinx.coroutines.delay
@@ -70,7 +71,7 @@ fun FilterableLanguagePreference(
     }
 
     Column(
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(Spacing.sm),
         modifier =
         modifier,
     ) {
@@ -95,7 +96,7 @@ fun FilterableLanguagePreference(
                     onSearchClick = { focusRequesters.firstOrNull()?.tryRequestFocus() },
                     modifier =
                         Modifier
-                            .padding(bottom = 8.dp)
+                            .padding(bottom = Spacing.sm)
                             .fillMaxWidth(),
                 )
             }

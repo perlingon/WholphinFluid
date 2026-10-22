@@ -86,6 +86,7 @@ import com.github.damontecres.wholphin.ui.preferences.PreferenceScreenOption
 import com.github.damontecres.wholphin.ui.setup.UserIconCardImage
 import com.github.damontecres.wholphin.ui.spacedByWithFooter
 import com.github.damontecres.wholphin.ui.theme.LocalTheme
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.ui.toServerString
 import com.github.damontecres.wholphin.ui.tryRequestFocus
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -554,7 +555,7 @@ fun NavDrawer(
                         .fillMaxSize()
                         .offset {
                             offset
-                        }.padding(start = closedDrawerWidth + 8.dp, end = 16.dp),
+                        }.padding(start = closedDrawerWidth + Spacing.sm, end = Spacing.md),
             )
             if (preferences.appPreferences.interfacePreferences.showClock) {
                 TimeDisplay()

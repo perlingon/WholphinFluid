@@ -40,6 +40,7 @@ import com.github.damontecres.wholphin.ui.components.TextButton
 import com.github.damontecres.wholphin.ui.ifElse
 import com.github.damontecres.wholphin.ui.isNotNullOrBlank
 import com.github.damontecres.wholphin.ui.seasonEpisode
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.ui.tryRequestFocus
 import com.github.damontecres.wholphin.util.DataLoadingState
 import java.time.LocalDateTime
@@ -68,10 +69,10 @@ fun ProgramDialog(
                     ).focusRequester(focusRequester),
         ) {
             Column(
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(Spacing.sm),
                 modifier =
                     Modifier
-                        .padding(16.dp),
+                        .padding(Spacing.md),
             ) {
                 when (val st = state) {
                     is DataLoadingState.Error -> {
@@ -83,7 +84,7 @@ fun ProgramDialog(
                     -> {
                         CircularProgress(
                             Modifier
-                                .padding(8.dp)
+                                .padding(Spacing.sm)
                                 .size(48.dp),
                         )
                     }
@@ -140,11 +141,11 @@ fun ProgramDialog(
                             )
                         }
                         Column(
-                            verticalArrangement = Arrangement.spacedBy(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(Spacing.md),
                             horizontalAlignment = Alignment.CenterHorizontally,
                             modifier =
                                 Modifier
-                                    .padding(top = 8.dp)
+                                    .padding(top = Spacing.sm)
                                     .fillMaxWidth(),
                         ) {
                             if (now.isAfter(dto.startDate!!) && now.isBefore(dto.endDate!!)) {
@@ -153,7 +154,7 @@ fun ProgramDialog(
                                     modifier = Modifier,
                                 ) {
                                     Row(
-                                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                        horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
                                         verticalAlignment = Alignment.CenterVertically,
                                     ) {
                                         Icon(
@@ -171,7 +172,7 @@ fun ProgramDialog(
                                 LazyRow(
                                     horizontalArrangement =
                                         Arrangement.spacedBy(
-                                            16.dp,
+                                            Spacing.md,
                                             Alignment.CenterHorizontally,
                                         ),
                                     modifier =
@@ -195,7 +196,7 @@ fun ProgramDialog(
                                                 Row(
                                                     horizontalArrangement =
                                                         Arrangement.spacedBy(
-                                                            4.dp,
+                                                            Spacing.xs,
                                                         ),
                                                     verticalAlignment = Alignment.CenterVertically,
                                                 ) {
@@ -242,7 +243,7 @@ fun ProgramDialog(
                                                 Row(
                                                     horizontalArrangement =
                                                         Arrangement.spacedBy(
-                                                            4.dp,
+                                                            Spacing.xs,
                                                         ),
                                                     verticalAlignment = Alignment.CenterVertically,
                                                 ) {

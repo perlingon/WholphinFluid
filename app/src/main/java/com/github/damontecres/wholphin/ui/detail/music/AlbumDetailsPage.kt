@@ -80,6 +80,7 @@ import com.github.damontecres.wholphin.ui.launchDefault
 import com.github.damontecres.wholphin.ui.launchIO
 import com.github.damontecres.wholphin.ui.letNotEmpty
 import com.github.damontecres.wholphin.ui.rememberPosition
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.ui.toBaseItems
 import com.github.damontecres.wholphin.ui.tryRequestFocus
 import com.github.damontecres.wholphin.util.ApiRequestPager
@@ -410,12 +411,12 @@ fun AlbumDetailsPage(
                 ) {
                     item {
                         Column(
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalArrangement = Arrangement.spacedBy(Spacing.sm),
                             modifier =
                                 Modifier
                                     .fillMaxWidth()
                                     .bringIntoViewRequester(bringIntoViewRequester)
-                                    .padding(bottom = 32.dp),
+                                    .padding(bottom = Spacing.xl),
                         ) {
                             AlbumHeader(
                                 album = album,
@@ -478,7 +479,7 @@ fun AlbumDetailsPage(
                             text = stringResource(R.string.songs) + " (${state.songs.size})",
                             style = MaterialTheme.typography.titleLarge,
                             color = MaterialTheme.colorScheme.onBackground,
-                            modifier = Modifier.padding(start = 8.dp),
+                            modifier = Modifier.padding(start = Spacing.sm),
                         )
                     }
                     itemsIndexed(state.songs) { index, song ->
@@ -669,8 +670,8 @@ fun AlbumHeader(
 ) {
     val scope = rememberCoroutineScope()
     Row(
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
-        modifier = modifier.padding(top = 32.dp),
+        horizontalArrangement = Arrangement.spacedBy(Spacing.md),
+        modifier = modifier.padding(top = Spacing.xl),
     ) {
         AsyncImage(
             model = imageUrl,
@@ -682,7 +683,7 @@ fun AlbumHeader(
                     .clip(RoundedCornerShape(16.dp)),
         )
         Column(
-            verticalArrangement = Arrangement.spacedBy(4.dp),
+            verticalArrangement = Arrangement.spacedBy(Spacing.xs),
         ) {
             // Artist
             Text(
@@ -695,7 +696,7 @@ fun AlbumHeader(
                 modifier =
                     Modifier
                         .fillMaxWidth(.75f)
-                        .padding(start = 8.dp),
+                        .padding(start = Spacing.sm),
             )
             Text(
                 text = album.name ?: "",
@@ -706,21 +707,21 @@ fun AlbumHeader(
                 modifier =
                     Modifier
                         .fillMaxWidth(.75f)
-                        .padding(start = 8.dp),
+                        .padding(start = Spacing.sm),
             )
 
             Column(
-                verticalArrangement = Arrangement.spacedBy(4.dp),
+                verticalArrangement = Arrangement.spacedBy(Spacing.xs),
                 modifier = Modifier.fillMaxWidth(.60f),
             ) {
                 QuickDetails(
                     album.ui.quickDetails,
                     null,
-                    Modifier.padding(start = 8.dp),
+                    Modifier.padding(start = Spacing.sm),
                 )
 
                 album.data.genres?.letNotEmpty {
-                    GenreText(it, Modifier.padding(start = 8.dp))
+                    GenreText(it, Modifier.padding(start = Spacing.sm))
                 }
 
                 // Description

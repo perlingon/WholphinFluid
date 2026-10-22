@@ -73,6 +73,7 @@ import com.github.damontecres.wholphin.ui.detail.GridItemDetails
 import com.github.damontecres.wholphin.ui.detail.livetv.ProgramDialog
 import com.github.damontecres.wholphin.ui.nav.Destination
 import com.github.damontecres.wholphin.ui.onMain
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.ui.titleStringRes
 import com.github.damontecres.wholphin.ui.tryRequestFocus
 import com.github.damontecres.wholphin.util.WholphinDispatchers
@@ -257,7 +258,7 @@ fun SearchPage(
 
     Column(
         modifier = modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+        verticalArrangement = Arrangement.spacedBy(Spacing.md),
     ) {
         Box(
             contentAlignment = Alignment.Center,
@@ -285,7 +286,7 @@ fun SearchPage(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier =
                     Modifier
-                        .padding(start = 16.dp, end = 16.dp, top = 16.dp)
+                        .padding(start = Spacing.md, end = Spacing.md, top = Spacing.md)
                         .focusGroup()
                         .focusRestorer(textFieldFocusRequester)
                         .focusRequester(focusRequesters[SEARCH_ROW]),
@@ -301,7 +302,7 @@ fun SearchPage(
                             triggerImmediateSearch(spokenText)
                         },
                         voiceInputManager = viewModel.voiceInputManager,
-                        modifier = Modifier.padding(end = 12.dp),
+                        modifier = Modifier.padding(end = Spacing.md),
                     )
                 }
 
@@ -336,7 +337,7 @@ fun SearchPage(
                     title = R.string.view_options,
                     iconStringRes = R.string.fa_sliders,
                     onClick = { showViewOptions = true },
-                    modifier = Modifier.padding(start = 12.dp),
+                    modifier = Modifier.padding(start = Spacing.md),
                 )
             }
         }
@@ -360,7 +361,7 @@ fun SearchPage(
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .padding(start = 16.dp, end = 16.dp)
+                        .padding(start = Spacing.md, end = Spacing.md)
                         .onFocusChanged {
                             if (it.hasFocus) setPosition(RowColumn(TAB_ROW, 0))
                         },
@@ -407,10 +408,10 @@ fun SearchPage(
                     LazyColumn(
                         contentPadding =
                             PaddingValues(
-                                start = 16.dp,
-                                end = 16.dp,
-                                top = 8.dp,
-                                bottom = 44.dp,
+                                start = Spacing.md,
+                                end = Spacing.md,
+                                top = Spacing.sm,
+                                bottom = Spacing.xxl,
                             ),
                         verticalArrangement = Arrangement.spacedBy(0.dp),
                         modifier = Modifier.focusGroup(),
@@ -554,7 +555,7 @@ fun SearchCombinedResults(
             SearchResultPlaceholder(
                 title = stringResource(R.string.results),
                 message = stringResource(R.string.searching),
-                modifier = modifier.padding(16.dp),
+                modifier = modifier.padding(Spacing.md),
             )
         }
 
@@ -563,7 +564,7 @@ fun SearchCombinedResults(
                 title = stringResource(R.string.results),
                 message = result.ex.localizedMessage ?: "Error occurred during search",
                 messageColor = MaterialTheme.colorScheme.error,
-                modifier = modifier.padding(16.dp),
+                modifier = modifier.padding(Spacing.md),
             )
         }
 
@@ -572,7 +573,7 @@ fun SearchCombinedResults(
                 SearchResultPlaceholder(
                     title = stringResource(R.string.results),
                     message = stringResource(R.string.no_results),
-                    modifier = modifier.padding(16.dp),
+                    modifier = modifier.padding(Spacing.md),
                 )
             } else {
                 SearchGrid(
@@ -602,7 +603,7 @@ fun SearchCombinedResults(
                 SearchResultPlaceholder(
                     title = stringResource(R.string.results),
                     message = stringResource(R.string.no_results),
-                    modifier = modifier.padding(16.dp),
+                    modifier = modifier.padding(Spacing.md),
                 )
             } else {
                 SearchGrid(
@@ -757,8 +758,8 @@ fun SearchResultPlaceholder(
     messageColor: Color = MaterialTheme.colorScheme.onBackground,
 ) {
     Column(
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-        modifier = modifier.padding(bottom = 32.dp),
+        verticalArrangement = Arrangement.spacedBy(Spacing.sm),
+        modifier = modifier.padding(bottom = Spacing.xl),
     ) {
         Text(
             text = title,

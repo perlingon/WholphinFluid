@@ -30,6 +30,7 @@ import androidx.tv.material3.surfaceColorAtElevation
 import com.github.damontecres.wholphin.R
 import com.github.damontecres.wholphin.ui.components.EditTextBox
 import com.github.damontecres.wholphin.ui.components.TextButton
+import com.github.damontecres.wholphin.ui.theme.Spacing
 
 @Composable
 fun QuickConnectDialog(
@@ -65,7 +66,7 @@ fun QuickConnectDialog(
             contentAlignment = Alignment.Center,
             modifier =
                 Modifier
-                    .padding(16.dp)
+                    .padding(Spacing.md)
                     .width(360.dp)
                     .background(
                         color = MaterialTheme.colorScheme.surfaceColorAtElevation(elevation),
@@ -73,10 +74,10 @@ fun QuickConnectDialog(
                     ),
         ) {
             Column(
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(Spacing.sm),
                 modifier =
                     Modifier
-                        .padding(16.dp),
+                        .padding(Spacing.md),
             ) {
                 Text(
                     text = stringResource(R.string.quick_connect_code),
@@ -112,7 +113,7 @@ fun QuickConnectDialog(
                         text = stringResource(R.string.quick_connect_code_error),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.padding(start = 8.dp),
+                        modifier = Modifier.padding(start = Spacing.sm),
                     )
                 }
 

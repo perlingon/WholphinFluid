@@ -32,6 +32,7 @@ import com.github.damontecres.wholphin.ui.AspectRatios
 import com.github.damontecres.wholphin.ui.LocalImageUrlService
 import com.github.damontecres.wholphin.ui.formatDuration
 import com.github.damontecres.wholphin.ui.roundSeconds
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import org.jellyfin.sdk.model.api.ImageType
 
 /**
@@ -86,7 +87,7 @@ fun ChapterCard(
                         .align(Alignment.BottomStart)
                         .background(AppColors.TransparentBlack50),
             ) {
-                Column(modifier = Modifier.padding(4.dp)) {
+                Column(modifier = Modifier.padding(Spacing.xs)) {
                     chapter.name?.let {
                         Text(
                             text = it,

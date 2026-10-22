@@ -39,6 +39,7 @@ import com.github.damontecres.wholphin.ui.AspectRatio
 import com.github.damontecres.wholphin.ui.Cards
 import com.github.damontecres.wholphin.ui.PreviewTvSpec
 import com.github.damontecres.wholphin.ui.enableMarquee
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.ui.theme.WholphinTheme
 import kotlinx.coroutines.delay
 
@@ -77,7 +78,7 @@ fun ViewMoreCard(
             size.height.takeIf { it.isSpecified } ?: (size.height * (1f / aspectRatio.ratio))
         }
     Column(
-        verticalArrangement = Arrangement.spacedBy(4.dp),
+        verticalArrangement = Arrangement.spacedBy(Spacing.xs),
         modifier = modifier,
     ) {
         Card(
@@ -117,7 +118,7 @@ fun ViewMoreCard(
                     modifier =
                         Modifier
                             .width(width)
-                            .padding(horizontal = 4.dp)
+                            .padding(horizontal = Spacing.xs)
                             .enableMarquee(focusedAfterDelay),
                 )
             }
@@ -133,7 +134,7 @@ private fun Preview() {
             ViewMoreCard(
                 onClick = {},
                 onLongClick = {},
-                modifier = Modifier.padding(16.dp),
+                modifier = Modifier.padding(Spacing.md),
                 aspectRatio = AspectRatio.TALL,
                 size = DpSize(width = Dp.Unspecified, height = Cards.heightEpisode),
                 showTitle = false,

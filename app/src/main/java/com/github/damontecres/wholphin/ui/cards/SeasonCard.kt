@@ -34,6 +34,7 @@ import com.github.damontecres.wholphin.ui.AspectRatios
 import com.github.damontecres.wholphin.ui.LocalImageUrlService
 import com.github.damontecres.wholphin.ui.enableMarquee
 import com.github.damontecres.wholphin.ui.nav.PrebakeBackdrop
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import kotlinx.coroutines.delay
 import org.jellyfin.sdk.model.api.ImageType
 
@@ -153,7 +154,7 @@ fun SeasonCard(
     val height = imageWidth * (1f / aspectRationToUse)
 
     Column(
-        verticalArrangement = Arrangement.spacedBy(4.dp), // Fixed base spacing
+        verticalArrangement = Arrangement.spacedBy(Spacing.xs), // Fixed base spacing
         modifier = modifier.size(width, height),
     ) {
         Card(
@@ -212,7 +213,7 @@ fun SeasonCard(
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 4.dp)
+                        .padding(horizontal = Spacing.xs)
                         .enableMarquee(focusedAfterDelay),
             )
             Text(
@@ -224,7 +225,7 @@ fun SeasonCard(
                 modifier =
                     Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 4.dp)
+                        .padding(horizontal = Spacing.xs)
                         .enableMarquee(focusedAfterDelay),
             )
         }

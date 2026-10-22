@@ -45,6 +45,7 @@ import com.github.damontecres.wholphin.ui.data.ItemDetailsDialogInfo
 import com.github.damontecres.wholphin.ui.detail.PlaylistDialog
 import com.github.damontecres.wholphin.ui.nav.Destination
 import com.github.damontecres.wholphin.ui.rememberInt
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.util.DataLoadingState
 import com.github.damontecres.wholphin.util.ExceptionHandler
 import kotlinx.coroutines.launch
@@ -241,8 +242,8 @@ fun EpisodeDetailsContent(
     RequestOrRestoreFocus(focusRequesters.getOrNull(position))
     Box(modifier = modifier) {
         LazyColumn(
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-            contentPadding = PaddingValues(bottom = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(Spacing.md),
+            contentPadding = PaddingValues(bottom = Spacing.sm),
             modifier = Modifier.fillMaxSize(),
         ) {
             item {
@@ -262,7 +263,7 @@ fun EpisodeDetailsContent(
                         modifier =
                             Modifier
                                 .fillMaxWidth()
-                                .padding(top = HeaderUtils.topPadding, bottom = 16.dp),
+                                .padding(top = HeaderUtils.topPadding, bottom = Spacing.md),
                     )
                     ExpandablePlayButtons(
                         title = ep.title ?: "",
@@ -299,7 +300,7 @@ fun EpisodeDetailsContent(
                         modifier =
                             Modifier
                                 .fillMaxWidth()
-                                .padding(bottom = 16.dp)
+                                .padding(bottom = Spacing.md)
                                 .focusRequester(focusRequesters[HEADER_ROW]),
                     )
                 }

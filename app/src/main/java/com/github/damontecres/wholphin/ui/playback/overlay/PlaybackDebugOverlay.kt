@@ -32,6 +32,7 @@ import com.github.damontecres.wholphin.ui.formatBytes
 import com.github.damontecres.wholphin.ui.letNotEmpty
 import com.github.damontecres.wholphin.ui.playback.AnalyticsState
 import com.github.damontecres.wholphin.ui.playback.CurrentPlayback
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.ui.theme.WholphinTheme
 import com.github.damontecres.wholphin.util.TrackSupport
 import com.github.damontecres.wholphin.util.TrackSupportReason
@@ -105,12 +106,12 @@ fun PlaybackDebugOverlay(
     }
 
     Column(
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(Spacing.sm),
         modifier = modifier,
     ) {
         Row(
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-            modifier = Modifier.padding(start = 8.dp, top = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(Spacing.md),
+            modifier = Modifier.padding(start = Spacing.sm, top = Spacing.sm),
         ) {
             ProvideTextStyle(textStyle) {
                 SimpleTable(
@@ -179,12 +180,12 @@ fun SimpleTable(
     keyWidth: Dp = 100.dp,
 ) {
     Column(
-        verticalArrangement = Arrangement.spacedBy(4.dp),
+        verticalArrangement = Arrangement.spacedBy(Spacing.xs),
         modifier = modifier,
     ) {
         rows.forEach {
             Row(
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
             ) {
                 Text(
                     text = it.first,

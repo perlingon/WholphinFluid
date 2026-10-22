@@ -47,6 +47,7 @@ import com.github.damontecres.wholphin.ui.components.BasicDialog
 import com.github.damontecres.wholphin.ui.components.ErrorMessage
 import com.github.damontecres.wholphin.ui.components.LoadingPage
 import com.github.damontecres.wholphin.ui.formatSeasonNumber
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.ui.theme.WholphinTheme
 import com.github.damontecres.wholphin.ui.tryRequestFocus
 import com.github.damontecres.wholphin.util.LoadingState
@@ -141,7 +142,7 @@ fun RequestSeasons(
     }
 
     Column(
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(Spacing.sm),
         modifier = modifier,
     ) {
         Text(
@@ -160,7 +161,7 @@ fun RequestSeasons(
                     modifier =
                         Modifier
                             .fillMaxWidth()
-                            .padding(vertical = 8.dp),
+                            .padding(vertical = Spacing.sm),
                 ) {
                     if (requestEnabled && request4kEnabled) {
                         ClickSwitch(
@@ -248,7 +249,7 @@ fun RequestSeasons(
                         modifier =
                             Modifier
                                 .fillMaxWidth()
-                                .padding(vertical = 8.dp),
+                                .padding(vertical = Spacing.sm),
                     ) {
                         Button(
                             onClick = ::submit,
@@ -369,13 +370,13 @@ fun ClickSwitch(
             verticalAlignment = Alignment.CenterVertically,
             modifier =
                 Modifier
-                    .padding(horizontal = 8.dp)
+                    .padding(horizontal = Spacing.sm)
                     .height(54.dp),
         ) {
             Switch(
                 checked = checked,
                 onCheckedChange = {},
-                modifier = Modifier.padding(end = 8.dp),
+                modifier = Modifier.padding(end = Spacing.sm),
             )
             Text(
                 text = label,
@@ -425,7 +426,7 @@ fun RequestSeasonsDialog(
                     onSubmit = onSubmit,
                     modifier =
                         Modifier
-                            .padding(16.dp)
+                            .padding(Spacing.md)
                             .focusRequester(focusRequester),
                 )
             }
