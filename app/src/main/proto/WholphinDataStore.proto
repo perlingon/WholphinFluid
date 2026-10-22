@@ -128,7 +128,7 @@ enum AppThemeColors {
   OLED_BLACK = 5;
   RED = 6;
   BROWN = 7;
-  // WholphinFluid themes; numbered high to stay clear of upstream additions
+  // Nema themes; numbered high to stay clear of upstream additions
   VIVID = 100;
   MUTED = 101;
   DARK = 102;
@@ -218,7 +218,7 @@ message InterfacePreferences {
   bool show_logos = 13;
   SearchPreferences search_preferences = 14;
   repeated DisplayToggle display_toggles = 15;
-  // WholphinFluid: focus/accent colour as RGB without alpha, 0 = default
+  // Nema: focus/accent colour as RGB without alpha, 0 = default
   int32 highlight_color = 100;
 }
 

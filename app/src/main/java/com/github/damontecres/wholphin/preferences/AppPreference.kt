@@ -967,7 +967,7 @@ sealed interface AppPreference<Pref, T> {
                 setter = { prefs, value ->
                     prefs.updatePlaybackPreferences { playerBackend = value }
                 },
-                // WholphinFluid: MPV choices are hidden, only ExoPlayer and External Player are offered
+                // Nema: MPV choices are hidden, only ExoPlayer and External Player are offered
                 displayValues = R.array.player_backend_options_fluid,
                 indexToValue = { if (it == 1) PlayerBackend.EXTERNAL_PLAYER else PlayerBackend.EXO_PLAYER },
                 valueToIndex = { if (it == PlayerBackend.EXTERNAL_PLAYER) 1 else 0 },
@@ -1370,7 +1370,7 @@ val advancedPreferences =
                 preferences = listOf(AppPreference.PlayerBackendPref),
                 conditionalPreferences =
                     listOf(
-                        // WholphinFluid: MPV settings are hidden; a leftover MPV choice behaves as ExoPlayer
+                        // Nema: MPV settings are hidden; a leftover MPV choice behaves as ExoPlayer
                         ConditionalPreferences(
                             { it.playbackPreferences.playerBackend != PlayerBackend.EXTERNAL_PLAYER },
                             ExoPlayerSettings,

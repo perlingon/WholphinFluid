@@ -508,7 +508,7 @@ class AppUpgradeHandler
                 }
             }
 
-            // WholphinFluid: MPV is hidden, so move anyone who picked it back to ExoPlayer
+            // Nema: MPV is hidden, so move anyone who picked it back to ExoPlayer
             appPreferences.updateData {
                 when (it.playbackPreferences.playerBackend) {
                     PlayerBackend.MPV,

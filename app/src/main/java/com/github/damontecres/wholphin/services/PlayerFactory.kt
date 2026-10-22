@@ -76,7 +76,7 @@ class PlayerFactory
             }
             var assHandler: AssHandler? = null
             val newPlayer =
-                // WholphinFluid: MPV is hidden, always fall back to ExoPlayer
+                // Nema: MPV is hidden, always fall back to ExoPlayer
                 when (backend.takeUnless { it == PlayerBackend.MPV || it == PlayerBackend.PREFER_MPV } ?: PlayerBackend.EXO_PLAYER) {
                     PlayerBackend.PREFER_MPV,
                     PlayerBackend.MPV,
