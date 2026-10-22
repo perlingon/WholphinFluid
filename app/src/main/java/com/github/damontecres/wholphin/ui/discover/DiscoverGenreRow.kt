@@ -16,6 +16,7 @@ import com.github.damontecres.wholphin.ui.cards.GenreCard
 import com.github.damontecres.wholphin.ui.cards.ItemRow
 import com.github.damontecres.wholphin.ui.components.ErrorMessage
 import com.github.damontecres.wholphin.ui.components.Genre
+import com.github.damontecres.wholphin.ui.theme.rowHeadline
 import com.github.damontecres.wholphin.ui.util.StringProvider
 import com.github.damontecres.wholphin.util.DataLoadingState
 
@@ -42,7 +43,7 @@ fun DiscoverGenreRow(
             ) {
                 Text(
                     text = title.getString(),
-                    style = MaterialTheme.typography.titleLarge,
+                    style = MaterialTheme.typography.rowHeadline,
                     color = MaterialTheme.colorScheme.onBackground,
                 )
                 Text(

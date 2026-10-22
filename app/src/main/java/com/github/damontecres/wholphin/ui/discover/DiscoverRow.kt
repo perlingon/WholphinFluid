@@ -33,6 +33,7 @@ import com.github.damontecres.wholphin.ui.components.ErrorMessage
 import com.github.damontecres.wholphin.ui.ifElse
 import com.github.damontecres.wholphin.ui.rememberInt
 import com.github.damontecres.wholphin.ui.theme.FluidLayout
+import com.github.damontecres.wholphin.ui.theme.rowHeadline
 import com.github.damontecres.wholphin.ui.tryRequestFocus
 import com.github.damontecres.wholphin.util.DataLoadingState
 
@@ -61,7 +62,7 @@ fun DiscoverRow(
             ) {
                 Text(
                     text = row.title.getString(),
-                    style = MaterialTheme.typography.titleLarge,
+                    style = MaterialTheme.typography.rowHeadline,
                     color = MaterialTheme.colorScheme.onBackground,
                 )
                 Text(

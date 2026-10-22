@@ -18,6 +18,7 @@ import androidx.tv.material3.Text
 import com.github.damontecres.wholphin.R
 import com.github.damontecres.wholphin.data.model.Chapter
 import com.github.damontecres.wholphin.ui.theme.FluidLayout
+import com.github.damontecres.wholphin.ui.theme.rowHeadline
 
 @Composable
 fun ChapterRow(
@@ -32,7 +33,7 @@ fun ChapterRow(
     ) {
         Text(
             text = stringResource(R.string.chapters),
-            style = MaterialTheme.typography.titleLarge,
+            style = MaterialTheme.typography.rowHeadline,
             color = MaterialTheme.colorScheme.onBackground,
             modifier = Modifier.padding(start = 8.dp),
         )

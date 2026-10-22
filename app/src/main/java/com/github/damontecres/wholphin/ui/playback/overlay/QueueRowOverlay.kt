@@ -27,6 +27,7 @@ import com.github.damontecres.wholphin.ui.cards.SeasonCard
 import com.github.damontecres.wholphin.ui.components.HiddenFocusBox
 import com.github.damontecres.wholphin.ui.ifElse
 import com.github.damontecres.wholphin.ui.playback.ControllerViewState
+import com.github.damontecres.wholphin.ui.theme.rowHeadline
 import com.github.damontecres.wholphin.ui.tryRequestFocus
 
 @Composable
@@ -50,7 +51,7 @@ fun QueueRowOverlay(
         }
         Text(
             text = stringResource(R.string.queue),
-            style = MaterialTheme.typography.titleLarge,
+            style = MaterialTheme.typography.rowHeadline,
         )
         LazyRow(
             contentPadding =

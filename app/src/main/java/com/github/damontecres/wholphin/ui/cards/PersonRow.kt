@@ -28,6 +28,7 @@ import com.github.damontecres.wholphin.data.model.Person
 import com.github.damontecres.wholphin.ui.ifElse
 import com.github.damontecres.wholphin.ui.rememberInt
 import com.github.damontecres.wholphin.ui.theme.FluidLayout
+import com.github.damontecres.wholphin.ui.theme.rowHeadline
 
 @Composable
 fun PersonRow(
@@ -45,7 +46,7 @@ fun PersonRow(
     ) {
         Text(
             text = stringResource(title),
-            style = MaterialTheme.typography.titleLarge,
+            style = MaterialTheme.typography.rowHeadline,
             color = MaterialTheme.colorScheme.onBackground,
             modifier = Modifier.padding(start = 8.dp),
         )
@@ -101,7 +102,7 @@ fun DiscoverPersonRow(
     ) {
         Text(
             text = stringResource(title),
-            style = MaterialTheme.typography.titleLarge,
+            style = MaterialTheme.typography.rowHeadline,
             color = MaterialTheme.colorScheme.onBackground,
         )
         LazyRow(

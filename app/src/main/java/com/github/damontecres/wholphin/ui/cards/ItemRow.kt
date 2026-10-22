@@ -28,6 +28,7 @@ import androidx.tv.material3.Text
 import com.github.damontecres.wholphin.ui.nav.BackdropDebug
 import com.github.damontecres.wholphin.ui.rememberInt
 import com.github.damontecres.wholphin.ui.theme.FluidLayout
+import com.github.damontecres.wholphin.ui.theme.rowHeadline
 import com.github.damontecres.wholphin.ui.tryRequestFocus
 
 @Composable
@@ -145,7 +146,7 @@ fun ItemRowTitle(
     modifier: Modifier = Modifier,
 ) = Text(
     text = title,
-    style = MaterialTheme.typography.titleLarge,
+    style = MaterialTheme.typography.rowHeadline,
     color = MaterialTheme.colorScheme.onBackground,
     // Row titles line up with the page's title, at the left margin
     modifier = modifier.padding(start = FluidLayout.headlineInset()),
