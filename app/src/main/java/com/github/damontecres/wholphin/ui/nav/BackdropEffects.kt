@@ -2,6 +2,7 @@ package com.github.damontecres.wholphin.ui.nav
 
 import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.util.LruCache
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
@@ -13,6 +14,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.Paint
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.CanvasDrawScope
@@ -31,12 +33,20 @@ import coil3.request.ImageRequest
 import coil3.request.SuccessResult
 import coil3.request.allowHardware
 import coil3.request.bitmapConfig
+import com.github.damontecres.wholphin.BuildConfig
+import com.github.damontecres.wholphin.WholphinApplication
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import timber.log.Timber
+import java.io.File
+import java.security.MessageDigest
 import kotlin.math.max
 import kotlin.math.roundToInt
+import kotlin.math.sqrt
 
 // The heavy lifting behind the backdrop: composing the baked background and generating film grain.
 // Kept apart from Backdrop.kt on purpose. While tuning values there with Live Edit, the code in
@@ -110,7 +120,115 @@ private fun makeGrainTile(
 }
 
 // Recently baked backgrounds, so going back to a backdrop that was already shown is instant
-internal val bakedBackgrounds = LruCache<Any, ImageBitmap>(96)
+internal val bakedBackgrounds = BakedBackgrounds()
+
+/**
+ * Keeps baked backgrounds in memory and saves them as files, so they survive the app being closed.
+ * A saved file only counts for the build that made it, because a code change can change the look.
+ * Debug builds don't save files: with Live Edit the look changes without a new build
+ */
+internal class BakedBackgrounds {
+    // Limited by size rather than count, so larger bakes can't fill the memory
+    private val memory =
+        object : LruCache<Any, ImageBitmap>(MEMORY_BYTES) {
+            override fun sizeOf(
+                key: Any,
+                value: ImageBitmap,
+            ): Int = value.width * value.height * 4
+        }
+
+    private val saveDisk = !BuildConfig.DEBUG
+    private val folder by lazy { File(WholphinApplication.instance.cacheDir, "baked_backdrops") }
+    private val writer = CoroutineScope(SupervisorJob() + Dispatchers.IO.limitedParallelism(1))
+
+    /**
+     * The background for this key if it is in memory
+     */
+    fun get(key: Any): ImageBitmap? = memory.get(key)
+
+    /**
+     * The background for this key from memory, or else from its saved file
+     */
+    suspend fun load(key: Any): ImageBitmap? {
+        memory.get(key)?.let { return it }
+        if (!saveDisk) return null
+        return withContext(Dispatchers.IO) {
+            val file = fileFor(key)
+            if (!file.exists()) return@withContext null
+            try {
+                val options = BitmapFactory.Options().apply { inPreferredConfig = Bitmap.Config.ARGB_8888 }
+                BitmapFactory.decodeFile(file.path, options)?.asImageBitmap()?.also {
+                    Timber.tag("BackdropBake").i("Loaded %dx%d from a saved file", it.width, it.height)
+                    memory.put(key, it)
+                    // Marks it as recently used, so it is kept when old files are cleared out
+                    file.setLastModified(System.currentTimeMillis())
+                }
+            } catch (ex: Exception) {
+                Timber.w(ex, "Could not read saved backdrop background")
+                null
+            }
+        }
+    }
+
+    fun put(
+        key: Any,
+        image: ImageBitmap,
+    ) {
+        memory.put(key, image)
+        if (!saveDisk) return
+        writer.launch {
+            try {
+                folder.mkdirs()
+                val file = fileFor(key)
+                val temp = File(folder, file.name + ".tmp")
+                temp.outputStream().use { image.asAndroidBitmap().compress(Bitmap.CompressFormat.JPEG, 90, it) }
+                temp.renameTo(file)
+                trim()
+            } catch (ex: Exception) {
+                Timber.w(ex, "Could not save backdrop background")
+            }
+        }
+    }
+
+    // The file name is a fingerprint of the key and the build, so any change to the look gets
+    // new files
+    private fun fileFor(key: Any): File {
+        val digest = MessageDigest.getInstance("SHA-1").digest("${BuildConfig.BUILD_TIME}|$key".toByteArray())
+        return File(folder, digest.joinToString("") { "%02x".format(it) } + ".jpg")
+    }
+
+    /**
+     * Removes every saved background, from memory and from disk
+     */
+    fun clear() {
+        memory.evictAll()
+        writer.launch { folder.listFiles()?.forEach { it.delete() } }
+    }
+
+    // Removes the least recently used files beyond the size limit, including those of older builds
+    private fun trim() {
+        val files = folder.listFiles { file -> file.name.endsWith(".jpg") } ?: return
+        var total = files.sumOf { it.length() }
+        for (file in files.sortedBy { it.lastModified() }) {
+            if (total <= diskBytes) break
+            total -= file.length()
+            file.delete()
+        }
+    }
+
+    companion object {
+        private const val MEMORY_BYTES = 40 * 1024 * 1024
+
+        // Share of the image cache size setting that saved backgrounds may use on disk. The
+        // image cache gets the rest, so the setting stays the total
+        const val DISK_SHARE = 0.15
+
+        // How much the saved backgrounds may take up on disk. Set from the image cache size
+        // setting when the app starts
+        @Volatile
+        var diskBytes = 30L * 1024 * 1024
+    }
+}
 
 /**
  * One tile of the baked background: a copy of the backdrop image, usually blurred, laid over an
@@ -120,6 +238,9 @@ internal val bakedBackgrounds = LruCache<Any, ImageBitmap>(96)
  * that differ.
  */
 internal data class Tile(
+    // The edge of the image this tile reflects, if any. It is left out when that edge is one
+    // flat colour. Null = always drawn
+    val reflects: ImageEdge? = null,
     // Where the tile's left and top edges sit, as shares of the screen: 0f, 0f is the top-left
     // corner, 1f, 1f the bottom-right. Either may be negative or above 1 to reach off screen
     val left: Float = 0f,
@@ -144,11 +265,35 @@ internal data class Tile(
     // onTop = drawn last, straight onto the result, so it ends up over the group
     val behind: Boolean = false,
     val onTop: Boolean = false,
-    // Soft edges: how far in from each edge the tile fades out, as a share of its own width
-    // (left and right) and height (top and bottom). 0 = hard edges, 0.5 = fades all the way
-    // to the middle. Null = use the default given where the tiles are set up
-    val feather: Float? = null,
+    // Soft edges, see Feather. Null = use the default given where the tiles are set up
+    val feather: Feather? = null,
+    // How strongly it is drawn when any edge of the image is one flat colour, as a share of its
+    // layers' opacity: 1f = unchanged, 0.5f = half, 0f = left out
+    val flatEdgeOpacity: Float = 1f,
 )
+
+/**
+ * Soft edges on a tile: how far in from each side it fades out, as a share of its own width
+ * (left and right) or height (top and bottom). 0f = a hard edge, 0.2f = the outer fifth fades,
+ * 0.5f = fades all the way to the middle. The sides are as the tile appears on screen, after any
+ * flip. Written like CSS margins:
+ * - Feather(0.2f): all four sides
+ * - Feather(0.1f, 0.2f): top and bottom, then left and right
+ * - Feather(0.1f, 0.2f, 0f): top, then left and right, then bottom
+ * - Feather(0.1f, 0f, 0.2f, 0.3f): top, right, bottom, left
+ */
+internal data class Feather(
+    val top: Float,
+    val right: Float,
+    val bottom: Float,
+    val left: Float,
+) {
+    constructor(all: Float) : this(all, all, all, all)
+    constructor(vertical: Float, horizontal: Float) : this(vertical, horizontal, vertical, horizontal)
+    constructor(top: Float, horizontal: Float, bottom: Float) : this(top, horizontal, bottom, horizontal)
+
+    val any: Boolean get() = top > 0f || right > 0f || bottom > 0f || left > 0f
+}
 
 /**
  * Composes the backdrop's background once, into a small image: the theme background and colour
@@ -167,6 +312,15 @@ internal suspend fun bakeBackdropBackground(
     layoutDirection: LayoutDirection,
     imageAspect: Float,
     tiles: List<Tile>,
+    flatEdgeStrip: Float,
+    flatEdgeTolerance: Float,
+    flatEdgeDarkLevel: Float,
+    flatEdgeDarkTolerance: Float,
+    flatEdgeTint: Float,
+    flatEdgeTintSolid: Float,
+    flatEdgeTintReach: Float,
+    imageLeft: Float,
+    imageRight: Float,
     drawBackground: DrawScope.() -> Unit,
     drawOverlay: DrawScope.() -> Unit,
     groupSmoothRadius: Int,
@@ -176,11 +330,30 @@ internal suspend fun bakeBackdropBackground(
     outlineCopies: Boolean,
 ): ImageBitmap? =
     withContext(Dispatchers.Default) {
+        val started = System.nanoTime()
         try {
+            // Tiles that reflect an edge of the image which is one flat colour would only add a
+            // flat patch, so they are left out
+            val flatEdges =
+                if (imageUrl != null && tiles.any { it.reflects != null }) {
+                    findFlatEdges(
+                        context,
+                        imageUrl,
+                        flatEdgeStrip,
+                        flatEdgeTolerance,
+                        flatEdgeDarkLevel,
+                        flatEdgeDarkTolerance,
+                    )
+                } else {
+                    emptyMap()
+                }
+            val shownTiles = tiles.filter { it.reflects == null || it.reflects !in flatEdges }
+            if (imageUrl != null) flatEdgesByImage.put(imageUrl, flatEdges.keys)
+
             // The tiny versions of the backdrop that get stretched into blurs, one per resolution
             val tinyVersions = HashMap<Int, ImageBitmap?>()
             if (imageUrl != null) {
-                tiles.map { it.resolution }.distinct().forEach { resolution ->
+                shownTiles.map { it.resolution }.distinct().forEach { resolution ->
                     val tinyHeight = (resolution / imageAspect).toInt().coerceAtLeast(1)
                     val request =
                         ImageRequest
@@ -211,15 +384,47 @@ internal suspend fun bakeBackdropBackground(
             val outputSize = Size(width.toFloat(), height.toFloat())
             CanvasDrawScope().draw(density, layoutDirection, Canvas(output), outputSize) {
                 drawBackground()
+                // Where the image's left or right edge is one flat colour, the colour base takes
+                // that colour on that side: full from the screen's edge to just past the image's
+                // edge, so the image's edge always sits on it, then fading out behind the image
+                val tint = flatEdgeTint.coerceIn(0f, 1f)
+                val solid = flatEdgeTintSolid.coerceAtLeast(0f)
+                val reach = flatEdgeTintReach.coerceAtLeast(solid + 0.001f)
+                if (tint > 0f) {
+                    flatEdges[ImageEdge.LEFT]?.let { color ->
+                        val full = (imageLeft + solid).coerceIn(0f, 0.998f)
+                        val gone = (imageLeft + reach).coerceIn(full + 0.001f, 1f)
+                        drawRect(
+                            brush =
+                                Brush.horizontalGradient(
+                                    0f to color.copy(alpha = tint),
+                                    full to color.copy(alpha = tint),
+                                    gone to color.copy(alpha = 0f),
+                                ),
+                        )
+                    }
+                    flatEdges[ImageEdge.RIGHT]?.let { color ->
+                        val full = (imageRight - solid).coerceIn(0.002f, 1f)
+                        val gone = (imageRight - reach).coerceIn(0f, full - 0.001f)
+                        drawRect(
+                            brush =
+                                Brush.horizontalGradient(
+                                    gone to color.copy(alpha = 0f),
+                                    full to color.copy(alpha = tint),
+                                    1f to color.copy(alpha = tint),
+                                ),
+                        )
+                    }
+                }
             }
             // Three passes. First the tiles marked behind go straight onto the glows. Then the
             // group is drawn on a see-through sheet of its own, blurred together as one, and
             // that sheet is blended on top. Then the tiles marked onTop go straight onto the
             // result. Last, everything is smoothed together
             listOf(
-                Triple(tiles.filter { it.behind && !it.onTop }, 0, false),
-                Triple(tiles.filter { !it.behind && !it.onTop }, groupSmoothRadius, true),
-                Triple(tiles.filter { it.onTop }, 0, false),
+                Triple(shownTiles.filter { it.behind && !it.onTop }, 0, false),
+                Triple(shownTiles.filter { !it.behind && !it.onTop }, groupSmoothRadius, true),
+                Triple(shownTiles.filter { it.onTop }, 0, false),
             ).forEach { (passTiles, passRadius, isGroup) ->
                 val target = if (isGroup) ImageBitmap(width, height) else output
                 CanvasDrawScope().draw(density, layoutDirection, Canvas(target), outputSize) {
@@ -238,62 +443,88 @@ internal suspend fun bakeBackdropBackground(
                                     (size.width * copy.width).roundToInt().coerceAtLeast(1),
                                     (size.height * tileHeight).roundToInt().coerceAtLeast(1),
                                 )
-                            // This copy's own blur: stretch the tiny version to its final size first,
-                            // blur that, and draw the result in place of the plain stretch
                             val smoothRadius = (size.width * copy.smooth).roundToInt()
-                            val source =
-                                if (smoothRadius >= 1) {
-                                    // Kept to a sensible size; the blur radius shrinks along with it
-                                    val shrink = minOf(1f, 2048f / maxOf(area.width, area.height))
-                                    val stretched =
-                                        Bitmap
-                                            .createScaledBitmap(
-                                                blurred.asAndroidBitmap(),
-                                                (area.width * shrink).roundToInt().coerceAtLeast(1),
-                                                (area.height * shrink).roundToInt().coerceAtLeast(1),
-                                                true,
-                                            ).copy(Bitmap.Config.ARGB_8888, true)
-                                    boxBlur(stretched, (smoothRadius * shrink).roundToInt().coerceAtLeast(1))
-                                    stretched.asImageBitmap()
+                            // The fades are made before the flip, so a flipped tile swaps its sides
+                            val feather =
+                                copy.feather
+                                    ?.let {
+                                        Feather(
+                                            top = if (copy.flipVertical) it.bottom else it.top,
+                                            right = if (copy.flip) it.left else it.right,
+                                            bottom = if (copy.flipVertical) it.top else it.bottom,
+                                            left = if (copy.flip) it.right else it.left,
+                                        )
+                                    }?.takeIf { it.any }
+                            // What gets drawn, and where within the tile (before the flip)
+                            val drawn: ImageBitmap?
+                            val drawOffset: IntOffset
+                            val drawSize: IntSize
+                            if (smoothRadius < 1 && feather == null) {
+                                // A plain stretch of the tiny version: nothing to prepare
+                                drawn = blurred
+                                drawOffset = offset
+                                drawSize = area
+                            } else {
+                                // Only the part of the tile that can be seen is prepared. A blur
+                                // reaches about three radii, so that much more around the screen
+                                // is kept to blur the visible edge correctly
+                                val margin = 3 * smoothRadius
+                                val visibleLeft = maxOf(offset.x, -margin)
+                                val visibleTop = maxOf(offset.y, -margin)
+                                val visibleRight = minOf(offset.x + area.width, size.width.roundToInt() + margin)
+                                val visibleBottom = minOf(offset.y + area.height, size.height.roundToInt() + margin)
+                                if (visibleRight <= visibleLeft || visibleBottom <= visibleTop) {
+                                    // Entirely off screen
+                                    drawn = null
+                                    drawOffset = offset
+                                    drawSize = area
                                 } else {
-                                    blurred
+                                    // The same part of the tile before the flip, in the tile's
+                                    // own coordinates
+                                    val cropLeft =
+                                        if (copy.flip) area.width - (visibleRight - offset.x) else visibleLeft - offset.x
+                                    val cropTop =
+                                        if (copy.flipVertical) area.height - (visibleBottom - offset.y) else visibleTop - offset.y
+                                    val cropSize = IntSize(visibleRight - visibleLeft, visibleBottom - visibleTop)
+                                    drawn =
+                                        tileCrop(
+                                            blurred,
+                                            area,
+                                            IntOffset(cropLeft, cropTop),
+                                            cropSize,
+                                            smoothRadius,
+                                            feather,
+                                            density,
+                                            layoutDirection,
+                                        )
+                                    drawOffset = IntOffset(offset.x + cropLeft, offset.y + cropTop)
+                                    drawSize = cropSize
                                 }
-                            val feather = (copy.feather ?: 0f).coerceIn(0f, 0.5f)
-                            val drawn =
-                                if (feather > 0f) {
-                                    val shrink = minOf(1f, 2048f / maxOf(area.width, area.height))
-                                    featheredCopy(
-                                        source,
-                                        (area.width * shrink).roundToInt().coerceAtLeast(1),
-                                        (area.height * shrink).roundToInt().coerceAtLeast(1),
-                                        feather,
-                                        density,
-                                        layoutDirection,
-                                    )
-                                } else {
-                                    source
-                                }
+                            }
                             // Mirrored about the copy's own middle, so it stays where it is
                             val middle = Offset(offset.x + area.width / 2f, offset.y + area.height / 2f)
-                            withTransform({
-                                if (copy.flip || copy.flipVertical) {
-                                    scale(
-                                        scaleX = if (copy.flip) -1f else 1f,
-                                        scaleY = if (copy.flipVertical) -1f else 1f,
-                                        pivot = middle,
-                                    )
-                                }
-                            }) {
-                                copy.layers.forEach { (layerBlendMode, layerOpacity) ->
-                                    drawImage(
-                                        image = drawn,
-                                        dstOffset = offset,
-                                        dstSize = area,
-                                        alpha = layerOpacity.coerceIn(0f, 1f),
-                                        blendMode = layerBlendMode,
-                                        // A plain stretch, which is what turns the tiny version into a blur
-                                        filterQuality = FilterQuality.Low,
-                                    )
+                            if (drawn != null) {
+                                withTransform({
+                                    if (copy.flip || copy.flipVertical) {
+                                        scale(
+                                            scaleX = if (copy.flip) -1f else 1f,
+                                            scaleY = if (copy.flipVertical) -1f else 1f,
+                                            pivot = middle,
+                                        )
+                                    }
+                                }) {
+                                    val flatDim = if (flatEdges.isEmpty()) 1f else copy.flatEdgeOpacity
+                                    copy.layers.forEach { (layerBlendMode, layerOpacity) ->
+                                        drawImage(
+                                            image = drawn,
+                                            dstOffset = drawOffset,
+                                            dstSize = drawSize,
+                                            alpha = (layerOpacity * flatDim).coerceIn(0f, 1f),
+                                            blendMode = layerBlendMode,
+                                            // A plain stretch, which is what turns the tiny version into a blur
+                                            filterQuality = FilterQuality.Low,
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -340,6 +571,14 @@ internal suspend fun bakeBackdropBackground(
                     }
                 }
             }
+            // To compare devices and settings: filter Logcat on "BackdropBake"
+            Timber.tag("BackdropBake").i(
+                "Baked %dx%d in %d ms, flat edges: %s",
+                width,
+                height,
+                (System.nanoTime() - started) / 1_000_000,
+                flatEdges.keys.ifEmpty { "none" },
+            )
             output
         } catch (ex: CancellationException) {
             throw ex
@@ -350,36 +589,199 @@ internal suspend fun bakeBackdropBackground(
     }
 
 /**
- * The image stretched to the given size, with its edges fading out to transparent. The fades
- * cover [feather] of the width at the left and right, and of the height at the top and bottom
+ * An edge of the backdrop image, for tiles that reflect it
  */
-private fun featheredCopy(
-    source: ImageBitmap,
-    width: Int,
-    height: Int,
-    feather: Float,
+internal enum class ImageEdge { LEFT, BOTTOM, RIGHT }
+
+// The flat edges found for recently baked images, for BackdropDebug.showFlatEdges
+internal val flatEdgesByImage = LruCache<Any, Set<ImageEdge>>(200)
+
+/**
+ * Development aid: a red arrow on each of these edges of the area, pointing outwards
+ */
+internal fun DrawScope.drawFlatEdgeArrows(edges: Set<ImageEdge>) {
+    if (edges.isEmpty()) return
+    val arrow = minOf(size.width, size.height) * 0.08f
+    val inset = arrow * 0.5f
+    val color = Color(0xFFFF3B30)
+    edges.forEach { edge ->
+        val path = Path()
+        when (edge) {
+            ImageEdge.LEFT -> {
+                val y = size.height / 2f
+                path.moveTo(inset, y)
+                path.lineTo(inset + arrow, y - arrow * 0.6f)
+                path.lineTo(inset + arrow, y + arrow * 0.6f)
+            }
+            ImageEdge.RIGHT -> {
+                val y = size.height / 2f
+                path.moveTo(size.width - inset, y)
+                path.lineTo(size.width - inset - arrow, y - arrow * 0.6f)
+                path.lineTo(size.width - inset - arrow, y + arrow * 0.6f)
+            }
+            ImageEdge.BOTTOM -> {
+                val x = size.width / 2f
+                path.moveTo(x, size.height - inset)
+                path.lineTo(x - arrow * 0.6f, size.height - inset - arrow)
+                path.lineTo(x + arrow * 0.6f, size.height - inset - arrow)
+            }
+        }
+        path.close()
+        drawPath(path, color)
+    }
+}
+
+// Width of the version of the image that is checked for flat edges
+private const val EDGE_CHECK_WIDTH = 480
+
+/**
+ * The edges of the image that are one flat colour: along each, a strip [stripShare] of the
+ * image's width (or height, for the bottom) deep is checked, and it is flat when no colour
+ * channel varies by more than [tolerance] (a standard deviation, 0 to 255). A dark edge, whose
+ * average brightness is at most [darkLevel], uses [darkTolerance] instead.
+ *
+ * @return each flat edge with its average colour
+ */
+private suspend fun findFlatEdges(
+    context: Context,
+    imageUrl: Any,
+    stripShare: Float,
+    tolerance: Float,
+    darkLevel: Float,
+    darkTolerance: Float,
+): Map<ImageEdge, Color> {
+    val request =
+        ImageRequest
+            .Builder(context)
+            .data(imageUrl)
+            .size(EDGE_CHECK_WIDTH, EDGE_CHECK_WIDTH)
+            .allowHardware(false)
+            .bitmapConfig(Bitmap.Config.ARGB_8888)
+            .build()
+    val result = context.imageLoader.execute(request) as? SuccessResult ?: return emptyMap()
+    val bitmap = result.image.asDrawable(context.resources).toBitmap(config = Bitmap.Config.ARGB_8888)
+    val width = bitmap.width
+    val height = bitmap.height
+    val strip = (width * stripShare).roundToInt().coerceIn(1, max(1, minOf(width, height) / 2))
+
+    // Standard deviation of each colour channel over the area; flat when all are small.
+    // Returns the area's average colour when it is flat, otherwise null
+    fun flatColor(
+        x: Int,
+        y: Int,
+        w: Int,
+        h: Int,
+    ): Color? {
+        val pixels = IntArray(w * h)
+        bitmap.getPixels(pixels, 0, w, x, y, w, h)
+        val sums = DoubleArray(3)
+        val squares = DoubleArray(3)
+        for (color in pixels) {
+            val channels = intArrayOf((color shr 16) and 0xFF, (color shr 8) and 0xFF, color and 0xFF)
+            for (c in 0..2) {
+                sums[c] += channels[c]
+                squares[c] += channels[c].toDouble() * channels[c]
+            }
+        }
+        val count = pixels.size.toDouble()
+        val means = DoubleArray(3) { sums[it] / count }
+        // Perceived brightness of the edge's average colour
+        val brightness = 0.299 * means[0] + 0.587 * means[1] + 0.114 * means[2]
+        val allowed = if (brightness <= darkLevel) darkTolerance else tolerance
+        val flat =
+            (0..2).all { c ->
+                sqrt((squares[c] / count - means[c] * means[c]).coerceAtLeast(0.0)) <= allowed
+            }
+        return if (flat) {
+            Color(means[0].toInt(), means[1].toInt(), means[2].toInt())
+        } else {
+            null
+        }
+    }
+
+    return buildMap {
+        flatColor(0, 0, strip, height)?.let { put(ImageEdge.LEFT, it) }
+        flatColor(width - strip, 0, strip, height)?.let { put(ImageEdge.RIGHT, it) }
+        flatColor(0, height - strip, width, strip)?.let { put(ImageEdge.BOTTOM, it) }
+    }
+}
+
+/**
+ * Part of a tile, ready to draw: the tiny version stretched over the whole tile ([tileSize]), of
+ * which only the area at [cropOffset] and [cropSize] is made. That area is blurred by
+ * [smoothRadius] and its edges fade out by [feather], both measured on the whole tile, so the part
+ * looks exactly like the same part of the whole tile. Kept to a sensible size; the blur radius
+ * shrinks along with it
+ */
+private fun tileCrop(
+    tiny: ImageBitmap,
+    tileSize: IntSize,
+    cropOffset: IntOffset,
+    cropSize: IntSize,
+    smoothRadius: Int,
+    feather: Feather?,
     density: Density,
     layoutDirection: LayoutDirection,
 ): ImageBitmap {
+    val shrink = minOf(1f, 2048f / maxOf(cropSize.width, cropSize.height))
+    val width = (cropSize.width * shrink).roundToInt().coerceAtLeast(1)
+    val height = (cropSize.height * shrink).roundToInt().coerceAtLeast(1)
+    // Where the whole tile sits, seen from the crop
+    val tileLeft = -cropOffset.x * shrink
+    val tileTop = -cropOffset.y * shrink
+    val tileWidth = tileSize.width * shrink
+    val tileHeight = tileSize.height * shrink
     val result = ImageBitmap(width, height)
     val size = Size(width.toFloat(), height.toFloat())
     CanvasDrawScope().draw(density, layoutDirection, Canvas(result), size) {
         // A plain stretch, so a tiny source still turns into the same blur
         drawImage(
-            image = source,
-            dstSize = IntSize(width, height),
+            image = tiny,
+            dstOffset = IntOffset(tileLeft.roundToInt(), tileTop.roundToInt()),
+            dstSize = IntSize(tileWidth.roundToInt().coerceAtLeast(1), tileHeight.roundToInt().coerceAtLeast(1)),
             filterQuality = FilterQuality.Low,
         )
-        val fade =
-            arrayOf(
-                0f to Color.Transparent,
-                feather to Color.Black,
-                (1f - feather) to Color.Black,
-                1f to Color.Transparent,
+    }
+    if (smoothRadius >= 1) {
+        boxBlur(result.asAndroidBitmap(), (smoothRadius * shrink).roundToInt().coerceAtLeast(1))
+    }
+    if (feather != null) {
+        CanvasDrawScope().draw(density, layoutDirection, Canvas(result), size) {
+            // Solid between the two fades, see-through at a side that fades. A side without a fade
+            // starts solid, so it keeps a hard edge
+            fun fade(
+                start: Float,
+                end: Float,
+            ): Array<Pair<Float, Color>> {
+                val first = start.coerceIn(0f, 0.5f)
+                val last = end.coerceIn(0f, 0.5f)
+                return listOfNotNull(
+                    0f to if (first > 0f) Color.Transparent else Color.Black,
+                    if (first > 0f) first to Color.Black else null,
+                    if (last > 0f) (1f - last) to Color.Black else null,
+                    1f to if (last > 0f) Color.Transparent else Color.Black,
+                ).toTypedArray()
+            }
+            // Keep the image only where these are solid: once across, once down
+            drawRect(
+                brush =
+                    Brush.horizontalGradient(
+                        colorStops = fade(feather.left, feather.right),
+                        startX = tileLeft,
+                        endX = tileLeft + tileWidth,
+                    ),
+                blendMode = BlendMode.DstIn,
             )
-        // Keep the image only where these are solid: once across, once down
-        drawRect(brush = Brush.horizontalGradient(colorStops = fade), blendMode = BlendMode.DstIn)
-        drawRect(brush = Brush.verticalGradient(colorStops = fade), blendMode = BlendMode.DstIn)
+            drawRect(
+                brush =
+                    Brush.verticalGradient(
+                        colorStops = fade(feather.top, feather.bottom),
+                        startY = tileTop,
+                        endY = tileTop + tileHeight,
+                    ),
+                blendMode = BlendMode.DstIn,
+            )
+        }
     }
     return result
 }
