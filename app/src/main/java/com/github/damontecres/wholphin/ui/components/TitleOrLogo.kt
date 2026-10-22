@@ -14,6 +14,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -28,6 +29,7 @@ import com.github.damontecres.wholphin.ui.LocalImageUrlService
 import com.github.damontecres.wholphin.ui.logCoilError
 import org.jellyfin.sdk.model.api.BaseItemKind
 import org.jellyfin.sdk.model.api.ImageType
+import kotlin.math.roundToInt
 
 @Composable
 fun TitleOrLogo(
@@ -48,15 +50,23 @@ fun TitleOrLogo(
     ) {
         if (showLogo && logoImageUrl != null && !imageError) {
             val context = LocalContext.current
+            val density = LocalDensity.current
             // Empty see-through space around the logo is cut away first, so the size limits
-            // apply to the logo itself
+            // apply to the logo itself. The logo is loaded at twice the size of the box, because
+            // after trimming a logo with a wide empty border it is stretched to fill the box
+            // again; loaded only at the box's size, it would come out blurry
             val logoRequest =
-                remember(logoImageUrl) {
-                    ImageRequest
-                        .Builder(context)
-                        .data(logoImageUrl)
-                        .transformations(CoilTrimTransformation())
-                        .build()
+                remember(logoImageUrl, density) {
+                    with(density) {
+                        ImageRequest
+                            .Builder(context)
+                            .data(logoImageUrl)
+                            .size(
+                                (logoMaxWidth.toPx() * 2).roundToInt(),
+                                (logoMaxHeight.toPx() * 2).roundToInt(),
+                            ).transformations(CoilTrimTransformation())
+                            .build()
+                    }
                 }
             AsyncImage(
                 model = logoRequest,

@@ -600,7 +600,7 @@ fun HomePageHeader(
     modifier: Modifier = Modifier,
 ) {
     // Gap between the logo (or title) and the lines below it
-    val titleGap = 16.dp
+    val titleGap = 20.dp
     // The whole block is as wide as the space left of the backdrop image (see FluidLayout)
     Column(
         verticalArrangement = Arrangement.spacedBy(titleGap),
@@ -624,7 +624,7 @@ fun HomePageHeader(
             QuickDetails(quickDetails, timeRemaining, endsAt = endsAt)
             // The description fills the block, but stops at a comfortable line length for
             // reading (around 80 characters) however wide the block gets
-            val overviewMaxWidth = 600.dp
+            val overviewMaxWidth = 550.dp
             val overviewModifier =
                 Modifier
                     .padding(0.dp)

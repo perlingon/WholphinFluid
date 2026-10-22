@@ -151,15 +151,15 @@ fun Backdrop(
     // Strength of the colour glows behind the image: 1 = upstream's look, higher = more colour.
     // Kept local so Live Edit picks up changes
     // The theme scales this: full strength on Vivid, down to a fraction on Darkest
-    val glowIntensity = 7f * LocalFluidTheme.current.glow
+    val glowIntensity = 5.1f * LocalFluidTheme.current.glow
 
     // Brightest a glow colour may be, 0 to 1 (1 = no cap). Brighter colours are darkened down
     // to this, keeping their hue and saturation, so a white or yellow poster cannot wash the
     // background out
-    val glowMaxBrightness = 0.3f
+    val glowMaxBrightness = 0.8f
     // Darkest a glow colour may be, 0 to 1 (0 = no cap). Darker colours are lifted up to this,
     // keeping their hue and saturation, so a near-black poster still gives a hint of colour
-    val glowMinBrightness = 0.15f
+    val glowMinBrightness = 0.1f
 
     fun Color.capped(): Color {
         if (!isSpecified) return this
@@ -420,7 +420,7 @@ fun Backdrop(
                         ),
                     // When an edge of the image is flat, it is drawn at this share of the above,
                     // so it does not wash out the flat edge colour
-                    flatEdgeOpacity = 0.4f,
+                    flatEdgeOpacity = 0.7f,
                 )
             // Switch for the main tile: true = on, false = off
             val showMainTile = true
@@ -471,7 +471,7 @@ fun Backdrop(
             //   1f = black)
             // They are drawn in order, each on top of the one before
             // Switch for all the vignettes at once: true = on, false = off
-            val showVignettes = false
+            val showVignettes = true
             val allVignettes =
                 listOf(
                     // spotlight on the image
@@ -483,9 +483,9 @@ fun Backdrop(
                         stops =
                             listOf(
                                 0f to 0f,
-                                0.18f to 0.1f,
-                                0.38f to 0.2f,
-                                1f to 0.5f,
+                                0.18f to 0.05f,
+                                0.38f to 0.1f,
+                                1f to 0.4f,
                             ),
                         blendMode = BlendMode.SrcOver,
                     ),
@@ -516,8 +516,8 @@ fun Backdrop(
                         listOf(
                             0f to 0f,
                             0.77f to 0f,
-                            0.85f to 0.25f,
-                            1f to 0.7f,
+                            0.85f to 0.15f,
+                            1f to 0.4f,
                         ),
                     blendMode = BlendMode.Overlay,
                 )
@@ -593,7 +593,7 @@ fun Backdrop(
                 // How the blurred mirror tiles are blended onto the glows, bottom to top, as blend
                 // mode to opacity, and the opacity of the group as a whole
                 val groupLayers = listOf(BlendMode.Overlay to 1f, BlendMode.SrcOver to 0.8f)
-                val groupOpacity = 0.6f
+                val groupOpacity = 0.4f
                 val bakeHeight = (bakeWidth * (maxHeight / maxWidth)).toInt().coerceAtLeast(1)
                 // The baked version uses the colours the glows are heading for, not the animated
                 // ones, so it is composed once per backdrop instead of on every animation frame
@@ -875,7 +875,7 @@ fun Backdrop(
                             val horizontalFadeFlat =
                                 listOf(
                                     0f to 1f,
-                                    0.97f to 1f,
+                                    0.999f to 1f,
                                     1f to 0f,
                                 )
                             val horizontalFade = if (flatOuterEdge) horizontalFadeFlat else horizontalFadeNormal
@@ -928,7 +928,7 @@ fun Backdrop(
                             // The same when the image's edge facing the screen edge is one flat
                             // colour: closer to the edge = a much narrower fade, since the colour
                             // base already carries that colour onwards
-                            val edgeFadeCenterXFlat = 0.92f
+                            val edgeFadeCenterXFlat = 0.9f
                             val edgeFadeCenterY = 0.35f
                             // Height of the curve relative to the image's height: lower = rounder
                             // (corners cut away more), higher = flatter (closer to a straight edge)
