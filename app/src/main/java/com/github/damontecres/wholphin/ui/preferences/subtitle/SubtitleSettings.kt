@@ -1,6 +1,8 @@
 package com.github.damontecres.wholphin.ui.preferences.subtitle
 
+import android.content.Context
 import android.content.res.Configuration
+import android.content.res.Resources
 import android.graphics.Typeface
 import android.os.Build
 import android.view.Display
@@ -11,6 +13,7 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.res.ResourcesCompat
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.ui.CaptionStyleCompat
 import androidx.media3.ui.SubtitleView
@@ -358,7 +361,7 @@ object SubtitleSettings {
     ) = ((opacity / 100.0 * 255).toInt().shl(24)).or(color.and(0x00FFFFFF))
 
     @OptIn(UnstableApi::class)
-    fun SubtitlePreferences.toSubtitleStyle(): CaptionStyleCompat {
+    fun SubtitlePreferences.toSubtitleStyle(context: Context): CaptionStyleCompat {
         val bg = combine(backgroundColor, backgroundOpacity)
         return CaptionStyleCompat(
             combine(fontColor, fontOpacity),
@@ -370,18 +373,32 @@ object SubtitleSettings {
                 EdgeStyle.EDGE_SHADOW -> CaptionStyleCompat.EDGE_TYPE_DROP_SHADOW
             },
             combine(edgeColor, fontOpacity),
-            when {
-                fontBold && fontItalic -> Typeface.defaultFromStyle(Typeface.BOLD_ITALIC)
-                fontBold -> Typeface.defaultFromStyle(Typeface.BOLD)
-                fontItalic -> Typeface.defaultFromStyle(Typeface.ITALIC)
-                else -> Typeface.DEFAULT
-            },
+            Typeface.create(
+                subtitleTypeface(context),
+                when {
+                    fontBold && fontItalic -> Typeface.BOLD_ITALIC
+                    fontBold -> Typeface.BOLD
+                    fontItalic -> Typeface.ITALIC
+                    else -> Typeface.NORMAL
+                },
+            ),
         )
     }
 
+    /**
+     * The font used for text subtitles. ABeeZee has no bold weight, so bold is synthesized.
+     */
+    private fun subtitleTypeface(context: Context): Typeface =
+        try {
+            ResourcesCompat.getFont(context, R.font.abeezee)
+        } catch (ex: Resources.NotFoundException) {
+            Timber.w(ex, "Could not load subtitle font")
+            null
+        } ?: Typeface.DEFAULT
+
     @OptIn(UnstableApi::class)
     fun SubtitlePreferences.applyTo(view: SubtitleView) {
-        view.setStyle(toSubtitleStyle())
+        view.setStyle(toSubtitleStyle(view.context))
         view.setFixedTextSize(Dimension.SP, fontSize.toFloat())
         view.setBottomPaddingFraction(margin.toFloat() / 100f)
     }
