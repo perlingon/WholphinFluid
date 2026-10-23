@@ -709,4 +709,5 @@
         <item quantity="one">%1$d objekt</item>
         <item quantity="other">%1$d objekt</item>
     </plurals>
+    <string name="chapter_of">Kapitel %1$d av %2$d</string>
 </resources>

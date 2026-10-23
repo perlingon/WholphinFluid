@@ -1033,4 +1033,5 @@
         <item quantity="one">%1$d Item</item>
         <item quantity="other">%1$d Items</item>
     </plurals>
+    <string name="chapter_of">Chapter %1$d of %2$d</string>
 </resources>

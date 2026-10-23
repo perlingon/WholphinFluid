@@ -17,6 +17,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -41,6 +42,7 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.github.damontecres.wholphin.R
 import com.github.damontecres.wholphin.data.model.BaseItem
+import com.github.damontecres.wholphin.data.model.Chapter
 import com.github.damontecres.wholphin.ui.formatTime
 import com.github.damontecres.wholphin.ui.playback.ControllerViewState
 import com.github.damontecres.wholphin.ui.playback.PlaybackDialogType
@@ -75,6 +77,7 @@ fun PlaybackController(
     seekBarInteractionSource: MutableInteractionSource = remember { MutableInteractionSource() },
     onTitleHeightChange: (Dp) -> Unit = {},
     queueHeadline: String? = null,
+    chapters: List<Chapter> = emptyList(),
 ) {
     // Tuning values for the "Chapters"/"Queue" hint under the controls, kept local for Live Edit
     val nextHeadlineStyle = MaterialTheme.typography.labelLarge
@@ -131,8 +134,23 @@ fun PlaybackController(
         )
         when (nextState) {
             OverlayViewState.CHAPTERS -> {
+                // "Chapter 5 of 23", following playback
+                val chapterNumber by produceState(
+                    currentChapterNumber(chapters, player.currentPosition),
+                    chapters,
+                ) {
+                    while (true) {
+                        value = currentChapterNumber(chapters, player.currentPosition)
+                        delay(500)
+                    }
+                }
                 Text(
-                    text = stringResource(R.string.chapters),
+                    text =
+                        if (chapters.isNotEmpty()) {
+                            stringResource(R.string.chapter_of, chapterNumber, chapters.size)
+                        } else {
+                            stringResource(R.string.chapters)
+                        },
                     style = nextHeadlineStyle,
                     color = nextHeadlineColor,
                     modifier =
@@ -343,3 +361,11 @@ fun Controller(
         )
     }
 }
+
+/**
+ * 1-based number of the chapter playing at [positionMs]
+ */
+private fun currentChapterNumber(
+    chapters: List<Chapter>,
+    positionMs: Long,
+): Int = chapters.indexOfLast { it.position.inWholeMilliseconds <= positionMs }.coerceAtLeast(0) + 1

@@ -289,6 +289,7 @@ fun PlaybackOverlay(
                                     },
                             seekBarInteractionSource = seekBarInteractionSource,
                             onTitleHeightChange = { titleHeight = it },
+                            chapters = chapters,
                             queueHeadline = queueHeadline(remember(queue) { groupQueueBySeason(queue) }),
                         )
                     }
