@@ -147,7 +147,11 @@ class CollectionGridViewModel
                     // group heading, so their own card is hidden
                     val hideContainers = emojiFirst && groupNested
                     val (parents, containers) =
-                        if (groupNested) parentCollections(all, hideContainers) else Pair(emptyMap<UUID, UUID>(), emptySet<UUID>())
+                        if (groupNested) {
+                            parentCollections(all, hideContainers)
+                        } else {
+                            Pair(emptyMap<UUID, UUID>(), emptySet<UUID>())
+                        }
                     // Emoji collections first, then the rest. Both A-Z, ignoring the leading emoji
                     val byName =
                         compareByDescending<CollectionCardItem> { it.isEmoji }
