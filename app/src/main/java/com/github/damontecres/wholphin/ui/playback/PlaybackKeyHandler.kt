@@ -53,7 +53,9 @@ class PlaybackKeyHandler(
         } else if (isPlayPauseKey(it)) {
             // The remote's play/pause key toggles playback right away, like OK does with one click
             // pause, instead of relying on the media session to pick it up
-            if (it.type == KeyEventType.KeyUp) {
+            // Act on the first key down, like media sessions do: some remaps (e.g. Button Mapper) send
+            // only a key down, or a down without a matching up
+            if (it.type == KeyEventType.KeyDown && it.nativeKeyEvent.repeatCount == 0) {
                 when (it.key) {
                     Key.MediaPlay -> if (Util.shouldShowPlayButton(player)) togglePlayPause()
                     Key.MediaPause -> if (!Util.shouldShowPlayButton(player)) togglePlayPause()
