@@ -12,6 +12,8 @@ import java.lang.reflect.Field
 @OptIn(UnstableApi::class)
 class Media3SubtitleOverride(
     val outlineThicknessPx: Float,
+    val shadowOffsetPx: Float,
+    val shadowRadiusPx: Float,
 ) {
     companion object {
         private lateinit var outputField: Field
@@ -19,6 +21,8 @@ class Media3SubtitleOverride(
         private lateinit var paintersField: Field
         private lateinit var classSubtitlePainter: Class<*>
         private lateinit var outlineWidthField: Field
+        private lateinit var shadowOffsetField: Field
+        private lateinit var shadowRadiusField: Field
 
         var initialized: Boolean
             private set
@@ -31,8 +35,12 @@ class Media3SubtitleOverride(
                 paintersField = classCanvasSubtitleOutput.getDeclaredField("painters")
                 classSubtitlePainter = Class.forName("androidx.media3.ui.SubtitlePainter")
                 outlineWidthField = classSubtitlePainter.getDeclaredField("outlineWidth")
+                shadowOffsetField = classSubtitlePainter.getDeclaredField("shadowOffset")
+                shadowRadiusField = classSubtitlePainter.getDeclaredField("shadowRadius")
                 outputField.isAccessible = true
                 outlineWidthField.isAccessible = true
+                shadowOffsetField.isAccessible = true
+                shadowRadiusField.isAccessible = true
                 paintersField.isAccessible = true
                 initialized = true
             } catch (ex: Exception) {
@@ -45,11 +53,13 @@ class Media3SubtitleOverride(
     fun apply(subtitleView: SubtitleView) {
         try {
             if (initialized) {
-                // Basically hijack the field that controls the subtitle outline size
+                // Basically hijack the fields that control the subtitle outline and shadow
                 val canvasSubtitleOutput = outputField.get(subtitleView)
                 val painters = paintersField.get(canvasSubtitleOutput) as List<*>
                 painters.forEach { painter ->
                     outlineWidthField.set(painter, outlineThicknessPx)
+                    shadowOffsetField.set(painter, shadowOffsetPx)
+                    shadowRadiusField.set(painter, shadowRadiusPx)
                 }
             }
         } catch (ex: Exception) {
