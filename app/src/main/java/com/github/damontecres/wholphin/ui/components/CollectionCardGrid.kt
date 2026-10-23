@@ -143,7 +143,11 @@ class CollectionGridViewModel
                         GetItemsRequestHandler
                             .execute(api, collectionsRequest())
                             .content.items
-                    val parents = if (groupNested) parentCollections(all) else emptyMap()
+                    // With both settings on, collections that only hold other collections are represented by their
+                    // group heading, so their own card is hidden
+                    val hideContainers = emojiFirst && groupNested
+                    val (parents, containers) =
+                        if (groupNested) parentCollections(all, hideContainers) else Pair(emptyMap<UUID, UUID>(), emptySet<UUID>())
                     // Emoji collections first, then the rest. Both A-Z, ignoring the leading emoji
                     val byName =
                         compareByDescending<CollectionCardItem> { it.isEmoji }
@@ -159,7 +163,7 @@ class CollectionGridViewModel
                                 )
                             }
                             .sortedWith(byName)
-                    val collections = layoutGroups(allSorted)
+                    val collections = layoutGroups(allSorted).filter { it.id !in containers }
                     val key = CollectionCacheKey(serverRepository.currentUser?.id, itemId, emojiFirst, groupNested)
                     val cached = collectionImageCache.getIfAvailable(key)
                     _state.update {
@@ -236,9 +240,13 @@ class CollectionGridViewModel
 
         /**
          * Map each of the given collections that is inside another of the given collections to that parent.
-         * If it is in several, the first parent in the list wins.
+         * If it is in several, the first parent in the list wins. With [findContainers], also return the
+         * collections that hold nothing but other collections.
          */
-        private suspend fun parentCollections(collections: List<BaseItemDto>): Map<UUID, UUID> {
+        private suspend fun parentCollections(
+            collections: List<BaseItemDto>,
+            findContainers: Boolean,
+        ): Pair<Map<UUID, UUID>, Set<UUID>> {
             val userId = serverRepository.currentUser?.id
             val ids = collections.map { it.id }.toSet()
             val semaphore = Semaphore(IMAGE_CONCURRENCY)
@@ -248,30 +256,47 @@ class CollectionGridViewModel
                         viewModelScope.async(WholphinDispatchers.IO) {
                             semaphore.withPermit {
                                 try {
-                                    GetItemsRequestHandler
-                                        .execute(
-                                            api,
-                                            GetItemsRequest(
-                                                userId = userId,
-                                                parentId = collection.id,
-                                                includeItemTypes = listOf(BaseItemKind.BOX_SET),
-                                                enableTotalRecordCount = false,
-                                            ),
-                                        ).content.items
-                                        .map { it.id }
-                                        .filter { it in ids && it != collection.id }
+                                    val childCollections =
+                                        GetItemsRequestHandler
+                                            .execute(
+                                                api,
+                                                GetItemsRequest(
+                                                    userId = userId,
+                                                    parentId = collection.id,
+                                                    includeItemTypes = listOf(BaseItemKind.BOX_SET),
+                                                    enableTotalRecordCount = false,
+                                                ),
+                                            ).content.items
+                                            .map { it.id }
+                                    val onlyCollections =
+                                        findContainers &&
+                                            childCollections.isNotEmpty() &&
+                                            GetItemsRequestHandler.countMatching(
+                                                api,
+                                                GetItemsRequest(
+                                                    userId = userId,
+                                                    parentId = collection.id,
+                                                    excludeItemTypes = listOf(BaseItemKind.BOX_SET),
+                                                    limit = 0,
+                                                    enableTotalRecordCount = true,
+                                                ),
+                                            ) == 0
+                                    childCollections.filter { it in ids && it != collection.id } to onlyCollections
                                 } catch (ex: Exception) {
                                     Timber.w(ex, "Error fetching child collections of %s", collection.id)
-                                    emptyList()
+                                    emptyList<UUID>() to false
                                 }
                             }
                         }
                     }.awaitAll()
             val parents = mutableMapOf<UUID, UUID>()
-            collections.zip(children).forEach { (parent, childIds) ->
+            val containers = mutableSetOf<UUID>()
+            collections.zip(children).forEach { (parent, result) ->
+                val (childIds, onlyCollections) = result
                 childIds.forEach { parents.putIfAbsent(it, parent.id) }
+                if (onlyCollections) containers.add(parent.id)
             }
-            return parents
+            return parents to containers
         }
 
         /**
