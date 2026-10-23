@@ -139,6 +139,7 @@ fun SeasonCard(
     interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
     showImageOverlay: Boolean = false,
     aspectRatio: Float = AspectRatios.TALL,
+    showSubtitle: Boolean = true,
 ) {
     val focused by interactionSource.collectIsFocusedAsState()
     // Do not use `by` here, this way we are Defer reads and recompositions to only when modifier calculates
@@ -216,18 +217,20 @@ fun SeasonCard(
                         .padding(horizontal = Spacing.xs)
                         .enableMarquee(focusedAfterDelay),
             )
-            Text(
-                text = subtitle ?: "",
-                maxLines = 1,
-                textAlign = TextAlign.Center,
-                style = MaterialTheme.typography.bodySmall,
-                fontWeight = FontWeight.Normal,
-                modifier =
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = Spacing.xs)
-                        .enableMarquee(focusedAfterDelay),
-            )
+            if (showSubtitle) {
+                Text(
+                    text = subtitle ?: "",
+                    maxLines = 1,
+                    textAlign = TextAlign.Center,
+                    style = MaterialTheme.typography.bodySmall,
+                    fontWeight = FontWeight.Normal,
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = Spacing.xs)
+                            .enableMarquee(focusedAfterDelay),
+                )
+            }
         }
     }
 }

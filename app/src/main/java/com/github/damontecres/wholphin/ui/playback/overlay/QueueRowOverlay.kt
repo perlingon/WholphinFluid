@@ -36,7 +36,9 @@ import androidx.tv.material3.Text
 import com.github.damontecres.wholphin.R
 import com.github.damontecres.wholphin.data.model.BaseItem
 import com.github.damontecres.wholphin.data.model.PlaylistItem
+import com.github.damontecres.wholphin.ui.AspectRatios
 import com.github.damontecres.wholphin.ui.cards.SeasonCard
+import com.github.damontecres.wholphin.ui.cards.rememberImageUrl
 import com.github.damontecres.wholphin.ui.components.HiddenFocusBox
 import com.github.damontecres.wholphin.ui.formatSeasonNumber
 import com.github.damontecres.wholphin.ui.ifElse
@@ -85,6 +87,20 @@ fun queueHeadline(groups: List<QueueGroup>): String {
     val episodes = seasonGroups.sumOf { it.items.size }
     return pluralStringResource(R.plurals.seasons_count, seasons, seasons) + " · " +
         pluralStringResource(R.plurals.episodes_count, episodes, episodes)
+}
+
+/**
+ * "S1 E3 · Children of the Comet" for an episode, like the title row above the timeline. Other
+ * items just show their name
+ */
+fun queueItemTitle(item: BaseItem): String? {
+    val data = item.data
+    if (item.type != BaseItemKind.EPISODE) return item.name
+    val seasonEpisode =
+        listOfNotNull(data.parentIndexNumber?.let { "S$it" }, data.indexNumber?.let { "E$it" })
+            .joinToString(" ")
+            .takeIf { it.isNotBlank() }
+    return listOfNotNull(seasonEpisode, data.name).joinToString(" · ").takeIf { it.isNotBlank() }
 }
 
 @Composable
@@ -189,7 +205,25 @@ fun QueueRowOverlay(
                         }
                     }
                     SeasonCard(
-                        item = item.item,
+                        title = queueItemTitle(item.item),
+                        subtitle = null,
+                        name = item.item.name,
+                        imageUrl = rememberImageUrl(item.item, 140.dp),
+                        isFavorite =
+                            item.item.data.userData
+                                ?.isFavorite ?: false,
+                        isPlayed =
+                            item.item.data.userData
+                                ?.played ?: false,
+                        unplayedItemCount =
+                            item.item.data.userData
+                                ?.unplayedItemCount ?: 0,
+                        playedPercentage =
+                            item.item.data.userData
+                                ?.playedPercentage ?: 0.0,
+                        numberOfVersions = item.item.data.mediaSourceCount ?: 0,
+                        aspectRatio = item.item.aspectRatio ?: AspectRatios.TALL,
+                        showSubtitle = false,
                         onClick = {
                             onClickPlaylist.invoke(item.item)
                             controllerViewState.hideControls()
