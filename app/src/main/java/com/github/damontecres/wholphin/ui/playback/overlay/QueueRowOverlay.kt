@@ -30,7 +30,6 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.res.pluralStringResource
-import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.MaterialTheme
@@ -91,9 +90,9 @@ fun seasonHeadline(group: QueueGroup): String? {
 }
 
 /**
- * Hint under the controls, about where the playing episode sits in its show:
- * "First Season · 4 episodes left", "Second Season · First of 10 episodes",
- * "Last Season · Final episode" (only for ended shows). Uses the queue, which holds the rest of the series. Queues
+ * Hint under the controls, about where the playing episode sits in its show. Ended shows:
+ * "Season 1 of 3 · 4 episodes left", "Season 2 of 3 · First of 10 episodes", "Last Season · Final episode".
+ * Running shows: "Season 2 · 4 episodes left", and in the newest season "Season 3 · Episode 2". Uses the queue, which holds the rest of the series. Queues
  * that don't follow an episode show "Queue · 8 Items"
  */
 @Composable
@@ -110,21 +109,26 @@ fun queueHeadline(
     }
     val seriesGroups = groups.filter { it.seriesId == current?.seriesId && it.seasonNumber != null }
     val left = seriesGroups.filter { it.seasonNumber == season }.sumOf { it.items.size }
-    // "Last Season" only for shows that have ended (running ones keep the ordinal). A full queue
-    // may stop before the later seasons, so only trust it when it isn't full
+    // A full queue may stop before the later seasons, so the season count is only known when it isn't
     val queueFull = groups.sumOf { it.items.size } >= Playlist.MAX_SIZE - 1
-    val laterSeasons = seriesGroups.any { it.seasonNumber!! > season }
+    val lastQueuedSeason = seriesGroups.maxOfOrNull { it.seasonNumber!! } ?: season
+    val isLatestSeason = !queueFull && lastQueuedSeason <= season
+    val seasonCount = maxOf(season, lastQueuedSeason)
+    val ended = seriesEnded == true
+    // Ended show: "Season 1 of 3", then "Last Season". Running show (or unknown): "Season 3"
     val seasonLabel =
-        if (seriesEnded == true && season > 1 && !laterSeasons && !queueFull) {
-            stringResource(R.string.last_season)
-        } else {
-            stringArrayResource(R.array.season_ordinals).getOrNull(season - 1)
-                ?: formatSeasonNumber(season)
+        when {
+            ended && isLatestSeason && season > 1 -> stringResource(R.string.last_season)
+            ended && !queueFull && seasonCount > 1 -> stringResource(R.string.season_of, season, seasonCount)
+            else -> formatSeasonNumber(season)
         }
+    // The newest season of a running show may still grow, so it shows just the episode number
+    val episodeNumber = current?.indexNumber
     val episodeLabel =
         when {
+            !ended && isLatestSeason && episodeNumber != null -> stringResource(R.string.episode_number, episodeNumber)
             left == 0 -> stringResource(R.string.final_episode)
-            current?.indexNumber == 1 -> pluralStringResource(R.plurals.first_of_episodes, left + 1, left + 1)
+            episodeNumber == 1 -> pluralStringResource(R.plurals.first_of_episodes, left + 1, left + 1)
             else -> pluralStringResource(R.plurals.episodes_left, left, left)
         }
     return "$seasonLabel · $episodeLabel"

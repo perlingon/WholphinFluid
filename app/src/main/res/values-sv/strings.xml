@@ -710,18 +710,8 @@
         <item quantity="other">%1$d objekt</item>
     </plurals>
     <string name="chapter_of">Kapitel %1$d av %2$d</string>
-    <string-array name="season_ordinals">
-        <item>Första säsongen</item>
-        <item>Andra säsongen</item>
-        <item>Tredje säsongen</item>
-        <item>Fjärde säsongen</item>
-        <item>Femte säsongen</item>
-        <item>Sjätte säsongen</item>
-        <item>Sjunde säsongen</item>
-        <item>Åttonde säsongen</item>
-        <item>Nionde säsongen</item>
-        <item>Tionde säsongen</item>
-    </string-array>
+    <string name="season_of">Säsong %1$d av %2$d</string>
+    <string name="episode_number">Avsnitt %1$d</string>
     <string name="last_season">Sista säsongen</string>
     <string name="final_episode">Sista avsnittet</string>
     <plurals name="first_of_episodes">
