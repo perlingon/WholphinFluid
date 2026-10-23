@@ -96,6 +96,7 @@ fun PlaybackOverlay(
     trickplayInfo: TrickplayInfo? = null,
     trickplayUrlFor: (Int) -> String? = { null },
     onClickPlaylist: (BaseItem) -> Unit = {},
+    videoAspectRatio: Float? = null,
     seekBarInteractionSource: MutableInteractionSource = remember { MutableInteractionSource() },
 ) {
     val seekBarFocused by seekBarInteractionSource.collectIsFocusedAsState()
@@ -118,6 +119,9 @@ fun PlaybackOverlay(
 
     // The seek bar and controls never get wider than a 16:9 video, so they stay over the picture on ultrawide screens
     val controlsMaxWidth = FluidLayout.videoWidth()
+
+    // The logo and the chapter & queue rows stay over the picture: a 16:9 area, or wider for an ultrawide video
+    val pictureMaxWidth = FluidLayout.playingVideoWidth(videoAspectRatio)
 
     // This will be calculated after composition
     var controllerHeight by remember { mutableStateOf(0.dp) }
@@ -236,6 +240,7 @@ fun PlaybackOverlay(
                             onChangeState = onChangeState,
                             modifier =
                                 Modifier
+                                    .widthIn(max = pictureMaxWidth)
                                     .padding(horizontal = Spacing.sm)
                                     .fillMaxWidth(),
                         )
@@ -259,6 +264,7 @@ fun PlaybackOverlay(
                             onClickPlaylist = onClickPlaylist,
                             modifier =
                                 Modifier
+                                    .widthIn(max = pictureMaxWidth)
                                     .padding(Spacing.sm)
                                     .fillMaxWidth(),
                         )
@@ -310,23 +316,31 @@ fun PlaybackOverlay(
 
         // Top
         val logoImageUrl = LocalImageUrlService.current.rememberImageUrl(item, ImageType.LOGO)
-        AnimatedVisibility(
-            visible = !showDebugInfo && logoImageUrl.isNotNullOrBlank() && controllerViewState.controlsVisible,
-            enter = slideIn { IntOffset(x = -it.width / 2, y = -it.height / 2) } + fadeIn(),
-            exit = slideOut { IntOffset(x = -it.width / 2, y = -it.height / 2) } + fadeOut(),
+        Box(
             modifier =
                 Modifier
-                    .align(Alignment.TopStart),
+                    .align(Alignment.TopCenter)
+                    .widthIn(max = pictureMaxWidth)
+                    .fillMaxWidth(),
         ) {
-            AsyncImage(
-                model = logoImageUrl,
-                contentDescription = "Logo",
-                alignment = Alignment.TopStart,
+            AnimatedVisibility(
+                visible = !showDebugInfo && logoImageUrl.isNotNullOrBlank() && controllerViewState.controlsVisible,
+                enter = slideIn { IntOffset(x = -it.width / 2, y = -it.height / 2) } + fadeIn(),
+                exit = slideOut { IntOffset(x = -it.width / 2, y = -it.height / 2) } + fadeOut(),
                 modifier =
                     Modifier
-                        .size(width = 240.dp, height = 120.dp)
-                        .padding(Spacing.md),
-            )
+                        .align(Alignment.TopStart),
+            ) {
+                AsyncImage(
+                    model = logoImageUrl,
+                    contentDescription = "Logo",
+                    alignment = Alignment.TopStart,
+                    modifier =
+                        Modifier
+                            .size(width = 240.dp, height = 120.dp)
+                            .padding(Spacing.md),
+                )
+            }
         }
         AnimatedVisibility(
             visible = !showDebugInfo && showClock && controllerViewState.controlsVisible,

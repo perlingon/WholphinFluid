@@ -204,6 +204,8 @@ fun PlaybackPageContent(
     }
 
     val presentationState = rememberPresentationState(player, false)
+    val videoAspectRatio =
+        presentationState.videoSizeDp?.let { size -> if (size.height > 0f) size.width / size.height else null }
     val playbackState by rememberPlayerState(player)
     var showBuffering by remember { mutableStateOf(false) }
     LaunchedEffect(playbackState) {
@@ -515,6 +517,7 @@ fun PlaybackPageContent(
                 currentSegment = state.currentSegment?.segment,
                 showClock = preferences.appPreferences.interfacePreferences.showClock,
                 analyticsState = state.analyticsState,
+                videoAspectRatio = videoAspectRatio,
             )
 
             var subtitleStyleAppliedForHdr by remember { mutableStateOf(state.currentMediaInfo.videoStream?.hdr == true) }
@@ -636,28 +639,36 @@ fun PlaybackPageContent(
             )
         }
 
-        // Ask to skip intros, etc button
-        AnimatedVisibility(
-            showSegment,
+        // Ask to skip intros, etc button, kept over the picture (a 16:9 area, or wider for an ultrawide video)
+        Box(
             modifier =
                 Modifier
-                    .padding(Spacing.xxl)
-                    .align(Alignment.BottomEnd),
+                    .align(Alignment.BottomCenter)
+                    .widthIn(max = FluidLayout.playingVideoWidth(videoAspectRatio))
+                    .fillMaxWidth(),
         ) {
-            state.currentSegment?.let { segment ->
-                val focusRequester = remember { FocusRequester() }
-                LaunchedEffect(Unit) {
-                    focusRequester.tryRequestFocus()
-                    delay(10.seconds)
-                    viewModel.updateSegment(segment.segment.id, true)
+            AnimatedVisibility(
+                showSegment,
+                modifier =
+                    Modifier
+                        .padding(Spacing.xxl)
+                        .align(Alignment.BottomEnd),
+            ) {
+                state.currentSegment?.let { segment ->
+                    val focusRequester = remember { FocusRequester() }
+                    LaunchedEffect(Unit) {
+                        focusRequester.tryRequestFocus()
+                        delay(10.seconds)
+                        viewModel.updateSegment(segment.segment.id, true)
+                    }
+                    SkipSegmentButton(
+                        type = segment.segment.type,
+                        onClick = {
+                            viewModel.updateSegment(segment.segment.id, false)
+                        },
+                        modifier = Modifier.focusRequester(focusRequester),
+                    )
                 }
-                SkipSegmentButton(
-                    type = segment.segment.type,
-                    onClick = {
-                        viewModel.updateSegment(segment.segment.id, false)
-                    },
-                    modifier = Modifier.focusRequester(focusRequester),
-                )
             }
         }
 
