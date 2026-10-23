@@ -90,7 +90,7 @@ fun SeekPreviewImage(
     val context = LocalContext.current
 
     if (previewImageUrl.isNotNullOrBlank()) {
-        val height = 96.dp
+        val height = 64.dp
         val width = height * (trickPlayInfo.width.toFloat() / trickPlayInfo.height)
         val scale = with(LocalDensity.current) { width.toPx() / trickPlayInfo.width }
 
@@ -118,7 +118,7 @@ fun SeekPreviewImage(
             modifier =
                 modifier
                     .clip(PreviewShape)
-                    .border(1.5.dp, color = MaterialTheme.colorScheme.border, shape = PreviewShape)
+                    .border(1.8.dp, color = MaterialTheme.colorScheme.border, shape = PreviewShape)
                     .background(Color.Black)
                     .height(height)
                     .width(width),
