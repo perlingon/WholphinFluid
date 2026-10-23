@@ -593,11 +593,11 @@ fun PlaybackPageContent(
                         Timber.v("Switching SDR/HDR, reapplying subtitle style")
                         subtitleSettings.applyTo(subtitleView)
                     }
-                    if (appliedSubtitleSettings.value != subtitleSettings) {
+                    if (appliedSubtitleSettings.get() != subtitleSettings) {
                         // The style was changed, e.g. from the subtitle style panel during playback
                         subtitleSettings.applyTo(subtitleView)
                         subtitleSettings.media3Override(density).apply(subtitleView)
-                        appliedSubtitleSettings.value = subtitleSettings
+                        appliedSubtitleSettings.set(subtitleSettings)
                     }
                     subtitleView.setSubtitleCues(subtitleCues)
                     if (state.subtitleCues.size > cueCount) {
