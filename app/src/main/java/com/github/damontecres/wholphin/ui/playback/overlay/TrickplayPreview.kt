@@ -17,11 +17,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalResources
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
-import com.github.damontecres.wholphin.R
 import com.github.damontecres.wholphin.ui.formatDuration
 import com.github.damontecres.wholphin.ui.theme.Spacing
 import kotlinx.coroutines.delay
@@ -35,23 +33,14 @@ fun TrickplayPreview(
     trickplayUrlFor: (Int) -> String?,
     modifier: Modifier = Modifier,
     totalJumpMs: Long = 0L,
-    backToStart: Boolean = false,
 ) {
     // How long the jump chip ("+1m 20s") stays after the latest press, and how long it takes to fade
     // out, leaving the bare image. Tuning values, kept local so Live Edit picks up changes.
     val chipShowMs = 1000L
     val chipFadeMs = 400
 
-    val resources = LocalResources.current
-    val seekProgressSec = seekProgressMs / 1000L
-    val seekText = remember(seekProgressSec) { resources.formatDuration(seekProgressSec.seconds) }
     val totalSec = totalJumpMs / 1000L
-    val totalText =
-        when {
-            backToStart -> stringResource(R.string.seek_back_to, seekText)
-            totalSec != 0L -> formatJump(totalSec)
-            else -> null
-        }
+    val totalText = remember(totalSec) { if (totalSec != 0L) formatJump(totalSec) else null }
     var chipVisible by remember { mutableStateOf(false) }
     LaunchedEffect(seekProgressMs) {
         chipVisible = true
@@ -89,13 +78,11 @@ fun TrickplayPreview(
         }
         // Without a preview image, fall back to a label with the time and the total jump
         if (!imageShown) {
+            val resources = LocalResources.current
+            val seekProgressSec = seekProgressMs / 1000L
+            val seekText = remember(seekProgressSec) { resources.formatDuration(seekProgressSec.seconds) }
             Text(
-                text =
-                    when {
-                        backToStart -> totalText ?: seekText
-                        totalText != null -> "$seekText · $totalText"
-                        else -> seekText
-                    },
+                text = if (totalText != null) "$seekText · $totalText" else seekText,
                 color = MaterialTheme.colorScheme.onSurface,
                 style = MaterialTheme.typography.labelLarge,
                 modifier =

@@ -47,7 +47,6 @@ import androidx.compose.ui.unit.dp
 import androidx.tv.material3.MaterialTheme
 import com.github.damontecres.wholphin.ui.playback.ControllerViewState
 import com.github.damontecres.wholphin.ui.playback.calculateSeekAccelerationMultiplier
-import com.github.damontecres.wholphin.ui.playback.isBackKey
 import com.github.damontecres.wholphin.ui.playback.isDpadLeft
 import com.github.damontecres.wholphin.ui.playback.isDpadRight
 import com.github.damontecres.wholphin.ui.theme.Spacing
@@ -94,11 +93,6 @@ fun SteppedSeekBarImpl(
         bufferedProgress = bufferedProgress,
         durationMs = durationMs,
         originProgress = if (isFocused && hasSeeked) originProgress else null,
-        onBackToOrigin = {
-            controllerViewState.pulseControls()
-            seekProgress = originProgress
-            seek(seekProgress)
-        },
         onLeft = { multiplier ->
             controllerViewState.pulseControls()
             if (!hasSeeked) originProgress = progressToUse
@@ -178,11 +172,6 @@ fun IntervalSeekBarImpl(
         enabled = enabled,
         progress = (progressToUse.toDouble() / durationMs).toFloat(),
         originProgress = if (isFocused && hasSeeked) (originMs.toDouble() / durationMs).toFloat() else null,
-        onBackToOrigin = {
-            controllerViewState.pulseControls()
-            seekPositionMs = originMs
-            onSeek(seekPositionMs)
-        },
         bufferedProgress = bufferedProgress,
         durationMs = durationMs,
         onLeft = { multiplier ->
@@ -224,7 +213,6 @@ private fun SeekBarDisplay(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     originProgress: Float? = null,
-    onBackToOrigin: () -> Unit = {},
 ) {
     val color = MaterialTheme.colorScheme.border
     val onSurface = MaterialTheme.colorScheme.onSurface
@@ -239,8 +227,6 @@ private fun SeekBarDisplay(
     val isFocused by interactionSource.collectIsFocusedAsState()
     var leftHandledByRepeat by remember { mutableStateOf(false) }
     var rightHandledByRepeat by remember { mutableStateOf(false) }
-    // Back while seeking jumps back to where seeking started (an undo); a second Back works as usual
-    var backToOriginPending by remember { mutableStateOf(false) }
     val animatedIndicatorHeight by animateDpAsState(
         targetValue = 6.dp.times((if (isFocused) 2f else 1f)),
     )
@@ -253,27 +239,6 @@ private fun SeekBarDisplay(
                     .height(animatedIndicatorHeight)
                     .padding(horizontal = Spacing.xs)
                     .onPreviewKeyEvent { event ->
-                        if (isBackKey(event)) {
-                            when (event.type) {
-                                KeyEventType.KeyDown -> {
-                                    backToOriginPending = originProgress != null && originProgress != progress
-                                    return@onPreviewKeyEvent backToOriginPending
-                                }
-
-                                KeyEventType.KeyUp -> {
-                                    if (backToOriginPending) {
-                                        backToOriginPending = false
-                                        onBackToOrigin()
-                                        return@onPreviewKeyEvent true
-                                    }
-                                    return@onPreviewKeyEvent false
-                                }
-
-                                else -> {
-                                    return@onPreviewKeyEvent false
-                                }
-                            }
-                        }
                         if (!isDpadLeft(event) && !isDpadRight(event)) {
                             Timber.v("Ignoring %s", event)
                             return@onPreviewKeyEvent false
