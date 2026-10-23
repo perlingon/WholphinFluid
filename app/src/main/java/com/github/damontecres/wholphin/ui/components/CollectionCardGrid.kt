@@ -197,14 +197,23 @@ class CollectionGridViewModel
             val placed = mutableSetOf<UUID>()
             var groupIndex = 0
 
-            fun emit(run: List<CollectionCardItem>) {
+            // Only groups of children of a first level collection get a heading (the parent's name)
+            fun titleFor(parent: CollectionCardItem) = parent.item.name.takeIf { parent.parentId == null }
+
+            fun emit(
+                run: List<CollectionCardItem>,
+                title: String?,
+            ) {
                 var current = mutableListOf<CollectionCardItem>()
+                var currentTitle = title
 
                 fun close() {
                     if (current.isNotEmpty()) {
-                        result.addAll(current.map { it.copy(groupIndex = groupIndex) })
+                        result.addAll(current.map { it.copy(groupIndex = groupIndex, groupTitle = currentTitle) })
                         groupIndex++
                         current = mutableListOf()
+                        // The rest of a run after a child group continues without repeating the heading
+                        currentTitle = null
                     }
                 }
                 run.filter { placed.add(it.id) }.forEach { c ->
@@ -212,16 +221,16 @@ class CollectionGridViewModel
                     val children = childrenOf[c.id].orEmpty().filter { it.id !in placed }
                     if (children.isNotEmpty()) {
                         close()
-                        emit(children)
+                        emit(children, titleFor(c))
                     }
                 }
                 close()
             }
-            emoji.forEach { parent -> childrenOf[parent.id]?.let { emit(it) } }
+            emoji.forEach { parent -> childrenOf[parent.id]?.let { emit(it, titleFor(parent)) } }
             // Not inside another collection
-            emit(rest.filter { it.parentId == null })
+            emit(rest.filter { it.parentId == null }, null)
             // Anything left over (e.g. collections inside each other)
-            emit(rest.filter { it.id !in placed })
+            emit(rest.filter { it.id !in placed }, null)
             return result
         }
 
@@ -422,6 +431,8 @@ data class CollectionCardItem(
     val isEmoji: Boolean = false,
     /** Which group of cards this belongs to (-1 for the emoji collections), groups are separated by a gap */
     val groupIndex: Int = 0,
+    /** Heading shown above this card's group, if any */
+    val groupTitle: String? = null,
 ) : CardGridItem {
     val id: UUID get() = item.id
     override val gridId: String get() = item.gridId
@@ -586,9 +597,18 @@ fun CollectionCardGrid(
                         var offset = emojiGroup.size
                         restSubgroups.forEachIndexed { groupIndex, subgroup ->
                             if (emojiGroup.isNotEmpty() || groupIndex > 0) {
-                                // Gap between groups, no heading
+                                // Gap between groups
                                 item(key = "group_gap_$groupIndex", span = { GridItemSpan(maxLineSpan) }) {
                                     Spacer(Modifier.height(groupGap))
+                                }
+                            }
+                            subgroup.first().groupTitle?.let { title ->
+                                item(key = "group_title_$groupIndex", span = { GridItemSpan(maxLineSpan) }) {
+                                    Text(
+                                        text = title,
+                                        style = MaterialTheme.typography.titleLarge,
+                                        color = MaterialTheme.colorScheme.onBackground,
+                                    )
                                 }
                             }
                             val start = offset
