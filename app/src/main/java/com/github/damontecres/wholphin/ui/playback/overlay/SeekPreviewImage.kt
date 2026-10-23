@@ -3,7 +3,6 @@ package com.github.damontecres.wholphin.ui.playback.overlay
 import androidx.annotation.FloatRange
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -16,6 +15,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
@@ -98,7 +98,10 @@ fun SeekPreviewImage(
     // Height of the preview image; the width follows the video's shape (64 dp is about 114 dp wide at 16:9)
     val previewHeight = 68.dp
     val previewCornerRadius = 4.dp
-    val previewBorder = 1.8.dp
+    // Drop shadow under the preview: its size (elevation, e.g. 4.dp subtle … 16.dp strong) and colour.
+    // The colour only applies on Android 9+; older boxes draw the system's grey shadow.
+    val previewShadow = 12.dp
+    val previewShadowColor = Color.Black
     val previewShape = RoundedCornerShape(previewCornerRadius)
     // The jump text ("+1m 20s" / "Back to 12:34") sits at the bottom of the image on a dark fade.
     // How much of the image height the fade covers, how dark it gets at the bottom, the text style
@@ -136,9 +139,13 @@ fun SeekPreviewImage(
         Box(
             modifier =
                 modifier
-                    .clip(previewShape)
-                    .border(previewBorder, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f), shape = previewShape)
-                    .background(Color.Black)
+                    .shadow(
+                        elevation = previewShadow,
+                        shape = previewShape,
+                        clip = true,
+                        ambientColor = previewShadowColor,
+                        spotColor = previewShadowColor,
+                    ).background(Color.Black)
                     .height(height)
                     .width(width),
         ) {
