@@ -46,6 +46,7 @@ import com.github.damontecres.wholphin.ui.components.HiddenFocusBox
 import com.github.damontecres.wholphin.ui.formatSeasonNumber
 import com.github.damontecres.wholphin.ui.ifElse
 import com.github.damontecres.wholphin.ui.playback.ControllerViewState
+import com.github.damontecres.wholphin.ui.playback.isBackKey
 import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.ui.theme.rowHeadline
 import com.github.damontecres.wholphin.ui.tryRequestFocus
@@ -239,6 +240,11 @@ fun QueueRowOverlay(
                                 controllerViewState.pulseControls()
                             }
                         }.onPreviewKeyEvent {
+                            // Back returns to the controls instead of hiding them
+                            if (isBackKey(it)) {
+                                if (it.type == KeyEventType.KeyUp) onChangeState.invoke(OverlayViewState.CONTROLLER)
+                                return@onPreviewKeyEvent true
+                            }
                             if (it.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
                             when (it.key) {
                                 // Past the last season there is nowhere to go, so stay put
@@ -250,15 +256,15 @@ fun QueueRowOverlay(
                                     true
                                 }
 
-                                // From the first season, up leaves the queue as before
+                                // Up from the first season goes back to the controls, from a later one to the previous season
                                 Key.DirectionUp -> {
                                     if (groupIndex > 0) {
                                         groupIndex--
                                         focusFirst = true
-                                        true
                                     } else {
-                                        false
+                                        onChangeState.invoke(OverlayViewState.CONTROLLER)
                                     }
+                                    true
                                 }
 
                                 else -> {
