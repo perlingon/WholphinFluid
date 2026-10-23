@@ -80,25 +80,13 @@ fun groupQueueBySeason(queue: List<PlaylistItem>): List<QueueGroup> {
 }
 
 /**
- * Heading for one season's run of episodes: "Season 2 · 4 episodes left" for the season being
- * watched, "Season 3 · 10 Episodes" for a later one. Null for a group without a season
+ * Heading for one season's run of episodes, e.g. "Season 2 · 10 Episodes". Null for a group without a season
  */
 @Composable
-fun seasonHeadline(
-    group: QueueGroup,
-    currentItem: BaseItem?,
-): String? {
+fun seasonHeadline(group: QueueGroup): String? {
     val season = group.seasonNumber ?: return null
     val count = group.items.size
-    val isCurrentSeason =
-        currentItem?.data?.seriesId == group.seriesId && currentItem?.data?.parentIndexNumber == season
-    val episodes =
-        if (isCurrentSeason) {
-            pluralStringResource(R.plurals.episodes_left, count, count)
-        } else {
-            pluralStringResource(R.plurals.episodes_count, count, count)
-        }
-    return formatSeasonNumber(season) + " · " + episodes
+    return formatSeasonNumber(season) + " · " + pluralStringResource(R.plurals.episodes_count, count, count)
 }
 
 /**
@@ -187,7 +175,7 @@ fun QueueRowOverlay(
         val headlineInset = 0.dp
         Text(
             text =
-                seasonHeadline(group, currentItem) ?: (
+                seasonHeadline(group) ?: (
                     stringResource(R.string.queue) + " · " +
                         pluralStringResource(R.plurals.items_count, group.items.size, group.items.size)
                 ),
