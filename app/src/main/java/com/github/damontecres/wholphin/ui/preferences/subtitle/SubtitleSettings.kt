@@ -6,6 +6,8 @@ import android.content.res.Resources
 import android.graphics.Typeface
 import android.os.Build
 import android.view.Display
+import android.view.ViewGroup
+import android.widget.FrameLayout
 import androidx.annotation.Dimension
 import androidx.annotation.OptIn
 import androidx.compose.ui.graphics.Color
@@ -14,6 +16,7 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.res.ResourcesCompat
+import androidx.media3.common.text.Cue
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.ui.CaptionStyleCompat
 import androidx.media3.ui.SubtitleView
@@ -364,11 +367,11 @@ object SubtitleSettings {
                 conditionalPreferences =
                     listOf(
                         ConditionalPreferences(
-                            condition = { it.edgeStyle == EdgeStyle.EDGE_SOLID },
+                            condition = { it.hasOutline },
                             preferences = listOf(EdgeThickness),
                         ),
                         ConditionalPreferences(
-                            condition = { it.edgeStyle == EdgeStyle.EDGE_SHADOW },
+                            condition = { it.hasShadow },
                             preferences = listOf(ShadowOffset, ShadowBlur, ShadowOpacity),
                         ),
                     ),
@@ -420,6 +423,15 @@ object SubtitleSettings {
         opacity: Int,
     ) = ((opacity / 100.0 * 255).toInt().shl(24)).or(color.and(0x00FFFFFF))
 
+    val SubtitlePreferences.hasOutline: Boolean
+        get() = edgeStyle == EdgeStyle.EDGE_SOLID || edgeStyle == EdgeStyle.EDGE_OUTLINE_SHADOW
+
+    val SubtitlePreferences.hasShadow: Boolean
+        get() = edgeStyle == EdgeStyle.EDGE_SHADOW || edgeStyle == EdgeStyle.EDGE_OUTLINE_SHADOW
+
+    private val SubtitlePreferences.shadowColor: Int
+        get() = combine(edgeColor, fontOpacity * effectiveShadowOpacity / 100)
+
     @OptIn(UnstableApi::class)
     fun SubtitlePreferences.toSubtitleStyle(context: Context): CaptionStyleCompat {
         val bg = combine(backgroundColor, backgroundOpacity)
@@ -429,16 +441,47 @@ object SubtitleSettings {
             if (backgroundStyle == BackgroundStyle.BG_BOXED) bg else 0,
             when (edgeStyle) {
                 EdgeStyle.EDGE_NONE, EdgeStyle.UNRECOGNIZED -> CaptionStyleCompat.EDGE_TYPE_NONE
-                EdgeStyle.EDGE_SOLID -> CaptionStyleCompat.EDGE_TYPE_OUTLINE
+                EdgeStyle.EDGE_SOLID, EdgeStyle.EDGE_OUTLINE_SHADOW -> CaptionStyleCompat.EDGE_TYPE_OUTLINE
                 EdgeStyle.EDGE_SHADOW -> CaptionStyleCompat.EDGE_TYPE_DROP_SHADOW
             },
-            if (edgeStyle == EdgeStyle.EDGE_SHADOW) {
-                combine(edgeColor, fontOpacity * effectiveShadowOpacity / 100)
-            } else {
-                combine(edgeColor, fontOpacity)
-            },
+            if (edgeStyle == EdgeStyle.EDGE_SHADOW) shadowColor else combine(edgeColor, fontOpacity),
             subtitleTypeface(context),
         )
+    }
+
+    /**
+     * Style for the shadow layer of Outline + shadow: the text in the edge color with a drop
+     * shadow. The outlined text drawn on top covers the text itself, so only the shadow shows
+     */
+    @OptIn(UnstableApi::class)
+    private fun SubtitlePreferences.toShadowLayerStyle(context: Context): CaptionStyleCompat =
+        CaptionStyleCompat(
+            combine(edgeColor, fontOpacity),
+            0,
+            0,
+            CaptionStyleCompat.EDGE_TYPE_DROP_SHADOW,
+            shadowColor,
+            subtitleTypeface(context),
+        )
+
+    private const val SHADOW_LAYER_TAG = "subtitle-shadow-layer"
+
+    /**
+     * media3 draws one edge type per [SubtitleView], so Outline + shadow draws the shadow with a
+     * second view inside the first, underneath its outlined text
+     */
+    @OptIn(UnstableApi::class)
+    private val SubtitleView.shadowLayer: SubtitleView?
+        get() = findViewWithTag(SHADOW_LAYER_TAG)
+
+    /**
+     * Sets the cues on a [SubtitleView] styled with [applyStyleTo] or [applyTo], including its
+     * shadow layer
+     */
+    @OptIn(UnstableApi::class)
+    fun SubtitleView.setSubtitleCues(cues: List<Cue>?) {
+        setCues(cues)
+        shadowLayer?.setCues(cues)
     }
 
     /**
@@ -526,9 +569,38 @@ object SubtitleSettings {
 
     @OptIn(UnstableApi::class)
     fun SubtitlePreferences.applyTo(view: SubtitleView) {
+        applyStyleTo(view)
+        view.setBottomPaddingFraction(margin.toFloat() / 100f)
+        view.shadowLayer?.setBottomPaddingFraction(margin.toFloat() / 100f)
+    }
+
+    /**
+     * Applies everything but the margin, adding or removing the shadow layer for Outline + shadow
+     */
+    @OptIn(UnstableApi::class)
+    fun SubtitlePreferences.applyStyleTo(view: SubtitleView) {
         view.setStyle(toSubtitleStyle(view.context))
         view.setFixedTextSize(Dimension.SP, fontSize.toFloat())
-        view.setBottomPaddingFraction(margin.toFloat() / 100f)
+        var shadowLayer = view.shadowLayer
+        if (edgeStyle == EdgeStyle.EDGE_OUTLINE_SHADOW) {
+            if (shadowLayer == null) {
+                shadowLayer =
+                    SubtitleView(view.context).apply {
+                        tag = SHADOW_LAYER_TAG
+                        layoutParams =
+                            FrameLayout.LayoutParams(
+                                ViewGroup.LayoutParams.MATCH_PARENT,
+                                ViewGroup.LayoutParams.MATCH_PARENT,
+                            )
+                    }
+                // Index 0 draws it before, so underneath, the view's own subtitles
+                view.addView(shadowLayer, 0)
+            }
+            shadowLayer.setStyle(toShadowLayerStyle(view.context))
+            shadowLayer.setFixedTextSize(Dimension.SP, fontSize.toFloat())
+        } else if (shadowLayer != null) {
+            view.removeView(shadowLayer)
+        }
     }
 
     fun SubtitlePreferences.calculateEdgeSize(density: Density): Float = with(density) { (edgeThickness / 2f).dp.toPx() }
@@ -566,18 +638,19 @@ object SubtitleSettings {
                 MPVLib.setPropertyDouble("sub-outline-size", 1.15)
             }
 
-            EdgeStyle.EDGE_SHADOW -> {
+            EdgeStyle.EDGE_SHADOW,
+            EdgeStyle.EDGE_OUTLINE_SHADOW,
+            -> {
                 val shadowOffsetPx = with(density) { (effectiveShadowOffset / 2f).dp.toPx() * .8 }
                 MPVLib.setPropertyInt("sub-shadow-offset", shadowOffsetPx.toInt())
-                MPVLib.setPropertyColor(
-                    "sub-shadow-color",
-                    Color(combine(edgeColor, fontOpacity * effectiveShadowOpacity / 100)),
-                )
+                MPVLib.setPropertyColor("sub-shadow-color", Color(shadowColor))
                 MPVLib.setPropertyDouble("sub-outline-size", 0.0)
             }
         }
-        val outlineSizePx = calculateEdgeSize(density) * .8
-        MPVLib.setPropertyDouble("sub-outline-size", outlineSizePx)
+        if (hasOutline) {
+            val outlineSizePx = calculateEdgeSize(density) * .8
+            MPVLib.setPropertyDouble("sub-outline-size", outlineSizePx)
+        }
 
 //        if (fontBold) {
 //            MPVLib.setPropertyString("sub-font", "Roboto Bold")

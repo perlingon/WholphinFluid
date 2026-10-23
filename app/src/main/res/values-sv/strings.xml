@@ -438,6 +438,7 @@
     <string name="magenta">Purpurröd</string>
     <string name="stars">Stjärnor</string>
     <string name="subtitle_edge_shadow">Skugga</string>
+    <string name="subtitle_edge_outline_shadow">Kontur + skugga</string>
     <string name="avc">AVC</string>
     <string name="volume_lowest">Lägsta</string>
     <string name="volume_low">Låg</string>
