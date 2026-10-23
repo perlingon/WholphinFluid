@@ -105,6 +105,7 @@ class CollectionGridViewModel
         @Assisted private val itemId: UUID,
         @Assisted("recursive") private val recursive: Boolean,
         @Assisted("emojiOnly") private val emojiOnly: Boolean,
+        @Assisted("groupNested") private val groupNested: Boolean,
     ) : ViewModel() {
         @AssistedFactory
         interface Factory {
@@ -112,6 +113,7 @@ class CollectionGridViewModel
                 itemId: UUID,
                 @Assisted("recursive") recursive: Boolean,
                 @Assisted("emojiOnly") emojiOnly: Boolean,
+                @Assisted("groupNested") groupNested: Boolean,
             ): CollectionGridViewModel
         }
 
@@ -137,10 +139,14 @@ class CollectionGridViewModel
                         api.userLibraryApi.getItem(itemId = itemId).content.let {
                             BaseItem(it, false)
                         }
-                    val collections =
+                    val all =
                         GetItemsRequestHandler
                             .execute(api, collectionsRequest())
                             .content.items
+                    val nested = if (groupNested) nestedCollectionIds(all) else emptySet()
+                    val collections =
+                        all
+                            .filter { it.id !in nested }
                             .filter { !emojiOnly || it.name.startsWithEmoji() }
                             .map { CollectionCardItem(BaseItem(it, false), null) }
                             // Emoji collections first, then the rest. Both groups A-Z, ignoring the leading emoji
@@ -148,7 +154,7 @@ class CollectionGridViewModel
                                 compareByDescending<CollectionCardItem> { it.isEmoji }
                                     .thenBy(String.CASE_INSENSITIVE_ORDER) { it.sortName.withoutLeadingEmoji() },
                             )
-                    val key = CollectionCacheKey(serverRepository.currentUser?.id, itemId, emojiOnly)
+                    val key = CollectionCacheKey(serverRepository.currentUser?.id, itemId, emojiOnly, groupNested)
                     val cached = collectionImageCache.getIfAvailable(key)
                     _state.update {
                         it.copy(
@@ -169,6 +175,41 @@ class CollectionGridViewModel
                     _state.update { it.copy(item = DataLoadingState.Error(ex)) }
                 }
             }
+        }
+
+        /**
+         * IDs of the given collections that are inside another of the given collections
+         */
+        private suspend fun nestedCollectionIds(collections: List<BaseItemDto>): Set<UUID> {
+            val userId = serverRepository.currentUser?.id
+            val ids = collections.map { it.id }.toSet()
+            val semaphore = Semaphore(IMAGE_CONCURRENCY)
+            return collections
+                .map { collection ->
+                    viewModelScope.async(WholphinDispatchers.IO) {
+                        semaphore.withPermit {
+                            try {
+                                GetItemsRequestHandler
+                                    .execute(
+                                        api,
+                                        GetItemsRequest(
+                                            userId = userId,
+                                            parentId = collection.id,
+                                            includeItemTypes = listOf(BaseItemKind.BOX_SET),
+                                            enableTotalRecordCount = false,
+                                        ),
+                                    ).content.items
+                                    .map { it.id }
+                                    .filter { it in ids && it != collection.id }
+                            } catch (ex: Exception) {
+                                Timber.w(ex, "Error fetching child collections of %s", collection.id)
+                                emptyList()
+                            }
+                        }
+                    }
+                }.awaitAll()
+                .flatten()
+                .toSet()
         }
 
         /**
@@ -309,6 +350,7 @@ data class CollectionCacheKey(
     val userId: UUID?,
     val parentId: UUID,
     val emojiOnly: Boolean,
+    val groupNested: Boolean,
 )
 
 private val collectionImageCache by lazy {
@@ -338,11 +380,12 @@ fun CollectionCardGrid(
     recursive: Boolean,
     modifier: Modifier = Modifier,
     emojiOnly: Boolean = false,
+    groupNested: Boolean = false,
     showTitle: Boolean = false,
     viewModel: CollectionGridViewModel =
         hiltViewModel<CollectionGridViewModel, CollectionGridViewModel.Factory>(
-            key = "${itemId}_collection_cards_$emojiOnly",
-            creationCallback = { it.create(itemId, recursive, emojiOnly) },
+            key = "${itemId}_collection_cards_${emojiOnly}_$groupNested",
+            creationCallback = { it.create(itemId, recursive, emojiOnly, groupNested) },
         ),
 ) {
     val columns = 4

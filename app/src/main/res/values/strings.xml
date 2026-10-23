@@ -925,6 +925,8 @@
     <string name="confirm_enable_experimental_body">Experimental settings may be unstable!\n\n These may removed or changed in any release.</string>
     <string name="video_tunneling">Video tunneling</string>
     <string name="emoji_collections_as_main">Treat collections with emojis as main collections</string>
+    <string name="group_collections">Group collections when possible</string>
+    <string name="group_collections_summary">Collections inside another collection are only shown inside that collection</string>
     <string name="emoji_collections_as_main_summary">Only collections whose name begins with an emoji are shown on the Collections pages</string>
 
     <string name="d_pad_seek_mode_title">D-Pad seek bar mode</string>

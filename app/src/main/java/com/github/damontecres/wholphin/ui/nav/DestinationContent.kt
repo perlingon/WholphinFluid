@@ -462,6 +462,7 @@ fun CollectionFolder(
                 itemId = destination.itemId,
                 recursive = false,
                 emojiOnly = preferences.appPreferences.advancedPreferences.emojiCollectionsAsMain,
+                groupNested = preferences.appPreferences.advancedPreferences.groupCollections,
                 showTitle = true,
                 modifier = modifier,
             )

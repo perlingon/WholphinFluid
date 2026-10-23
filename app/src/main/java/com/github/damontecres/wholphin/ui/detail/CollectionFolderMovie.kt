@@ -107,6 +107,7 @@ fun CollectionFolderMovie(
                     itemId = destination.itemId,
                     recursive = true,
                     emojiOnly = preferences.appPreferences.advancedPreferences.emojiCollectionsAsMain,
+                    groupNested = preferences.appPreferences.advancedPreferences.groupCollections,
                     modifier =
                         Modifier
                             .fillMaxSize()
