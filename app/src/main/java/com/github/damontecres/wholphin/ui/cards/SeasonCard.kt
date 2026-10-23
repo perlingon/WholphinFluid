@@ -149,6 +149,9 @@ fun SeasonCard(
     aspectRatio: Float = AspectRatios.TALL,
     showSubtitle: Boolean = true,
     outlineColor: Color = Color.Unspecified,
+    // Focus outline, e.g. on the playing episode; unspecified keeps the theme's
+    focusedOutlineColor: Color = Color.Unspecified,
+    focusedOutlineWidth: Dp = 3.dp,
     dimAmount: Float = 0f,
     scale: CardScale = CardDefaults.scale(),
     // Drawn over the image, e.g. a play/pause icon on the playing episode
@@ -183,17 +186,34 @@ fun SeasonCard(
             scale = scale,
             // An outline while not focused (e.g. the playing episode in the player); focus keeps its own
             border =
-                if (outlineColor.isSpecified) {
-                    CardDefaults.border(
-                        border =
-                            Border(
-                                border = BorderStroke(2.dp, outlineColor),
-                                // Matches the Card's default shape
-                                shape = RoundedCornerShape(8.dp),
-                            ),
-                    )
-                } else {
-                    CardDefaults.border()
+                when {
+                    outlineColor.isSpecified && focusedOutlineColor.isSpecified -> {
+                        CardDefaults.border(
+                            border = Border(BorderStroke(2.dp, outlineColor), shape = RoundedCornerShape(8.dp)),
+                            focusedBorder = Border(BorderStroke(focusedOutlineWidth, focusedOutlineColor), shape = RoundedCornerShape(8.dp)),
+                        )
+                    }
+
+                    outlineColor.isSpecified -> {
+                        CardDefaults.border(
+                            border =
+                                Border(
+                                    border = BorderStroke(2.dp, outlineColor),
+                                    // Matches the Card's default shape
+                                    shape = RoundedCornerShape(8.dp),
+                                ),
+                        )
+                    }
+
+                    focusedOutlineColor.isSpecified -> {
+                        CardDefaults.border(
+                            focusedBorder = Border(BorderStroke(focusedOutlineWidth, focusedOutlineColor), shape = RoundedCornerShape(8.dp)),
+                        )
+                    }
+
+                    else -> {
+                        CardDefaults.border()
+                    }
                 },
             colors =
                 CardDefaults.colors(

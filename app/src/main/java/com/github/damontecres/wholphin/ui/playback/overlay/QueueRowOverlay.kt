@@ -14,6 +14,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -228,6 +229,11 @@ fun QueueRowOverlay(
         val cardImageHeight = 112.dp
         val cardGap = Spacing.lg
         val playingOutlineColor = Color.White
+        // Outline on the playing episode while it has focus
+        val playingFocusedOutlineColor = Color.White
+        val playingFocusedOutlineWidth = 4.dp
+        // Up from the playing episode goes straight back to the controls
+        var playingCardFocused by remember { mutableStateOf(false) }
         // How dark the cards that aren't focused get (0-1), and their size next to the focused one
         val cardDim = .5f
         val cardUnfocusedScale = .9f
@@ -281,9 +287,10 @@ fun QueueRowOverlay(
                                     true
                                 }
 
-                                // Up from the first season goes back to the controls, from a later one to the previous season
+                                // Up from the first season or the playing episode goes back to the controls, otherwise to the
+                                // previous season
                                 Key.DirectionUp -> {
-                                    if (groupIndex > 0) {
+                                    if (groupIndex > 0 && !playingCardFocused) {
                                         groupIndex--
                                         focusFirst = true
                                     } else {
@@ -315,6 +322,12 @@ fun QueueRowOverlay(
                         }
                     }
                     val isPlaying = item.id == currentItem?.id
+                    if (isPlaying) {
+                        DisposableEffect(isFocused) {
+                            playingCardFocused = isFocused
+                            onDispose { playingCardFocused = false }
+                        }
+                    }
                     SeasonCard(
                         title = queueItemTitle(item.item),
                         subtitle = null,
@@ -350,6 +363,8 @@ fun QueueRowOverlay(
                         // Watched checkmark (and progress bar) on the image
                         showImageOverlay = true,
                         outlineColor = if (isPlaying) playingOutlineColor else Color.Unspecified,
+                        focusedOutlineColor = if (isPlaying) playingFocusedOutlineColor else Color.Unspecified,
+                        focusedOutlineWidth = playingFocusedOutlineWidth,
                         dimAmount = if (isFocused || isPlaying) 0f else cardDim,
                         imageOverlay = {
                             if (isPlaying) {
