@@ -20,6 +20,7 @@ import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
+import com.github.damontecres.wholphin.R
 import com.github.damontecres.wholphin.ui.formatDuration
 import com.github.damontecres.wholphin.ui.theme.Spacing
 import kotlinx.coroutines.delay
@@ -48,7 +49,7 @@ fun TrickplayPreview(
     // "Back to 12:34" in the same spot instead of a jump
     var hasJumped by remember { mutableStateOf(false) }
     LaunchedEffect(totalSec) { if (totalSec != 0L) hasJumped = true }
-    val chipText = totalText ?: if (hasJumped) "Back to $seekText" else null
+    val chipText = totalText ?: if (hasJumped) resources.getString(R.string.seek_back_to, seekText) else null
     var chipVisible by remember { mutableStateOf(false) }
     LaunchedEffect(seekProgressMs) {
         chipVisible = true
