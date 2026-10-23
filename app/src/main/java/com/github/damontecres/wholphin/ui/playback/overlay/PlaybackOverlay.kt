@@ -116,15 +116,6 @@ fun PlaybackOverlay(
 
     val density = LocalDensity.current
 
-    val titleHeight =
-        remember(item?.title, density) {
-            if (item?.title.isNotNullOrBlank()) with(density) { titleTextSize.toDp() } else 0.dp
-        }
-    val subtitleHeight =
-        remember(item?.subtitleLong, density) {
-            if (item?.subtitleLong.isNotNullOrBlank()) with(density) { subtitleTextSize.toDp() } else 0.dp
-        }
-
     // The seek bar and controls never get wider than a 16:9 video, so they stay over the picture on ultrawide screens
     val controlsMaxWidth = FluidLayout.videoWidth()
 
@@ -296,7 +287,10 @@ fun PlaybackOverlay(
         }
 
         CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
-            // Trickplay
+            // Trickplay. The preview sits above the whole controls block (title row included), measured
+            // from its real height. Tuning value, kept local so Live Edit picks up changes:
+            // extra space between the top of the title row and the preview (negative = overlap)
+            val previewLift = Spacing.sm
             AnimatedVisibility(
                 visible = controllerViewState.controlsVisible && seekProgressPercent >= 0 && seekBarFocused,
                 enter =
@@ -323,7 +317,7 @@ fun PlaybackOverlay(
                                 .align(Alignment.BottomStart)
                                 .offsetByPercent(
                                     xPercentage = seekProgressPercent.coerceIn(0f, 1f),
-                                ).padding(bottom = controllerHeight - titleHeight - subtitleHeight),
+                                ).padding(bottom = controllerHeight + previewLift),
                     ) {
                         TrickplayPreview(
                             seekProgressMs = seekProgressMs,
