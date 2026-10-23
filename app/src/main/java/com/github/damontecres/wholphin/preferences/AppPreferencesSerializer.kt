@@ -291,4 +291,5 @@ fun SubtitlePreferences.Builder.resetSubtitles() {
     shadowBlur = SubtitleSettings.ShadowBlur.defaultValue.toInt()
     shadowOpacity = SubtitleSettings.ShadowOpacity.defaultValue.toInt()
     outlineOpacity = SubtitleSettings.OutlineOpacity.defaultValue.toInt()
+    shadowColor = SubtitleSettings.ShadowColor.defaultValue.toArgb()
 }

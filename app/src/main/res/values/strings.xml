@@ -741,6 +741,7 @@
     <string name="subtitle_shadow_softness">Shadow softness</string>
     <string name="subtitle_shadow_opacity">Shadow opacity</string>
     <string name="subtitle_outline_opacity">Outline opacity</string>
+    <string name="subtitle_shadow_color">Shadow color</string>
 
     <string name="background_style_wrap">Wrap</string>
     <string name="background_style_boxed">Boxed</string>
