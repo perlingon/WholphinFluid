@@ -1024,5 +1024,4 @@
     <string name="home_settings_source_server_profile">Server user profile</string>
     <string name="home_settings_source_plugin">Server default</string>
     <string name="home_settings_source_web">User web client</string>
-    <string name="seek_back_to">Back to %1$s</string>
 </resources>
