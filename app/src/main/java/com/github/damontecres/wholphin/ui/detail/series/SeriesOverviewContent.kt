@@ -1,6 +1,7 @@
 package com.github.damontecres.wholphin.ui.detail.series
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.focusGroup
@@ -118,6 +119,9 @@ fun SeriesOverviewContent(
     val episodeDim = .5f
     val episodeUnfocusedScale = .9f
     val episodeFocusedScale = 1f
+    // Gap between episodes, and the extra room on each side of the focused one (same as the player's row)
+    val episodeGap = Spacing.sm
+    val focusedEpisodeGap = Spacing.sm
 
     val scrollState = rememberScrollState()
     val scrollConnection = rememberDelayedNestedScroll()
@@ -232,7 +236,7 @@ fun SeriesOverviewContent(
                         var epPosition by rememberInt(position.episodeRowIndex)
                         LazyRow(
                             state = state,
-                            horizontalArrangement = Arrangement.spacedBy(Spacing.md),
+                            horizontalArrangement = Arrangement.spacedBy(episodeGap),
                             contentPadding = PaddingValues(start = FluidLayout.rowStart(Spacing.md), end = Spacing.md),
                             modifier =
                                 Modifier
@@ -250,6 +254,7 @@ fun SeriesOverviewContent(
                                 }
                                 val highlighted =
                                     if (cardRowHasFocus) episodeFocused else episodeIndex == position.episodeRowIndex
+                                val sideGap by animateDpAsState(if (episodeFocused) focusedEpisodeGap else 0.dp, label = "focusedEpisodeGap")
                                 BannerCard(
                                     name = episode?.name,
                                     item = episode,
@@ -273,6 +278,7 @@ fun SeriesOverviewContent(
                                     },
                                     modifier =
                                         Modifier
+                                            .padding(horizontal = sideGap)
                                             .ifElse(
                                                 episodeIndex == position.episodeRowIndex,
                                                 Modifier
