@@ -6,9 +6,12 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
@@ -23,9 +26,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.MaterialTheme
+import androidx.tv.material3.Text
 import coil3.compose.rememberAsyncImagePainter
 import coil3.request.ImageRequest
 import com.github.damontecres.wholphin.ui.isNotNullOrBlank
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import org.jellyfin.sdk.model.api.TrickplayInfo
 
 fun Modifier.offsetByPercent(
@@ -80,11 +85,12 @@ fun SeekPreviewImage(
     seekProgressMs: Long,
     trickPlayInfo: TrickplayInfo,
     modifier: Modifier = Modifier,
+    jumpText: String? = null,
 ) {
     val context = LocalContext.current
 
     if (previewImageUrl.isNotNullOrBlank()) {
-        val height = 160.dp
+        val height = 96.dp
         val width = height * (trickPlayInfo.width.toFloat() / trickPlayInfo.height)
         val scale = with(LocalDensity.current) { width.toPx() / trickPlayInfo.width }
 
@@ -111,7 +117,8 @@ fun SeekPreviewImage(
         Box(
             modifier =
                 modifier
-                    .border(1.5.dp, color = MaterialTheme.colorScheme.border)
+                    .clip(PreviewShape)
+                    .border(1.5.dp, color = MaterialTheme.colorScheme.border, shape = PreviewShape)
                     .background(Color.Black)
                     .height(height)
                     .width(width),
@@ -141,6 +148,20 @@ fun SeekPreviewImage(
                     }
                 }
             }
+            jumpText?.let {
+                Text(
+                    text = it,
+                    color = Color.White,
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier =
+                        Modifier
+                            .align(Alignment.Center)
+                            .background(Color.Black.copy(alpha = 0.6f), shape = RoundedCornerShape(4.dp))
+                            .padding(horizontal = Spacing.sm, vertical = Spacing.xs),
+                )
+            }
         }
     }
 }
+
+private val PreviewShape = RoundedCornerShape(8.dp)

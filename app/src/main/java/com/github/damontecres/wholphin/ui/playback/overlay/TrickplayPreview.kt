@@ -25,7 +25,11 @@ fun TrickplayPreview(
     trickplayInfo: TrickplayInfo?,
     trickplayUrlFor: (Int) -> String?,
     modifier: Modifier = Modifier,
+    jumpMs: Long = 0L,
 ) {
+    val jumpSec = jumpMs / 1000L
+    val jumpText = remember(jumpSec) { if (jumpSec != 0L) formatJump(jumpSec) else null }
+    var jumpShown = false
     Column(
         verticalArrangement = Arrangement.spacedBy(Spacing.sm),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -43,14 +47,18 @@ fun TrickplayPreview(
                     previewImageUrl = imageUrl,
                     seekProgressMs = seekProgressMs,
                     trickPlayInfo = trickplayInfo,
+                    jumpText = jumpText,
                 )
+                jumpShown = true
             }
         }
         val resources = LocalResources.current
         val seekProgressSec = seekProgressMs / 1000L
         val seekText = remember(seekProgressSec) { resources.formatDuration(seekProgressSec.seconds) }
+        // Without a preview image, the jump goes next to the timestamp instead
+        val labelText = if (!jumpShown && jumpText != null) "$seekText  $jumpText" else seekText
         Text(
-            text = seekText,
+            text = labelText,
             color = MaterialTheme.colorScheme.onSurface,
             style = MaterialTheme.typography.labelLarge,
             modifier =
@@ -61,4 +69,22 @@ fun TrickplayPreview(
                     ).padding(horizontal = Spacing.sm, vertical = Spacing.xs),
         )
     }
+}
+
+/**
+ * Format how far the user has jumped from where seeking started, e.g. "+10s", "-1m 30s", "+1h 5m"
+ */
+internal fun formatJump(jumpSec: Long): String {
+    val sign = if (jumpSec < 0) "-" else "+"
+    val total = kotlin.math.abs(jumpSec)
+    val h = total / 3600
+    val m = (total % 3600) / 60
+    val s = total % 60
+    val parts =
+        buildList {
+            if (h > 0) add("${h}h")
+            if (m > 0) add("${m}m")
+            if (s > 0 && h == 0L) add("${s}s")
+        }
+    return sign + parts.joinToString(" ")
 }

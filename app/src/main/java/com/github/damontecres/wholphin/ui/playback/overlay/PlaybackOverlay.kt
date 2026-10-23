@@ -99,6 +99,8 @@ fun PlaybackOverlay(
     val seekBarFocused by seekBarInteractionSource.collectIsFocusedAsState()
     // Will be used for preview/trick play images
     var seekProgressMs by remember(seekBarFocused) { mutableLongStateOf(player.currentPosition) }
+    // Where seeking started, so the preview can show how far the user has jumped
+    val seekStartMs = remember(seekBarFocused) { player.currentPosition }
     var seekProgressPercent = (seekProgressMs.toDouble() / player.duration).toFloat()
 
     val density = LocalDensity.current
@@ -291,6 +293,7 @@ fun PlaybackOverlay(
                             seekProgressMs = seekProgressMs,
                             trickplayInfo = trickplayInfo,
                             trickplayUrlFor = trickplayUrlFor,
+                            jumpMs = seekProgressMs - seekStartMs,
                         )
                     }
                 }

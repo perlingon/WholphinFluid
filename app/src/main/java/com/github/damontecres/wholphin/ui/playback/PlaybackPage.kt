@@ -413,6 +413,7 @@ fun PlaybackPageContent(
                         seekPositionMs = skipPosition,
                         trickplayInfo = state.currentMediaInfo.trickPlayInfo,
                         trickplayUrlFor = viewModel::getTrickplayUrl,
+                        jumpMs = skipIndicatorDuration,
                         modifier =
                             Modifier
                                 .align(Alignment.BottomCenter)
