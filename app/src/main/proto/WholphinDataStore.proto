@@ -139,7 +139,6 @@ enum EdgeStyle{
   EDGE_NONE = 0;
   EDGE_SOLID = 1;
   EDGE_SHADOW = 2;
-  EDGE_OUTLINE_SHADOW = 3;
 }
 
 enum BackgroundStyle{

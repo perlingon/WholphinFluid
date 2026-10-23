@@ -728,12 +728,10 @@
 
     <string name="subtitle_edge_outline">Outline</string>
     <string name="subtitle_edge_shadow">Shadow</string>
-    <string name="subtitle_edge_outline_shadow">Outline + shadow</string>
     <string-array name="subtitle_edge">
         <item>@string/none</item>
         <item>@string/subtitle_edge_outline</item>
         <item>@string/subtitle_edge_shadow</item>
-        <item>@string/subtitle_edge_outline_shadow</item>
     </string-array>
 
     <string name="subtitle_font_weight">Font weight</string>
