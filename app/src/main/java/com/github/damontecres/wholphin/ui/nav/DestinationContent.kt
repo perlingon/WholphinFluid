@@ -10,9 +10,9 @@ import com.github.damontecres.wholphin.data.filter.DefaultForStudiosFilterOption
 import com.github.damontecres.wholphin.data.model.SeerrItemType
 import com.github.damontecres.wholphin.preferences.PlayerBackend
 import com.github.damontecres.wholphin.preferences.UserPreferences
+import com.github.damontecres.wholphin.ui.components.CollectionCardGrid
 import com.github.damontecres.wholphin.ui.components.ItemGrid
 import com.github.damontecres.wholphin.ui.components.LicenseInfo
-import com.github.damontecres.wholphin.ui.data.MovieSortOptions
 import com.github.damontecres.wholphin.ui.data.rememberSortOptions
 import com.github.damontecres.wholphin.ui.detail.CollectionFolderGeneric
 import com.github.damontecres.wholphin.ui.detail.CollectionFolderLiveTv
@@ -458,14 +458,11 @@ fun CollectionFolder(
         }
 
         CollectionType.BOXSETS -> {
-            CollectionFolderGeneric(
-                preferences = preferences,
+            CollectionCardGrid(
                 itemId = destination.itemId,
-                usePosters = true,
                 recursive = false,
-                playEnabled = false,
+                showTitle = true,
                 modifier = modifier,
-                sortOptions = MovieSortOptions,
             )
         }
 
