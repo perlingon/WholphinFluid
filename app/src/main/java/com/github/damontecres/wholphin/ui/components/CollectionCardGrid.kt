@@ -159,18 +159,7 @@ class CollectionGridViewModel
                                 )
                             }
                             .sortedWith(byName)
-                    // The non-emoji collections are grouped by the collection they're in, in the same order as
-                    // their parents. Collections that aren't in another collection come last
-                    val parentOrder = allSorted.withIndex().associate { (index, c) -> c.id to index }
-                    val collections =
-                        allSorted
-                            .sortedWith(
-                                compareByDescending<CollectionCardItem> { it.isEmoji }
-                                    .thenBy { c ->
-                                        if (c.isEmoji) 0 else c.parentId?.let(parentOrder::get) ?: Int.MAX_VALUE
-                                    }
-                                    .then(byName),
-                            )
+                    val collections = layoutGroups(allSorted)
                     val key = CollectionCacheKey(serverRepository.currentUser?.id, itemId, emojiFirst, groupNested)
                     val cached = collectionImageCache.getIfAvailable(key)
                     _state.update {
@@ -192,6 +181,48 @@ class CollectionGridViewModel
                     _state.update { it.copy(item = DataLoadingState.Error(ex)) }
                 }
             }
+        }
+
+        /**
+         * Order the collections and number their groups: emoji collections first (group -1), then the rest in
+         * groups. Collections inside an emoji collection come first, in the order of those parents. Then the
+         * collections that aren't inside another one, where each group of child collections is listed right
+         * after its parent.
+         */
+        private fun layoutGroups(sorted: List<CollectionCardItem>): List<CollectionCardItem> {
+            val emoji = sorted.filter { it.isEmoji }
+            val rest = sorted.filterNot { it.isEmoji }
+            val childrenOf = rest.groupBy { it.parentId }
+            val result = emoji.map { it.copy(groupIndex = -1) }.toMutableList()
+            val placed = mutableSetOf<UUID>()
+            var groupIndex = 0
+
+            fun emit(run: List<CollectionCardItem>) {
+                var current = mutableListOf<CollectionCardItem>()
+
+                fun close() {
+                    if (current.isNotEmpty()) {
+                        result.addAll(current.map { it.copy(groupIndex = groupIndex) })
+                        groupIndex++
+                        current = mutableListOf()
+                    }
+                }
+                run.filter { placed.add(it.id) }.forEach { c ->
+                    current.add(c)
+                    val children = childrenOf[c.id].orEmpty().filter { it.id !in placed }
+                    if (children.isNotEmpty()) {
+                        close()
+                        emit(children)
+                    }
+                }
+                close()
+            }
+            emoji.forEach { parent -> childrenOf[parent.id]?.let { emit(it) } }
+            // Not inside another collection
+            emit(rest.filter { it.parentId == null })
+            // Anything left over (e.g. collections inside each other)
+            emit(rest.filter { it.id !in placed })
+            return result
         }
 
         /**
@@ -389,6 +420,8 @@ data class CollectionCardItem(
     val parentId: UUID? = null,
     /** Shown first and as a bigger card (emoji collections, when that setting is on) */
     val isEmoji: Boolean = false,
+    /** Which group of cards this belongs to (-1 for the emoji collections), groups are separated by a gap */
+    val groupIndex: Int = 0,
 ) : CardGridItem {
     val id: UUID get() = item.id
     override val gridId: String get() = item.gridId
@@ -463,13 +496,13 @@ fun CollectionCardGrid(
                     )
                 }
                 val emojiGroup = remember(state.collections) { state.collections.filter { it.isEmoji } }
-                // Non-emoji collections, split into runs that share the same parent collection
+                // Non-emoji collections, split into their groups
                 val restSubgroups =
                     remember(state.collections) {
                         state.collections
                             .filterNot { it.isEmoji }
                             .fold(mutableListOf<MutableList<CollectionCardItem>>()) { groups, c ->
-                                if (groups.lastOrNull()?.first()?.parentId == c.parentId) {
+                                if (groups.lastOrNull()?.first()?.groupIndex == c.groupIndex) {
                                     groups.last().add(c)
                                 } else {
                                     groups.add(mutableListOf(c))
