@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -25,6 +26,8 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import com.github.damontecres.wholphin.R
 import com.github.damontecres.wholphin.preferences.SubtitlePreferences
 import com.github.damontecres.wholphin.preferences.updateInterfacePreferences
+import com.github.damontecres.wholphin.ui.preferences.LocalPanelDialogPlacement
+import com.github.damontecres.wholphin.ui.preferences.PanelDialogPlacement
 import com.github.damontecres.wholphin.ui.preferences.PreferencesViewModel
 import com.github.damontecres.wholphin.ui.preferences.subtitle.SubtitlePreferencesContent
 import com.github.damontecres.wholphin.ui.preferences.subtitle.SubtitleSettings
@@ -73,31 +76,38 @@ fun SubtitleStyleDialog(
                     .fillMaxSize()
                     .padding(start = if (atStart) sideInset else 0.dp, end = if (atStart) 0.dp else sideInset),
         ) {
+            val panelWidth = LocalConfiguration.current.screenWidthDp.dp * .3f
             prefs?.let { current ->
-                SubtitlePreferencesContent(
-                    title = stringResource(if (isHdr) R.string.hdr_subtitle_style else R.string.subtitle_style),
-                    preferences = current,
-                    prefList = SubtitleSettings.preferences,
-                    onPreferenceChange = { newSubtitlePrefs ->
-                        prefs = newSubtitlePrefs
-                        // Show it on the playing video right away
-                        onChange(newSubtitlePrefs)
-                        viewModel.preferenceDataStore.updateData {
-                            it.updateInterfacePreferences {
-                                if (isHdr) {
-                                    hdrSubtitlesPreferences = newSubtitlePrefs
-                                } else {
-                                    subtitlesPreferences = newSubtitlePrefs
+                // Choice lists (colors etc.) open over this panel instead of in the middle of the video
+                CompositionLocalProvider(
+                    LocalPanelDialogPlacement provides
+                        if (atStart) null else PanelDialogPlacement(width = panelWidth, endInset = sideInset),
+                ) {
+                    SubtitlePreferencesContent(
+                        title = stringResource(if (isHdr) R.string.hdr_subtitle_style else R.string.subtitle_style),
+                        preferences = current,
+                        prefList = SubtitleSettings.preferences,
+                        onPreferenceChange = { newSubtitlePrefs ->
+                            prefs = newSubtitlePrefs
+                            // Show it on the playing video right away
+                            onChange(newSubtitlePrefs)
+                            viewModel.preferenceDataStore.updateData {
+                                it.updateInterfacePreferences {
+                                    if (isHdr) {
+                                        hdrSubtitlesPreferences = newSubtitlePrefs
+                                    } else {
+                                        subtitlesPreferences = newSubtitlePrefs
+                                    }
                                 }
                             }
-                        }
-                    },
-                    viewModel = viewModel,
-                    modifier =
-                        Modifier
-                            .fillMaxHeight()
-                            .width(LocalConfiguration.current.screenWidthDp.dp * .3f),
-                )
+                        },
+                        viewModel = viewModel,
+                        modifier =
+                            Modifier
+                                .fillMaxHeight()
+                                .width(panelWidth),
+                    )
+                }
             }
         }
     }
