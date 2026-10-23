@@ -41,6 +41,21 @@ object FluidLayout {
     }
 
     /**
+     * Width of the picture of the video that is playing: like [videoWidth], but an ultrawide video
+     * (wider than 16:9) gets its own, wider width, up to the full screen
+     *
+     * @param videoAspectRatio width / height of the playing video, null if not known yet
+     */
+    @Composable
+    fun playingVideoWidth(videoAspectRatio: Float?): Dp {
+        val configuration = LocalConfiguration.current
+        val vw = configuration.screenWidthDp.dp
+        val vh = configuration.screenHeightDp.dp
+        val aspectRatio = maxOf(16f / 9f, videoAspectRatio ?: 0f)
+        return minOf(vw, vh * aspectRatio)
+    }
+
+    /**
      * Gap between the left edge of the screen and the headlines: clamp(min, target, max), where
      * the target is a share of the extra width and min/max are shares of the screen width
      */

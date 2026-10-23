@@ -40,9 +40,11 @@ fun SubtitleStyleDialog(
         onDismissRequest = onDismissRequest,
         properties = DialogProperties(usePlatformDefaultWidth = false),
     ) {
+        val sideInsetPx = rememberPictureSideInsetPx()
         val dialogWindowProvider = LocalView.current.parent as? DialogWindowProvider
         dialogWindowProvider?.window?.let { window ->
             window.setGravity(gravity)
+            window.insetFromSide(sideInsetPx) // Over the picture on ultrawide screens
             window.setDimAmount(0f) // Keep the video and its subtitles fully visible
         }
         val prefs =

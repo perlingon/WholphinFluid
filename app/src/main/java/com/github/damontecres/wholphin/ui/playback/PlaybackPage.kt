@@ -50,6 +50,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
@@ -205,6 +206,11 @@ fun PlaybackPageContent(
     }
 
     val presentationState = rememberPresentationState(player, false)
+    val videoAspectRatio =
+        presentationState.videoSizeDp?.let { size -> if (size.height > 0f) size.width / size.height else null }
+    // The picture area: 16:9, or wider for an ultrawide video. Overlays, menus and subtitles stay inside it
+    val pictureWidth = FluidLayout.playingVideoWidth(videoAspectRatio)
+    val pictureSideInset = pictureSideInset(LocalConfiguration.current.screenWidthDp.dp, pictureWidth)
     val playbackState by rememberPlayerState(player)
     var showBuffering by remember { mutableStateOf(false) }
     LaunchedEffect(playbackState) {
@@ -516,6 +522,7 @@ fun PlaybackPageContent(
                 currentSegment = state.currentSegment?.segment,
                 showClock = preferences.appPreferences.interfacePreferences.showClock,
                 analyticsState = state.analyticsState,
+                videoAspectRatio = videoAspectRatio,
             )
 
             var subtitleStyleAppliedForHdr by remember { mutableStateOf(state.currentMediaInfo.videoStream?.hdr == true) }
@@ -621,8 +628,9 @@ fun PlaybackPageContent(
                 },
                 modifier =
                     Modifier
-                        .fillMaxSize(subtitleMaxSize)
                         .align(Alignment.TopCenter)
+                        .widthIn(max = pictureWidth)
+                        .fillMaxSize(subtitleMaxSize)
                         .background(Color.Transparent)
                         .graphicsLayer {
                             alpha =
@@ -637,28 +645,36 @@ fun PlaybackPageContent(
             )
         }
 
-        // Ask to skip intros, etc button
-        AnimatedVisibility(
-            showSegment,
+        // Ask to skip intros, etc button, kept over the picture (a 16:9 area, or wider for an ultrawide video)
+        Box(
             modifier =
                 Modifier
-                    .padding(Spacing.xxl)
-                    .align(Alignment.BottomEnd),
+                    .align(Alignment.BottomCenter)
+                    .widthIn(max = pictureWidth)
+                    .fillMaxWidth(),
         ) {
-            state.currentSegment?.let { segment ->
-                val focusRequester = remember { FocusRequester() }
-                LaunchedEffect(Unit) {
-                    focusRequester.tryRequestFocus()
-                    delay(10.seconds)
-                    viewModel.updateSegment(segment.segment.id, true)
+            AnimatedVisibility(
+                showSegment,
+                modifier =
+                    Modifier
+                        .padding(Spacing.xxl)
+                        .align(Alignment.BottomEnd),
+            ) {
+                state.currentSegment?.let { segment ->
+                    val focusRequester = remember { FocusRequester() }
+                    LaunchedEffect(Unit) {
+                        focusRequester.tryRequestFocus()
+                        delay(10.seconds)
+                        viewModel.updateSegment(segment.segment.id, true)
+                    }
+                    SkipSegmentButton(
+                        type = segment.segment.type,
+                        onClick = {
+                            viewModel.updateSegment(segment.segment.id, false)
+                        },
+                        modifier = Modifier.focusRequester(focusRequester),
+                    )
                 }
-                SkipSegmentButton(
-                    type = segment.segment.type,
-                    onClick = {
-                        viewModel.updateSegment(segment.segment.id, false)
-                    },
-                    modifier = Modifier.focusRequester(focusRequester),
-                )
             }
         }
 
@@ -725,6 +741,7 @@ fun PlaybackPageContent(
                             .padding(Spacing.sm)
 //                                    .height(128.dp)
                             .fillMaxHeight(1 - playerSize)
+                            .widthIn(max = pictureWidth)
                             .fillMaxWidth(.66f)
                             .align(Alignment.BottomCenter)
                             .background(
@@ -774,66 +791,68 @@ fun PlaybackPageContent(
     }
 
     playbackDialog?.let { type ->
-        PlaybackDialog(
-            type = type,
-            settings =
-                PlaybackSettings(
-                    showDebugInfo = showDebugInfo,
-                    audioIndex = state.currentPlayback?.audioIndex,
-                    audioStreams = state.currentMediaInfo.audioStreams,
-                    subtitleIndex = state.currentPlayback?.subtitleIndex,
-                    subtitleStreams = state.currentMediaInfo.subtitleStreams,
-                    playbackSpeed = playbackSpeed,
-                    contentScale = contentScale,
-                    videoTransform = videoTransform,
-                    subtitleDelay = state.currentPlayback?.subtitleDelay ?: Duration.ZERO,
-                    hasSubtitleDownloadPermission =
-                        remember(userDto) { userDto?.policy?.let { it.isAdministrator || it.enableSubtitleManagement } == true },
-                    // TODO Passing through audio prevents changing playback speed
-                    // See https://github.com/damontecres/Wholphin/issues/164
-                    playbackSpeedEnabled = playerBackend == PlayerBackend.MPV || state.currentPlayback?.audioDecoder != null,
-                    subtitleStyleHdr =
-                        preferences.appPreferences.interfacePreferences.subtitlesPreferences.useSeparateHdr &&
-                            state.currentMediaInfo.videoStream?.hdr == true,
-                ),
-            onDismissRequest = {
-                playbackDialog =
-                    when (type) {
-                        // Go back to settings dialog
-                        PlaybackDialogType.PLAYBACK_SPEED,
-                        PlaybackDialogType.VIDEO_SCALE,
-                        PlaybackDialogType.VIDEO_ADJUST,
-                        -> PlaybackDialogType.SETTINGS
+        CompositionLocalProvider(LocalPictureSideInset provides pictureSideInset) {
+            PlaybackDialog(
+                type = type,
+                settings =
+                    PlaybackSettings(
+                        showDebugInfo = showDebugInfo,
+                        audioIndex = state.currentPlayback?.audioIndex,
+                        audioStreams = state.currentMediaInfo.audioStreams,
+                        subtitleIndex = state.currentPlayback?.subtitleIndex,
+                        subtitleStreams = state.currentMediaInfo.subtitleStreams,
+                        playbackSpeed = playbackSpeed,
+                        contentScale = contentScale,
+                        videoTransform = videoTransform,
+                        subtitleDelay = state.currentPlayback?.subtitleDelay ?: Duration.ZERO,
+                        hasSubtitleDownloadPermission =
+                            remember(userDto) { userDto?.policy?.let { it.isAdministrator || it.enableSubtitleManagement } == true },
+                        // TODO Passing through audio prevents changing playback speed
+                        // See https://github.com/damontecres/Wholphin/issues/164
+                        playbackSpeedEnabled = playerBackend == PlayerBackend.MPV || state.currentPlayback?.audioDecoder != null,
+                        subtitleStyleHdr =
+                            preferences.appPreferences.interfacePreferences.subtitlesPreferences.useSeparateHdr &&
+                                state.currentMediaInfo.videoStream?.hdr == true,
+                    ),
+                onDismissRequest = {
+                    playbackDialog =
+                        when (type) {
+                            // Go back to settings dialog
+                            PlaybackDialogType.PLAYBACK_SPEED,
+                            PlaybackDialogType.VIDEO_SCALE,
+                            PlaybackDialogType.VIDEO_ADJUST,
+                            -> PlaybackDialogType.SETTINGS
 
-                        PlaybackDialogType.SUBTITLE_STYLE -> PlaybackDialogType.CAPTIONS
+                            PlaybackDialogType.SUBTITLE_STYLE -> PlaybackDialogType.CAPTIONS
 
-                        else -> null
+                            else -> null
+                        }
+                    if (controllerViewState.controlsVisible) {
+                        controllerViewState.pulseControls()
                     }
-                if (controllerViewState.controlsVisible) {
-                    controllerViewState.pulseControls()
-                }
-            },
-            onControllerInteraction = {
-                controllerViewState.pulseControls(Long.MAX_VALUE)
-            },
-            onClickPlaybackDialogType = {
-                if (it == PlaybackDialogType.SUBTITLE_DELAY ||
-                    it == PlaybackDialogType.VIDEO_ADJUST ||
-                    it == PlaybackDialogType.SUBTITLE_STYLE
-                ) {
-                    // Hide controls so subtitles are fully visible
-                    controllerViewState.hideControls()
-                }
-                playbackDialog = it
-            },
-            onPlaybackActionClick = onPlaybackActionClick,
-            onChangeSubtitleDelay = { viewModel.updateSubtitleDelay(it) },
-            onChangeVideoTransform = {
-                videoTransform = it
-                videoTransformStore.put(currentMediaId, it)
-            },
-            enableSubtitleDelay = player is MpvPlayer,
-            enableVideoScale = videoAdjustEnabled,
-        )
+                },
+                onControllerInteraction = {
+                    controllerViewState.pulseControls(Long.MAX_VALUE)
+                },
+                onClickPlaybackDialogType = {
+                    if (it == PlaybackDialogType.SUBTITLE_DELAY ||
+                        it == PlaybackDialogType.VIDEO_ADJUST ||
+                        it == PlaybackDialogType.SUBTITLE_STYLE
+                    ) {
+                        // Hide controls so subtitles are fully visible
+                        controllerViewState.hideControls()
+                    }
+                    playbackDialog = it
+                },
+                onPlaybackActionClick = onPlaybackActionClick,
+                onChangeSubtitleDelay = { viewModel.updateSubtitleDelay(it) },
+                onChangeVideoTransform = {
+                    videoTransform = it
+                    videoTransformStore.put(currentMediaId, it)
+                },
+                enableSubtitleDelay = player is MpvPlayer,
+                enableVideoScale = videoAdjustEnabled,
+            )
+        }
     }
 }

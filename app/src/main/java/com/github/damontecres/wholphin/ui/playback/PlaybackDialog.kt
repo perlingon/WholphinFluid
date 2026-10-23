@@ -285,10 +285,12 @@ fun PlaybackDialog(
                 onDismissRequest = onDismissRequest,
                 properties = DialogProperties(usePlatformDefaultWidth = false),
             ) {
+                val sideInsetPx = rememberPictureSideInsetPx()
                 val dialogWindowProvider = LocalView.current.parent as? DialogWindowProvider
                 dialogWindowProvider?.window?.let { window ->
                     // Keep the picture fully visible while adjusting
                     window.setGravity(Gravity.BOTTOM or rightGravity)
+                    window.insetFromSide(sideInsetPx) // Over the picture on ultrawide screens
                     window.setDimAmount(0f)
                 }
                 Box(
@@ -372,9 +374,11 @@ fun SubtitleChoiceBottomDialog(
         onDismissRequest = onDismissRequest,
         properties = DialogProperties(usePlatformDefaultWidth = true),
     ) {
+        val sideInsetPx = rememberPictureSideInsetPx()
         val dialogWindowProvider = LocalView.current.parent as? DialogWindowProvider
         dialogWindowProvider?.window?.let { window ->
             window.setGravity(Gravity.BOTTOM or gravity) // Move down, by default dialogs are in the centre
+            window.insetFromSide(sideInsetPx) // Over the picture on ultrawide screens
             window.setDimAmount(0f) // Remove dimmed background of ongoing playback
         }
 
@@ -543,9 +547,11 @@ fun StreamChoiceBottomDialog(
         onDismissRequest = onDismissRequest,
         properties = DialogProperties(usePlatformDefaultWidth = true),
     ) {
+        val sideInsetPx = rememberPictureSideInsetPx()
         val dialogWindowProvider = LocalView.current.parent as? DialogWindowProvider
         dialogWindowProvider?.window?.let { window ->
             window.setGravity(Gravity.BOTTOM or gravity) // Move down, by default dialogs are in the centre
+            window.insetFromSide(sideInsetPx) // Over the picture on ultrawide screens
             window.setDimAmount(0f) // Remove dimmed background of ongoing playback
         }
 
