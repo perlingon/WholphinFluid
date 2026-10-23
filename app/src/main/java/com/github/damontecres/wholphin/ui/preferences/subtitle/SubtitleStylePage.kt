@@ -42,7 +42,9 @@ import com.github.damontecres.wholphin.preferences.resetSubtitles
 import com.github.damontecres.wholphin.preferences.updateInterfacePreferences
 import com.github.damontecres.wholphin.ui.findActivity
 import com.github.damontecres.wholphin.ui.preferences.PreferencesViewModel
+import com.github.damontecres.wholphin.ui.preferences.subtitle.SubtitleSettings.applyStyleTo
 import com.github.damontecres.wholphin.ui.preferences.subtitle.SubtitleSettings.media3Override
+import com.github.damontecres.wholphin.ui.preferences.subtitle.SubtitleSettings.setSubtitleCues
 import com.github.damontecres.wholphin.ui.preferences.subtitle.SubtitleSettings.toSubtitleStyle
 import com.github.damontecres.wholphin.ui.theme.Spacing
 import timber.log.Timber
@@ -123,9 +125,8 @@ fun SubtitleStylePage(
                                 SubtitleView(context)
                             },
                             update = {
-                                it.setStyle(prefs.toSubtitleStyle(it.context))
-                                it.setFixedTextSize(Dimension.SP, prefs.fontSize.toFloat())
-                                it.setCues(
+                                prefs.applyStyleTo(it)
+                                it.setSubtitleCues(
                                     listOf(
                                         Cue.Builder().setText(text).build(),
                                     ),

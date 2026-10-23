@@ -61,6 +61,10 @@ class Media3SubtitleOverride(
                     shadowOffsetField.set(painter, shadowOffsetPx)
                     shadowRadiusField.set(painter, shadowRadiusPx)
                 }
+                // A shadow layer for Outline + shadow is a SubtitleView inside this one
+                for (i in 0 until subtitleView.childCount) {
+                    (subtitleView.getChildAt(i) as? SubtitleView)?.let { apply(it) }
+                }
             }
         } catch (ex: Exception) {
             Timber.w(ex, "Failed to apply")

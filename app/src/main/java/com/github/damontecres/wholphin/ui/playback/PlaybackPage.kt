@@ -93,6 +93,7 @@ import com.github.damontecres.wholphin.ui.playback.overlay.SkipSegmentButton
 import com.github.damontecres.wholphin.ui.playback.overlay.rememberSeekBarState
 import com.github.damontecres.wholphin.ui.preferences.subtitle.SubtitleSettings.applyTo
 import com.github.damontecres.wholphin.ui.preferences.subtitle.SubtitleSettings.media3Override
+import com.github.damontecres.wholphin.ui.preferences.subtitle.SubtitleSettings.setSubtitleCues
 import com.github.damontecres.wholphin.ui.seasonEpisode
 import com.github.damontecres.wholphin.ui.theme.FluidLayout
 import com.github.damontecres.wholphin.ui.theme.Spacing
@@ -591,7 +592,7 @@ fun PlaybackPageContent(
                         subtitleSettings.media3Override(density).apply(subtitleView)
                         appliedSubtitleSettings.value = subtitleSettings
                     }
-                    subtitleView.setCues(subtitleCues)
+                    subtitleView.setSubtitleCues(subtitleCues)
                     if (state.subtitleCues.size > cueCount) {
                         Timber.i("Applying subtitle style to SubtitleView")
                         // The output creates a painter for each cue, so need to apply the changes when the number of cues increases
