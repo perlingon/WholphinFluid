@@ -91,7 +91,9 @@ import com.github.damontecres.wholphin.ui.playback.overlay.PlaybackOverlay
 import com.github.damontecres.wholphin.ui.playback.overlay.SkipIndicator
 import com.github.damontecres.wholphin.ui.playback.overlay.SkipSegmentButton
 import com.github.damontecres.wholphin.ui.playback.overlay.rememberSeekBarState
+import com.github.damontecres.wholphin.ui.preferences.subtitle.SubtitleSettings.applyShadowLayerTo
 import com.github.damontecres.wholphin.ui.preferences.subtitle.SubtitleSettings.applyTo
+import com.github.damontecres.wholphin.ui.preferences.subtitle.SubtitleSettings.hasShadowLayer
 import com.github.damontecres.wholphin.ui.preferences.subtitle.SubtitleSettings.media3Override
 import com.github.damontecres.wholphin.ui.seasonEpisode
 import com.github.damontecres.wholphin.ui.theme.FluidLayout
@@ -557,6 +559,28 @@ fun PlaybackPageContent(
                 skipIndicatorDuration == 0L &&
                     state.currentPlayback?.subtitleIndexEnabled == true &&
                     !presentationState.coverSurface
+
+            if (subtitleSettings.hasShadowLayer && !isImageSubtitles) {
+                // "Outline + shadow": the shadow is drawn by this view, underneath the outlined subtitles
+                AndroidView(
+                    factory = { context ->
+                        SubtitleView(context).apply { subtitleSettings.applyShadowLayerTo(this) }
+                    },
+                    update = { shadowView ->
+                        subtitleSettings.applyShadowLayerTo(shadowView)
+                        shadowView.setCues(subtitleCues)
+                        subtitleSettings.media3Override(density).apply(shadowView)
+                    },
+                    onReset = {
+                        it.setCues(null)
+                    },
+                    modifier =
+                        Modifier
+                            .fillMaxSize(subtitleMaxSize)
+                            .align(Alignment.TopCenter)
+                            .graphicsLayer { alpha = if (subtitleVisible) 1f else 0f },
+                )
+            }
 
             AndroidView(
                 factory = { context ->

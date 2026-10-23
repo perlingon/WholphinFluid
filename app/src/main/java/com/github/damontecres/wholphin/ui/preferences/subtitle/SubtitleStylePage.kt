@@ -42,6 +42,8 @@ import com.github.damontecres.wholphin.preferences.resetSubtitles
 import com.github.damontecres.wholphin.preferences.updateInterfacePreferences
 import com.github.damontecres.wholphin.ui.findActivity
 import com.github.damontecres.wholphin.ui.preferences.PreferencesViewModel
+import com.github.damontecres.wholphin.ui.preferences.subtitle.SubtitleSettings.applyShadowLayerTo
+import com.github.damontecres.wholphin.ui.preferences.subtitle.SubtitleSettings.hasShadowLayer
 import com.github.damontecres.wholphin.ui.preferences.subtitle.SubtitleSettings.media3Override
 import com.github.damontecres.wholphin.ui.preferences.subtitle.SubtitleSettings.toSubtitleStyle
 import com.github.damontecres.wholphin.ui.theme.Spacing
@@ -118,26 +120,49 @@ fun SubtitleStylePage(
                             "Longer multi line subtitles will\nlook like this" to 0.dp,
                         )
                     examples.forEach { (text, padding) ->
-                        AndroidView(
-                            factory = { context ->
-                                SubtitleView(context)
-                            },
-                            update = {
-                                it.setStyle(prefs.toSubtitleStyle(it.context))
-                                it.setFixedTextSize(Dimension.SP, prefs.fontSize.toFloat())
-                                it.setCues(
-                                    listOf(
-                                        Cue.Builder().setText(text).build(),
-                                    ),
-                                )
-                                prefs.media3Override(density).apply(it)
-                            },
+                        Box(
                             modifier =
                                 Modifier
                                     .weight(1f)
                                     .fillMaxWidth()
                                     .padding(bottom = padding),
-                        )
+                        ) {
+                            if (prefs.hasShadowLayer) {
+                                // "Outline + shadow" draws the shadow with a second view underneath
+                                AndroidView(
+                                    factory = { context ->
+                                        SubtitleView(context)
+                                    },
+                                    update = {
+                                        prefs.applyShadowLayerTo(it)
+                                        it.setBottomPaddingFraction(SubtitleView.DEFAULT_BOTTOM_PADDING_FRACTION)
+                                        it.setCues(
+                                            listOf(
+                                                Cue.Builder().setText(text).build(),
+                                            ),
+                                        )
+                                        prefs.media3Override(density).apply(it)
+                                    },
+                                    modifier = Modifier.fillMaxSize(),
+                                )
+                            }
+                            AndroidView(
+                                factory = { context ->
+                                    SubtitleView(context)
+                                },
+                                update = {
+                                    it.setStyle(prefs.toSubtitleStyle(it.context))
+                                    it.setFixedTextSize(Dimension.SP, prefs.fontSize.toFloat())
+                                    it.setCues(
+                                        listOf(
+                                            Cue.Builder().setText(text).build(),
+                                        ),
+                                    )
+                                    prefs.media3Override(density).apply(it)
+                                },
+                                modifier = Modifier.fillMaxSize(),
+                            )
+                        }
                     }
                 }
             } else if (focusedOnMargin) {
