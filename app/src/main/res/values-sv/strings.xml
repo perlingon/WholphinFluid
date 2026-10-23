@@ -696,4 +696,5 @@
     <string name="user_views">Användarvisningar</string>
     <string name="genre_movies">%1$sfilmer</string>
     <string name="quality_profile">Kvalitetsprofil</string>
+    <string name="seek_back_to">Tillbaka till %1$s</string>
 </resources>
