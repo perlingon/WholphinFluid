@@ -2,11 +2,8 @@ package com.github.damontecres.wholphin.ui.playback.overlay
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -15,11 +12,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalResources
-import androidx.compose.ui.unit.dp
-import androidx.tv.material3.MaterialTheme
-import androidx.tv.material3.Text
 import com.github.damontecres.wholphin.R
 import com.github.damontecres.wholphin.ui.formatDuration
 import com.github.damontecres.wholphin.ui.theme.Spacing
@@ -85,24 +78,9 @@ fun TrickplayPreview(
                 imageShown = true
             }
         }
-        // Without a preview image, fall back to a label with the time and the total jump
+        // Without a preview image, the same chip shows on its own, with the same text and fade
         if (!imageShown) {
-            Text(
-                text =
-                    when {
-                        totalText != null -> "$seekText · $totalText"
-                        chipText != null -> chipText
-                        else -> seekText
-                    },
-                color = MaterialTheme.colorScheme.onSurface,
-                style = MaterialTheme.typography.labelLarge,
-                modifier =
-                    Modifier
-                        .background(
-                            Color.Black.copy(alpha = 0.6f),
-                            shape = RoundedCornerShape(4.dp),
-                        ).padding(horizontal = Spacing.sm, vertical = Spacing.xs),
-            )
+            chipText?.let { SeekJumpChip(text = it, alpha = chipAlpha) }
         }
     }
 }

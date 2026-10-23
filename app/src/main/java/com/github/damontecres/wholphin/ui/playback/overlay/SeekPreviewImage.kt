@@ -158,18 +158,30 @@ fun SeekPreviewImage(
                 }
             }
             jumpText?.let {
-                Text(
-                    text = it,
-                    color = Color.White,
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier =
-                        Modifier
-                            .align(Alignment.Center)
-                            .graphicsLayer { alpha = jumpAlpha }
-                            .background(Color.Black.copy(alpha = 0.6f), shape = RoundedCornerShape(4.dp))
-                            .padding(horizontal = Spacing.sm, vertical = Spacing.xs),
-                )
+                SeekJumpChip(text = it, alpha = jumpAlpha, modifier = Modifier.align(Alignment.Center))
             }
         }
     }
+}
+
+/**
+ * The "+1m 20s" / "Back to 12:34" chip shown while seeking: inside the preview image, or on its own
+ * when there are no trickplay images
+ */
+@Composable
+internal fun SeekJumpChip(
+    text: String,
+    alpha: Float,
+    modifier: Modifier = Modifier,
+) {
+    Text(
+        text = text,
+        color = Color.White,
+        style = MaterialTheme.typography.titleMedium,
+        modifier =
+            modifier
+                .graphicsLayer { this.alpha = alpha }
+                .background(Color.Black.copy(alpha = 0.6f), shape = RoundedCornerShape(4.dp))
+                .padding(horizontal = Spacing.sm, vertical = Spacing.xs),
+    )
 }
