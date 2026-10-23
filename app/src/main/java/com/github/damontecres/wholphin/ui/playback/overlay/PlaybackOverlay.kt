@@ -290,7 +290,7 @@ fun PlaybackOverlay(
                             seekBarInteractionSource = seekBarInteractionSource,
                             onTitleHeightChange = { titleHeight = it },
                             chapters = chapters,
-                            queueHeadline = queueHeadline(remember(queue) { groupQueueBySeason(queue) }),
+                            queueHeadline = queueHeadline(remember(queue) { groupQueueBySeason(queue) }, item),
                         )
                     }
 
@@ -315,6 +315,7 @@ fun PlaybackOverlay(
                         if (nextEnabled) {
                             QueueRowOverlay(
                                 queue = queue,
+                                currentItem = item,
                                 controllerViewState = controllerViewState,
                                 nextState =
                                     remember(chapters) {

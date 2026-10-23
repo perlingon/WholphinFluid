@@ -1025,9 +1025,9 @@
     <string name="home_settings_source_plugin">Server default</string>
     <string name="home_settings_source_web">User web client</string>
     <string name="seek_back_to">Back to %1$s</string>
-    <plurals name="seasons_count">
-        <item quantity="one">%1$d Season</item>
-        <item quantity="other">%1$d Seasons</item>
+    <plurals name="episodes_left">
+        <item quantity="one">%1$d episode left</item>
+        <item quantity="other">%1$d episodes left</item>
     </plurals>
     <plurals name="items_count">
         <item quantity="one">%1$d Item</item>

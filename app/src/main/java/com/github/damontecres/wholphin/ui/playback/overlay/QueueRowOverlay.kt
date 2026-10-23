@@ -77,19 +77,38 @@ fun groupQueueBySeason(queue: List<PlaylistItem>): List<QueueGroup> {
 }
 
 /**
- * "3 Seasons · 24 Episodes" for a queue of episodes, otherwise "Queue · 8 Items"
+ * Heading for one season's run of episodes: "Season 2 · 4 episodes left" for the season being
+ * watched, "Season 3 · 10 Episodes" for a later one. Null for a group without a season
  */
 @Composable
-fun queueHeadline(groups: List<QueueGroup>): String {
-    val seasonGroups = groups.filter { it.seasonNumber != null }
-    if (seasonGroups.isEmpty()) {
-        val count = groups.sumOf { it.items.size }
-        return stringResource(R.string.queue) + " · " + pluralStringResource(R.plurals.items_count, count, count)
-    }
-    val seasons = seasonGroups.map { it.seriesId to it.seasonNumber }.distinct().size
-    val episodes = seasonGroups.sumOf { it.items.size }
-    return pluralStringResource(R.plurals.seasons_count, seasons, seasons) + " · " +
-        pluralStringResource(R.plurals.episodes_count, episodes, episodes)
+fun seasonHeadline(
+    group: QueueGroup,
+    currentItem: BaseItem?,
+): String? {
+    val season = group.seasonNumber ?: return null
+    val count = group.items.size
+    val isCurrentSeason =
+        currentItem?.data?.seriesId == group.seriesId && currentItem?.data?.parentIndexNumber == season
+    val episodes =
+        if (isCurrentSeason) {
+            pluralStringResource(R.plurals.episodes_left, count, count)
+        } else {
+            pluralStringResource(R.plurals.episodes_count, count, count)
+        }
+    return formatSeasonNumber(season) + " · " + episodes
+}
+
+/**
+ * Hint under the controls: the next season's heading (see [seasonHeadline]), otherwise "Queue · 8 Items"
+ */
+@Composable
+fun queueHeadline(
+    groups: List<QueueGroup>,
+    currentItem: BaseItem?,
+): String {
+    groups.firstOrNull()?.let { seasonHeadline(it, currentItem) }?.let { return it }
+    val count = groups.sumOf { it.items.size }
+    return stringResource(R.string.queue) + " · " + pluralStringResource(R.plurals.items_count, count, count)
 }
 
 /**
@@ -109,6 +128,7 @@ fun queueItemTitle(item: BaseItem): String? {
 @Composable
 fun QueueRowOverlay(
     queue: List<PlaylistItem>,
+    currentItem: BaseItem?,
     controllerViewState: ControllerViewState,
     nextState: OverlayViewState,
     onChangeState: (OverlayViewState) -> Unit,
@@ -137,10 +157,7 @@ fun QueueRowOverlay(
         val headlineInset = 0.dp
         Text(
             text =
-                group.seasonNumber?.let {
-                    formatSeasonNumber(it) + " · " +
-                        pluralStringResource(R.plurals.episodes_count, group.items.size, group.items.size)
-                } ?: (
+                seasonHeadline(group, currentItem) ?: (
                     stringResource(R.string.queue) + " · " +
                         pluralStringResource(R.plurals.items_count, group.items.size, group.items.size)
                 ),
