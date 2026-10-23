@@ -246,8 +246,6 @@ fun PlaybackPageContent(
         skipIndicatorDuration = 0L
     }
     var skipPosition by remember { mutableLongStateOf(0L) }
-    // Size of the latest d-pad seek step, shown in the trickplay preview (e.g. +10s)
-    var lastSkipStepMs by remember { mutableLongStateOf(0L) }
     // Where d-pad seeking started, for the ghost marker and the total jump
     var dpadSeekOriginMs by remember { mutableLongStateOf(0L) }
     val updateSkipIndicator = { delta: Long ->
@@ -268,7 +266,6 @@ fun PlaybackPageContent(
             skipIndicatorDuration = 0L
         }
         skipIndicatorDuration += deltaMs
-        lastSkipStepMs = deltaMs
         skipPosition =
             (skipPosition + deltaMs).coerceIn(
                 minimumValue = 0L,
@@ -429,7 +426,6 @@ fun PlaybackPageContent(
                         seekPositionMs = skipPosition,
                         trickplayInfo = state.currentMediaInfo.trickPlayInfo,
                         trickplayUrlFor = viewModel::getTrickplayUrl,
-                        jumpMs = lastSkipStepMs,
                         seekOriginMs = dpadSeekOriginMs,
                         modifier =
                             Modifier

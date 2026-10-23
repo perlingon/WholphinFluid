@@ -23,7 +23,6 @@ fun DpadSeekOverlay(
     trickplayInfo: TrickplayInfo?,
     trickplayUrlFor: (Int) -> String?,
     modifier: Modifier = Modifier,
-    jumpMs: Long = 0L,
     seekOriginMs: Long? = null,
 ) {
     val durationMs = player.duration.coerceAtLeast(0L)
@@ -52,7 +51,6 @@ fun DpadSeekOverlay(
                 seekProgressMs = seekPositionMs,
                 trickplayInfo = trickplayInfo,
                 trickplayUrlFor = trickplayUrlFor,
-                jumpMs = jumpMs,
                 totalJumpMs = seekOriginMs?.let { seekPositionMs - it } ?: 0L,
                 modifier =
                     Modifier

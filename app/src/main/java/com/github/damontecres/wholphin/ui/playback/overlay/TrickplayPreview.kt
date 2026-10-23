@@ -32,16 +32,13 @@ fun TrickplayPreview(
     trickplayInfo: TrickplayInfo?,
     trickplayUrlFor: (Int) -> String?,
     modifier: Modifier = Modifier,
-    jumpMs: Long = 0L,
     totalJumpMs: Long = 0L,
 ) {
-    // How long the step chip ("+10s") stays after a press, and how long it takes to fade out.
-    // Tuning values, kept local so Live Edit picks up changes.
-    val chipShowMs = 600L
-    val chipFadeMs = 300
+    // How long the jump chip ("+1m 20s") stays after the latest press, and how long it takes to fade
+    // out, leaving the bare image. Tuning values, kept local so Live Edit picks up changes.
+    val chipShowMs = 1000L
+    val chipFadeMs = 400
 
-    val jumpSec = jumpMs / 1000L
-    val jumpText = remember(jumpSec) { if (jumpSec != 0L) formatJump(jumpSec) else null }
     val totalSec = totalJumpMs / 1000L
     val totalText = remember(totalSec) { if (totalSec != 0L) formatJump(totalSec) else null }
     var chipVisible by remember { mutableStateOf(false) }
@@ -53,9 +50,9 @@ fun TrickplayPreview(
     val chipAlpha by animateFloatAsState(
         targetValue = if (chipVisible) 1f else 0f,
         animationSpec = tween(if (chipVisible) 0 else chipFadeMs),
-        label = "step chip",
+        label = "jump chip",
     )
-    var jumpShown = false
+    var imageShown = false
     Column(
         verticalArrangement = Arrangement.spacedBy(Spacing.sm),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -73,34 +70,29 @@ fun TrickplayPreview(
                     previewImageUrl = imageUrl,
                     seekProgressMs = seekProgressMs,
                     trickPlayInfo = trickplayInfo,
-                    jumpText = jumpText,
+                    jumpText = totalText,
                     jumpAlpha = chipAlpha,
                 )
-                jumpShown = true
+                imageShown = true
             }
         }
-        val resources = LocalResources.current
-        val seekProgressSec = seekProgressMs / 1000L
-        val seekText = remember(seekProgressSec) { resources.formatDuration(seekProgressSec.seconds) }
-        // The label shows the total jump since seeking started, e.g. "12:34 · +1m 20s". Without a
-        // preview image, the step goes next to it instead.
-        val labelText =
-            when {
-                totalText != null -> "$seekText · $totalText"
-                !jumpShown && jumpText != null -> "$seekText  $jumpText"
-                else -> seekText
-            }
-        Text(
-            text = labelText,
-            color = MaterialTheme.colorScheme.onSurface,
-            style = MaterialTheme.typography.labelLarge,
-            modifier =
-                Modifier
-                    .background(
-                        Color.Black.copy(alpha = 0.6f),
-                        shape = RoundedCornerShape(4.dp),
-                    ).padding(horizontal = Spacing.sm, vertical = Spacing.xs),
-        )
+        // Without a preview image, fall back to a label with the time and the total jump
+        if (!imageShown) {
+            val resources = LocalResources.current
+            val seekProgressSec = seekProgressMs / 1000L
+            val seekText = remember(seekProgressSec) { resources.formatDuration(seekProgressSec.seconds) }
+            Text(
+                text = if (totalText != null) "$seekText · $totalText" else seekText,
+                color = MaterialTheme.colorScheme.onSurface,
+                style = MaterialTheme.typography.labelLarge,
+                modifier =
+                    Modifier
+                        .background(
+                            Color.Black.copy(alpha = 0.6f),
+                            shape = RoundedCornerShape(4.dp),
+                        ).padding(horizontal = Spacing.sm, vertical = Spacing.xs),
+            )
+        }
     }
 }
 

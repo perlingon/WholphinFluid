@@ -9,6 +9,7 @@ import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -31,6 +32,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -165,6 +167,17 @@ fun PlaybackControls(
             initialFocusRequester.tryRequestFocus()
         }
     }
+    // Leave the seek bar (and its trickplay preview) after this long without a seek press, by moving
+    // focus to play/pause. Tuning value, kept local so Live Edit picks up changes.
+    val seekIdleMs = 3000L
+    val seekBarFocused by seekBarInteractionSource.collectIsFocusedAsState()
+    var seekPresses by remember { mutableIntStateOf(0) }
+    LaunchedEffect(seekBarFocused, seekPresses) {
+        if (seekBarFocused) {
+            delay(seekIdleMs)
+            initialFocusRequester.tryRequestFocus()
+        }
+    }
     Column(
         modifier = modifier.bringIntoViewRequester(bringIntoViewRequester),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -173,7 +186,10 @@ fun PlaybackControls(
         SeekBar(
             player = player,
             controllerViewState = controllerViewState,
-            onSeekProgress = onSeekProgress,
+            onSeekProgress = {
+                seekPresses++
+                onSeekProgress(it)
+            },
             interactionSource = seekBarInteractionSource,
             isEnabled = seekEnabled,
             intervals = seekBarIntervals,
