@@ -1,7 +1,9 @@
 package com.github.damontecres.wholphin.ui.cards
 
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Arrangement
@@ -31,6 +33,7 @@ import androidx.compose.ui.unit.isSpecified
 import androidx.tv.material3.Border
 import androidx.tv.material3.Card
 import androidx.tv.material3.CardDefaults
+import androidx.tv.material3.CardScale
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.github.damontecres.wholphin.data.model.BaseItem
@@ -145,7 +148,10 @@ fun SeasonCard(
     aspectRatio: Float = AspectRatios.TALL,
     showSubtitle: Boolean = true,
     outlineColor: Color = Color.Unspecified,
+    dimAmount: Float = 0f,
+    scale: CardScale = CardDefaults.scale(),
 ) {
+    val dimAlpha by animateFloatAsState(dimAmount, label = "cardDim")
     val focused by interactionSource.collectIsFocusedAsState()
     // Do not use `by` here, this way we are Defer reads and recompositions to only when modifier calculates
     val spaceBetween =
@@ -171,6 +177,7 @@ fun SeasonCard(
             onClick = onClick,
             onLongClick = onLongClick,
             interactionSource = interactionSource,
+            scale = scale,
             // An outline while not focused (e.g. the playing episode in the player); focus keeps its own
             border =
                 if (outlineColor.isSpecified) {
@@ -209,6 +216,15 @@ fun SeasonCard(
                         Modifier
                             .fillMaxSize(),
                 )
+                // Darkens the card, e.g. episodes that aren't focused
+                if (dimAlpha > 0f) {
+                    Box(
+                        modifier =
+                            Modifier
+                                .fillMaxSize()
+                                .background(Color.Black.copy(alpha = dimAlpha)),
+                    )
+                }
             }
         }
         Column(

@@ -32,6 +32,7 @@ import androidx.compose.ui.input.key.type
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.tv.material3.CardDefaults
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.github.damontecres.wholphin.R
@@ -218,6 +219,10 @@ fun QueueRowOverlay(
         val cardImageHeight = 112.dp
         val cardGap = Spacing.lg
         val playingOutlineColor = Color.White
+        // How dark the cards that aren't focused get (0-1), and their size next to the focused one
+        val cardDim = .5f
+        val cardUnfocusedScale = .9f
+        val cardFocusedScale = 1f
         Text(
             text =
                 seasonHeadline(group) ?: (
@@ -323,6 +328,8 @@ fun QueueRowOverlay(
                         onLongClick = {},
                         imageHeight = cardImageHeight,
                         outlineColor = if (item.id == currentItem?.id) playingOutlineColor else Color.Unspecified,
+                        dimAmount = if (isFocused) 0f else cardDim,
+                        scale = CardDefaults.scale(scale = cardUnfocusedScale, focusedScale = cardFocusedScale),
                         interactionSource = interactionSource,
                         modifier =
                             Modifier.ifElse(

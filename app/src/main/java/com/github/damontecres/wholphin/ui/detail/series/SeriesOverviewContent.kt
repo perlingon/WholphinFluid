@@ -1,10 +1,8 @@
 package com.github.damontecres.wholphin.ui.detail.series
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.foundation.background
 import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
@@ -21,7 +19,6 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -38,11 +35,10 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.focusRestorer
 import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.dp
+import androidx.tv.material3.CardDefaults
 import com.github.damontecres.wholphin.R
 import com.github.damontecres.wholphin.data.ChosenStreams
 import com.github.damontecres.wholphin.data.ExtrasItem
@@ -117,7 +113,11 @@ fun SeriesOverviewContent(
         (episodes as? EpisodeList.Success)?.episodes?.getOrNull(position.episodeRowIndex)
     var pageHasFocus by remember { mutableStateOf(false) }
     var cardRowHasFocus by remember { mutableStateOf(false) }
-    val dimming by animateFloatAsState(if (pageHasFocus && !cardRowHasFocus) .4f else 1f)
+    // Episode row: how dark the episodes that aren't focused get (0-1), and their size next to the
+    // focused one
+    val episodeDim = .5f
+    val episodeUnfocusedScale = .9f
+    val episodeFocusedScale = 1f
 
     val scrollState = rememberScrollState()
     val scrollConnection = rememberDelayedNestedScroll()
@@ -244,9 +244,12 @@ fun SeriesOverviewContent(
                         ) {
                             itemsIndexed(eps.episodes) { episodeIndex, episode ->
                                 val interactionSource = remember { MutableInteractionSource() }
-                                if (interactionSource.collectIsFocusedAsState().value) {
+                                val episodeFocused = interactionSource.collectIsFocusedAsState().value
+                                if (episodeFocused) {
                                     onFocusEpisode.invoke(episodeIndex)
                                 }
+                                val highlighted =
+                                    if (cardRowHasFocus) episodeFocused else episodeIndex == position.episodeRowIndex
                                 BannerCard(
                                     name = episode?.name,
                                     item = episode,
@@ -277,21 +280,7 @@ fun SeriesOverviewContent(
                                             ).ifElse(
                                                 episodeIndex == epPosition,
                                                 Modifier.focusRequester(episodeRowFocusRequester),
-                                            ).background(
-                                                if (episodeIndex != position.episodeRowIndex) {
-                                                    Color.Black
-                                                } else {
-                                                    Color.Transparent
-                                                },
-                                                shape = RoundedCornerShape(8.dp),
-                                            ).graphicsLayer {
-                                                alpha =
-                                                    if (episodeIndex != position.episodeRowIndex) {
-                                                        dimming
-                                                    } else {
-                                                        1f
-                                                    }
-                                            }.onFocusChanged {
+                                            ).onFocusChanged {
                                                 if (it.isFocused) {
                                                     scope.launch {
                                                         bringIntoViewRequester.bringIntoView()
@@ -307,6 +296,10 @@ fun SeriesOverviewContent(
                                     interactionSource = interactionSource,
                                     cardHeight = 120.dp,
                                     useSeriesForPrimary = false,
+                                    // The focused episode (or the selected one while the row isn't
+                                    // focused) stays bright and full size, the others are darker and smaller
+                                    dimAmount = if (highlighted || !pageHasFocus) 0f else episodeDim,
+                                    scale = CardDefaults.scale(scale = episodeUnfocusedScale, focusedScale = episodeFocusedScale),
                                 )
                             }
                         }

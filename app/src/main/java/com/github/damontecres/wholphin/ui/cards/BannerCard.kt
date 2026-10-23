@@ -1,5 +1,6 @@
 package com.github.damontecres.wholphin.ui.cards
 
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
@@ -36,6 +37,7 @@ import androidx.compose.ui.unit.isSpecified
 import androidx.compose.ui.unit.sp
 import androidx.tv.material3.Card
 import androidx.tv.material3.CardDefaults
+import androidx.tv.material3.CardScale
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import coil3.compose.AsyncImage
@@ -71,8 +73,11 @@ fun BannerCard(
     imageType: ImageType = ImageType.PRIMARY,
     imageContentScale: ContentScale = ContentScale.FillBounds,
     useSeriesForPrimary: Boolean = true,
+    dimAmount: Float = 0f,
+    scale: CardScale = CardDefaults.scale(),
 ) {
     PrebakeBackdrop(item)
+    val dimAlpha by animateFloatAsState(dimAmount, label = "cardDim")
     val imageUrlService = LocalImageUrlService.current
     val density = LocalDensity.current
     val fillHeight =
@@ -111,6 +116,7 @@ fun BannerCard(
         onClick = { currentOnClick() },
         onLongClick = { currentOnLongClick() },
         interactionSource = interactionSource,
+        scale = scale,
         colors =
             CardDefaults.colors(
 //                containerColor = Color.Transparent,
@@ -195,6 +201,15 @@ fun BannerCard(
                             ).clip(RectangleShape)
                             .height(Cards.playedPercentHeight)
                             .fillMaxWidth((playPercent / 100).toFloat()),
+                )
+            }
+            // Darkens the card, e.g. episodes that aren't focused
+            if (dimAlpha > 0f) {
+                Box(
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .background(Color.Black.copy(alpha = dimAlpha)),
                 )
             }
         }
