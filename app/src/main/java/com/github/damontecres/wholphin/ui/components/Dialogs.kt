@@ -687,19 +687,6 @@ fun chooseStream(
                             onClick = { onClick.invoke(TrackIndex.DISABLED) },
                         ),
                     )
-                    add(
-                        DialogItem(
-                            leadingContent = {
-                                SelectedLeadingContent(currentIndex == TrackIndex.ONLY_FORCED)
-                            },
-                            headlineContent = {
-                                Text(text = stringResource(R.string.only_forced_subtitles))
-                            },
-                            supportingContent = {
-                            },
-                            onClick = { onClick.invoke(TrackIndex.ONLY_FORCED) },
-                        ),
-                    )
                     if (filteredStreams.isNotEmpty()) {
                         add(DialogItemDivider)
                     }
@@ -743,6 +730,22 @@ fun chooseStream(
                             )
                         },
                 )
+                if (type == MediaStreamType.SUBTITLE) {
+                    // Only forced subtitles comes last, after the tracks
+                    add(
+                        DialogItem(
+                            leadingContent = {
+                                SelectedLeadingContent(currentIndex == TrackIndex.ONLY_FORCED)
+                            },
+                            headlineContent = {
+                                Text(text = stringResource(R.string.only_forced_subtitles))
+                            },
+                            supportingContent = {
+                            },
+                            onClick = { onClick.invoke(TrackIndex.ONLY_FORCED) },
+                        ),
+                    )
+                }
             },
     )
 }

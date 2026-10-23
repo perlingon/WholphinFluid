@@ -24,6 +24,10 @@ data class PlaybackState(
     val nextUp: BaseItem? = null,
     val playlistIndex: Int = 0,
     val playlist: Playlist = Playlist(emptyList()),
+    // Whether the playing episode's series has ended (Jellyfin's series Status), null if unknown
+    val seriesEnded: Boolean? = null,
+    // Every episode of the playing episode's series, for the episode row in the player
+    val seriesEpisodes: List<BaseItem> = emptyList(),
 ) {
     val hasNext: Boolean get() = (playlistIndex + 1) < playlist.items.size
     val hasPrevious: Boolean get() = playlistIndex > 0

@@ -22,6 +22,7 @@ import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.focusRestorer
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.LayoutDirection
@@ -88,14 +89,23 @@ fun ChapterRowOverlay(
         HiddenFocusBox(hiddenFocusRequester) {
             onChangeState.invoke(OverlayViewState.CONTROLLER)
         }
+        // Tuning values for the row headings, kept local so Live Edit picks up changes
+        val headlineStyle = MaterialTheme.typography.rowHeadline
+        val headlineColor = Color.Unspecified // Color.Unspecified = the theme's text color
+        val headlineInset = 0.dp
+        // Card height and gap between cards
+        val cardHeight = 96.dp
+        val cardGap = Spacing.lg
         Text(
             text = stringResource(R.string.chapters),
-            style = MaterialTheme.typography.rowHeadline,
+            style = headlineStyle,
+            color = headlineColor,
+            modifier = Modifier.padding(start = headlineInset),
         )
         LazyRow(
             state = listState,
             contentPadding = PaddingValues(Spacing.md),
-            horizontalArrangement = Arrangement.spacedBy(Spacing.md),
+            horizontalArrangement = Arrangement.spacedBy(cardGap),
             modifier =
                 Modifier
                     .fillMaxWidth()
@@ -117,6 +127,7 @@ fun ChapterRowOverlay(
                 }
                 ChapterCard(
                     chapter = chapter,
+                    cardHeight = cardHeight,
                     onClick = {
                         player.seekTo(chapter.position.inWholeMilliseconds)
                         controllerViewState.hideControls()
@@ -147,10 +158,11 @@ fun ChapterRowOverlay(
         if (hasNext) {
             Text(
                 text = stringResource(R.string.queue),
-                style = MaterialTheme.typography.rowHeadline,
+                style = headlineStyle,
+                color = headlineColor,
                 modifier =
                     Modifier
-                        .padding(bottom = Spacing.sm)
+                        .padding(start = headlineInset, bottom = Spacing.sm)
                         .onFocusChanged {
                             if (it.isFocused) onChangeState.invoke(OverlayViewState.QUEUE)
                         }.focusable(),

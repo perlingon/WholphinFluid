@@ -3,29 +3,38 @@ package com.github.damontecres.wholphin.ui.playback.overlay
 import androidx.annotation.FloatRange
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.drawscope.translate
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.MaterialTheme
+import androidx.tv.material3.Text
 import coil3.compose.rememberAsyncImagePainter
 import coil3.request.ImageRequest
 import com.github.damontecres.wholphin.ui.isNotNullOrBlank
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import org.jellyfin.sdk.model.api.TrickplayInfo
 
 fun Modifier.offsetByPercent(
@@ -80,11 +89,30 @@ fun SeekPreviewImage(
     seekProgressMs: Long,
     trickPlayInfo: TrickplayInfo,
     modifier: Modifier = Modifier,
+    jumpText: String? = null,
+    jumpAlpha: Float = 1f,
 ) {
     val context = LocalContext.current
 
+    // Tuning values, kept local so Live Edit picks up changes.
+    // Height of the preview image; the width follows the video's shape (64 dp is about 114 dp wide at 16:9)
+    val previewHeight = 72.dp
+    val previewCornerRadius = 4.dp
+    // Drop shadow under the preview: its size (elevation, e.g. 4.dp subtle … 16.dp strong) and colour.
+    // The colour only applies on Android 9+; older boxes draw the system's grey shadow.
+    val previewShadow = 12.dp
+    val previewShadowColor = Color.Black
+    val previewShape = RoundedCornerShape(previewCornerRadius)
+    // The jump text ("+1m 20s" / "Back to 12:34") sits at the bottom of the image on a dark fade.
+    // How much of the image height the fade covers, how dark it gets at the bottom, the text style
+    // and its distance from the bottom edge
+    val jumpFadeShare = 0.72f
+    val jumpFadeAlpha = 0.8f
+    val jumpTextStyle = MaterialTheme.typography.titleMedium
+    val jumpTextBottomInset = Spacing.xs
+
     if (previewImageUrl.isNotNullOrBlank()) {
-        val height = 160.dp
+        val height = previewHeight
         val width = height * (trickPlayInfo.width.toFloat() / trickPlayInfo.height)
         val scale = with(LocalDensity.current) { width.toPx() / trickPlayInfo.width }
 
@@ -111,8 +139,13 @@ fun SeekPreviewImage(
         Box(
             modifier =
                 modifier
-                    .border(1.5.dp, color = MaterialTheme.colorScheme.border)
-                    .background(Color.Black)
+                    .shadow(
+                        elevation = previewShadow,
+                        shape = previewShape,
+                        clip = true,
+                        ambientColor = previewShadowColor,
+                        spotColor = previewShadowColor,
+                    ).background(Color.Black)
                     .height(height)
                     .width(width),
         ) {
@@ -141,6 +174,53 @@ fun SeekPreviewImage(
                     }
                 }
             }
+            jumpText?.let {
+                Box(
+                    contentAlignment = Alignment.BottomCenter,
+                    modifier =
+                        Modifier
+                            .align(Alignment.BottomCenter)
+                            .fillMaxWidth()
+                            .fillMaxHeight(jumpFadeShare)
+                            .graphicsLayer { alpha = jumpAlpha }
+                            .background(
+                                Brush.verticalGradient(
+                                    0f to Color.Transparent,
+                                    1f to Color.Black.copy(alpha = jumpFadeAlpha),
+                                ),
+                            ),
+                ) {
+                    Text(
+                        text = it,
+                        color = Color.White,
+                        style = jumpTextStyle,
+                        maxLines = 1,
+                        modifier = Modifier.padding(bottom = jumpTextBottomInset),
+                    )
+                }
+            }
         }
     }
+}
+
+/**
+ * The "+1m 20s" / "Back to 12:34" chip shown while seeking when there are no trickplay images (with an
+ * image, the text sits at the bottom of the image instead)
+ */
+@Composable
+internal fun SeekJumpChip(
+    text: String,
+    alpha: Float,
+    modifier: Modifier = Modifier,
+) {
+    Text(
+        text = text,
+        color = Color.White,
+        style = MaterialTheme.typography.titleMedium,
+        modifier =
+            modifier
+                .graphicsLayer { this.alpha = alpha }
+                .background(Color.Black.copy(alpha = 0.6f), shape = RoundedCornerShape(4.dp))
+                .padding(horizontal = Spacing.sm, vertical = Spacing.xs),
+    )
 }

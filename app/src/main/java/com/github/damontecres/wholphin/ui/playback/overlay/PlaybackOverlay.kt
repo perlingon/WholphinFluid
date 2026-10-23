@@ -2,9 +2,13 @@ package com.github.damontecres.wholphin.ui.playback.overlay
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Easing
+import androidx.compose.animation.core.FastOutLinearInEasing
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.VisibilityThreshold
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -25,6 +29,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -35,13 +40,19 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.LayoutDirection
@@ -59,6 +70,7 @@ import com.github.damontecres.wholphin.ui.playback.AnalyticsState
 import com.github.damontecres.wholphin.ui.playback.ControllerViewState
 import com.github.damontecres.wholphin.ui.playback.CurrentPlayback
 import com.github.damontecres.wholphin.ui.playback.PlaybackDialogType
+import com.github.damontecres.wholphin.ui.theme.FluidLayout
 import com.github.damontecres.wholphin.ui.theme.Spacing
 import org.jellyfin.sdk.model.api.ImageType
 import org.jellyfin.sdk.model.api.MediaSegmentDto
@@ -90,30 +102,47 @@ fun PlaybackOverlay(
     currentSegment: MediaSegmentDto?,
     analyticsState: AnalyticsState,
     queue: List<PlaylistItem>,
+    seriesEnded: Boolean?,
+    seriesEpisodes: List<BaseItem>,
+    onClickEpisode: (BaseItem) -> Unit,
     modifier: Modifier = Modifier,
     trickplayInfo: TrickplayInfo? = null,
     trickplayUrlFor: (Int) -> String? = { null },
     onClickPlaylist: (BaseItem) -> Unit = {},
+    videoAspectRatio: Float? = null,
     seekBarInteractionSource: MutableInteractionSource = remember { MutableInteractionSource() },
+    onCoveredHeightChange: (Dp) -> Unit = {},
 ) {
     val seekBarFocused by seekBarInteractionSource.collectIsFocusedAsState()
     // Will be used for preview/trick play images
     var seekProgressMs by remember(seekBarFocused) { mutableLongStateOf(player.currentPosition) }
+    // Where seeking started, for the total jump in the preview's label
+    val seekStartMs = remember(seekBarFocused) { player.currentPosition }
     var seekProgressPercent = (seekProgressMs.toDouble() / player.duration).toFloat()
 
     val density = LocalDensity.current
 
-    val titleHeight =
-        remember(item?.title, density) {
-            if (item?.title.isNotNullOrBlank()) with(density) { titleTextSize.toDp() } else 0.dp
-        }
-    val subtitleHeight =
-        remember(item?.subtitleLong, density) {
-            if (item?.subtitleLong.isNotNullOrBlank()) with(density) { subtitleTextSize.toDp() } else 0.dp
-        }
+    // Seek preview (trickplay) placement, kept local so Live Edit picks up changes
+    // true = the preview sits above the title row, false = between the title row and the seek bar
+    val previewAboveTitle = true
+    // Extra space between the preview and what is below it. Example: 0.dp, Spacing.sm (8.dp), 16.dp, -8.dp to overlap
+    val previewGap = Spacing.md
+
+    // Height of the title row above the seek bar, measured after composition
+    var titleHeight by remember { mutableStateOf(0.dp) }
+
+    // The seek bar and controls never get wider than a 16:9 video, so they stay over the picture on ultrawide screens
+    val controlsMaxWidth = FluidLayout.videoWidth()
+
+    // The logo, clock and the chapter & queue rows stay over the picture: a 16:9 area, or wider for an ultrawide video
+    val pictureMaxWidth = FluidLayout.playingVideoWidth(videoAspectRatio)
 
     // This will be calculated after composition
     var controllerHeight by remember { mutableStateOf(0.dp) }
+    // Heights of the shown overlay content (controls or chapter/queue row) and of the seek preview,
+    // so the subtitles can sit just above whatever covers the bottom of the screen
+    var overlayContentHeight by remember { mutableStateOf(0.dp) }
+    var previewBlockHeight by remember { mutableStateOf(0.dp) }
     var state by remember(controllerViewState.controlsVisible) {
         mutableStateOf(if (controllerViewState.controlsVisible) OverlayViewState.CONTROLLER else OverlayViewState.HIDDEN)
     }
@@ -121,28 +150,62 @@ fun PlaybackOverlay(
         state = newState
     }
 
+    // How the controls show up and go away. Tuning values, kept local so Live Edit picks up changes.
+    // Durations in ms. Easings: FastOutSlowInEasing (standard), LinearOutSlowInEasing (soft landing),
+    // FastOutLinearInEasing (quick exit), LinearEasing, or CubicBezierEasing(a, b, c, d)
+    val showMs = 350
+    val hideMs = 250
+    val showEasing: Easing = FastOutSlowInEasing
+    val hideEasing: Easing = FastOutLinearInEasing
+    // How far the controls slide, as a share of their own height (0f = fade only)
+    val slideFraction = 0.5f
+    val showOffset = tween<IntOffset>(showMs, easing = showEasing)
+    val hideOffset = tween<IntOffset>(hideMs, easing = hideEasing)
+    val showFade = tween<Float>(showMs, easing = showEasing)
+    val hideFade = tween<Float>(hideMs, easing = hideEasing)
+
+    // How much of the bottom of the screen the overlay covers: the controls (or row), or the seek
+    // preview above them when it shows. Reported so the subtitles can move above it.
+    val previewShowing = controllerViewState.controlsVisible && seekBarFocused
+    val previewBottom =
+        ((if (previewAboveTitle) controllerHeight else controllerHeight - titleHeight) + previewGap)
+            .coerceAtLeast(0.dp)
+    val coveredHeight =
+        when {
+            !controllerViewState.controlsVisible || showDebugInfo -> {
+                0.dp
+            }
+
+            previewShowing && previewBlockHeight > 0.dp -> {
+                maxOf(overlayContentHeight, previewBottom + previewBlockHeight)
+            }
+
+            else -> {
+                overlayContentHeight
+            }
+        }
+    LaunchedEffect(coveredHeight) { onCoveredHeightChange(coveredHeight) }
+
     Box(
         modifier = modifier,
         contentAlignment = Alignment.BottomCenter,
     ) {
         AnimatedVisibility(
             visible = controllerViewState.controlsVisible && !showDebugInfo,
-            enter = fadeIn(),
-            exit = fadeOut(),
+            enter = fadeIn(showFade),
+            exit = fadeOut(hideFade),
             modifier = Modifier.matchParentSize(),
         ) {
-            // Background scrim for OSD readability
-            val scrimBrush =
-                remember {
-                    Brush.verticalGradient(
-                        colors =
-                            listOf(
-                                Color.Transparent,
-                                Color.Black.copy(alpha = 0.5f),
-                                Color.Black.copy(alpha = 0.80f),
-                            ),
-                    )
-                }
+            // Background fade behind the controls, for readability. Tuning values, kept local so
+            // Live Edit picks up changes: each stop is (position from top 0..1, color)
+            val scrimColor = Color.Black
+            val scrimStops =
+                arrayOf(
+                    0f to Color.Transparent,
+                    0.5f to scrimColor.copy(alpha = 0.5f),
+                    1f to scrimColor.copy(alpha = 0.80f),
+                )
+            val scrimBrush = Brush.verticalGradient(*scrimStops)
             Box(
                 modifier =
                     Modifier
@@ -154,105 +217,129 @@ fun PlaybackOverlay(
         AnimatedContent(
             targetState = state,
             label = "controls transition",
+            contentAlignment = Alignment.BottomCenter,
             transitionSpec = {
                 if (targetState.ordinal > initialState.ordinal) {
-                    // Moving down, so move content up
-                    (slideInVertically { it / 2 } + fadeIn()).togetherWith(slideOutVertically { -it / 2 } + fadeOut())
+                    // Moving down (e.g. the controls showing up), so move content up
+                    (slideInVertically(showOffset) { (it * slideFraction).toInt() } + fadeIn(showFade))
+                        .togetherWith(slideOutVertically(hideOffset) { -(it * slideFraction).toInt() } + fadeOut(hideFade))
                 } else {
-                    // Moving up
-                    (slideInVertically { -it / 2 } + fadeIn()).togetherWith(slideOutVertically { it / 2 } + fadeOut())
+                    // Moving up (e.g. the controls going away)
+                    (slideInVertically(showOffset) { -(it * slideFraction).toInt() } + fadeIn(showFade))
+                        .togetherWith(slideOutVertically(hideOffset) { (it * slideFraction).toInt() } + fadeOut(hideFade))
                 }
             },
         ) { targetState ->
-            when (targetState) {
-                OverlayViewState.HIDDEN -> {
-                    // Necessary so the bounds for animation are full width
-                    Box(Modifier.fillMaxWidth())
-                }
-
-                OverlayViewState.CONTROLLER -> {
-                    if (seekBarFocused) {
-                        LaunchedEffect(Unit) {
-                            seekProgressPercent =
-                                (player.currentPosition.toFloat() / player.duration)
+            // Measure the settled content, not the animating container, so the subtitle lift
+            // doesn't get a new height (and a recomposition of the whole page) every frame
+            Box(
+                modifier =
+                    Modifier.onSizeChanged {
+                        if (targetState == state) {
+                            overlayContentHeight = with(density) { it.height.toDp() }
                         }
+                    },
+            ) {
+                when (targetState) {
+                    OverlayViewState.HIDDEN -> {
+                        // Necessary so the bounds for animation are full width
+                        Box(Modifier.fillMaxWidth())
                     }
-                    val nextState =
-                        remember(chapters, nextEnabled) {
-                            if (chapters.isNotEmpty()) {
-                                OverlayViewState.CHAPTERS
-                            } else if (nextEnabled) {
-                                OverlayViewState.QUEUE
-                            } else {
-                                null
+
+                    OverlayViewState.CONTROLLER -> {
+                        if (seekBarFocused) {
+                            LaunchedEffect(Unit) {
+                                seekProgressPercent =
+                                    (player.currentPosition.toFloat() / player.duration)
                             }
                         }
-                    PlaybackController(
-                        item = item,
-                        nextState = nextState,
-                        player = player,
-                        controllerViewState = controllerViewState,
-                        showPlay = showPlay,
-                        previousEnabled = previousEnabled,
-                        nextEnabled = nextEnabled,
-                        seekEnabled = seekEnabled,
-                        seekBack = seekBack,
-                        skipBackOnResume = skipBackOnResume,
-                        seekForward = seekForward,
-                        onPlaybackActionClick = onPlaybackActionClick,
-                        onClickPlaybackDialogType = onClickPlaybackDialogType,
-                        onSeekBarChange = {
-                            onSeekBarChange(it)
-                            seekProgressMs = it
-                        },
-                        currentSegment = currentSegment,
-                        onChangeState = onChangeState,
-                        modifier =
-                            Modifier
-                                .padding(bottom = Spacing.sm)
-                                .onGloballyPositioned {
-                                    controllerHeight = with(density) { it.size.height.toDp() }
-                                },
-                        seekBarInteractionSource = seekBarInteractionSource,
-                    )
-                }
-
-                OverlayViewState.CHAPTERS -> {
-                    if (chapters.isNotEmpty()) {
-                        ChapterRowOverlay(
+                        val nextState =
+                            remember(chapters, nextEnabled) {
+                                if (chapters.isNotEmpty()) {
+                                    OverlayViewState.CHAPTERS
+                                } else if (nextEnabled) {
+                                    OverlayViewState.QUEUE
+                                } else {
+                                    null
+                                }
+                            }
+                        PlaybackController(
+                            item = item,
+                            nextState = nextState,
                             player = player,
                             controllerViewState = controllerViewState,
-                            chapters = chapters,
-                            hasNext = nextEnabled,
+                            showPlay = showPlay,
+                            previousEnabled = previousEnabled,
+                            nextEnabled = nextEnabled,
+                            seekEnabled = seekEnabled,
+                            seekBack = seekBack,
+                            skipBackOnResume = skipBackOnResume,
+                            seekForward = seekForward,
+                            onPlaybackActionClick = onPlaybackActionClick,
+                            onClickPlaybackDialogType = onClickPlaybackDialogType,
+                            onSeekBarChange = {
+                                onSeekBarChange(it)
+                                seekProgressMs = it
+                            },
+                            currentSegment = currentSegment,
                             onChangeState = onChangeState,
                             modifier =
                                 Modifier
-                                    .padding(horizontal = Spacing.sm)
-                                    .fillMaxWidth(),
+                                    .widthIn(max = controlsMaxWidth)
+                                    .padding(bottom = Spacing.sm)
+                                    .onGloballyPositioned {
+                                        controllerHeight = with(density) { it.size.height.toDp() }
+                                    },
+                            seekBarInteractionSource = seekBarInteractionSource,
+                            onTitleHeightChange = { titleHeight = it },
+                            chapters = chapters,
+                            queueHeadline = queueHeadline(remember(queue) { groupQueueBySeason(queue) }, item, seriesEnded, seriesEpisodes),
                         )
                     }
-                }
 
-                OverlayViewState.QUEUE -> {
-                    if (nextEnabled) {
-                        QueueRowOverlay(
-                            queue = queue,
-                            controllerViewState = controllerViewState,
-                            nextState =
-                                remember(chapters) {
-                                    if (chapters.isNotEmpty()) {
-                                        OverlayViewState.CHAPTERS
-                                    } else {
-                                        OverlayViewState.CONTROLLER
-                                    }
-                                },
-                            onChangeState = onChangeState,
-                            onClickPlaylist = onClickPlaylist,
-                            modifier =
-                                Modifier
-                                    .padding(Spacing.sm)
-                                    .fillMaxWidth(),
-                        )
+                    OverlayViewState.CHAPTERS -> {
+                        if (chapters.isNotEmpty()) {
+                            ChapterRowOverlay(
+                                player = player,
+                                controllerViewState = controllerViewState,
+                                chapters = chapters,
+                                hasNext = nextEnabled,
+                                onChangeState = onChangeState,
+                                modifier =
+                                    Modifier
+                                        .widthIn(max = pictureMaxWidth)
+                                        .padding(horizontal = Spacing.sm)
+                                        .fillMaxWidth(),
+                            )
+                        }
+                    }
+
+                    OverlayViewState.QUEUE -> {
+                        if (nextEnabled) {
+                            QueueRowOverlay(
+                                player = player,
+                                queue = queue,
+                                currentItem = item,
+                                controllerViewState = controllerViewState,
+                                nextState =
+                                    remember(chapters) {
+                                        if (chapters.isNotEmpty()) {
+                                            OverlayViewState.CHAPTERS
+                                        } else {
+                                            OverlayViewState.CONTROLLER
+                                        }
+                                    },
+                                onChangeState = onChangeState,
+                                onClickPlaylist = onClickPlaylist,
+                                seriesEpisodes = seriesEpisodes,
+                                onClickEpisode = onClickEpisode,
+                                modifier =
+                                    Modifier
+                                        .widthIn(max = pictureMaxWidth)
+                                        .padding(Spacing.sm)
+                                        .fillMaxWidth(),
+                            )
+                        }
                     }
                 }
             }
@@ -275,6 +362,7 @@ fun PlaybackOverlay(
                     modifier =
                         Modifier
                             .align(Alignment.Center)
+                            .widthIn(max = controlsMaxWidth)
                             .fillMaxWidth(.95f),
                 ) {
                     Column(
@@ -285,12 +373,14 @@ fun PlaybackOverlay(
                                 .align(Alignment.BottomStart)
                                 .offsetByPercent(
                                     xPercentage = seekProgressPercent.coerceIn(0f, 1f),
-                                ).padding(bottom = controllerHeight - titleHeight - subtitleHeight),
+                                ).padding(bottom = previewBottom),
                     ) {
                         TrickplayPreview(
                             seekProgressMs = seekProgressMs,
                             trickplayInfo = trickplayInfo,
                             trickplayUrlFor = trickplayUrlFor,
+                            totalJumpMs = seekProgressMs - seekStartMs,
+                            modifier = Modifier.onSizeChanged { previewBlockHeight = with(density) { it.height.toDp() } },
                         )
                     }
                 }
@@ -299,33 +389,76 @@ fun PlaybackOverlay(
 
         // Top
         val logoImageUrl = LocalImageUrlService.current.rememberImageUrl(item, ImageType.LOGO)
-        AnimatedVisibility(
-            visible = !showDebugInfo && logoImageUrl.isNotNullOrBlank() && controllerViewState.controlsVisible,
-            enter = slideIn { IntOffset(x = -it.width / 2, y = -it.height / 2) } + fadeIn(),
-            exit = slideOut { IntOffset(x = -it.width / 2, y = -it.height / 2) } + fadeOut(),
+        val showLogo = !showDebugInfo && logoImageUrl.isNotNullOrBlank() && controllerViewState.controlsVisible
+        val showClockNow = !showDebugInfo && showClock && controllerViewState.controlsVisible
+        // Fades in the top corners behind the logo and the clock, each shown only with its element.
+        // Tuning values, kept local so Live Edit picks up changes: each stop is
+        // (distance from the corner 0..1, color), and the size is how far the fade reaches.
+        val topFadeColor = Color.Black
+        val topFadeStops =
+            arrayOf(
+                0f to topFadeColor.copy(alpha = 0.6f),
+                0.5f to topFadeColor.copy(alpha = 0.3f),
+                1f to Color.Transparent,
+            )
+        val logoFadeSize = DpSize(560.dp, 280.dp)
+        // Logo placement: the box the logo is fitted into (it keeps its own shape inside it), and
+        // its distance from the top and start edge of the picture area
+        val logoMaxSize = DpSize(180.dp, 80.dp)
+        val logoInsetStart = Spacing.lg
+        val logoInsetTop = Spacing.lg
+        val clockFadeSize = DpSize(400.dp, 200.dp)
+        Box(
             modifier =
                 Modifier
-                    .align(Alignment.TopStart),
+                    .align(Alignment.TopCenter)
+                    .widthIn(max = pictureMaxWidth)
+                    .fillMaxWidth(),
         ) {
-            AsyncImage(
-                model = logoImageUrl,
-                contentDescription = "Logo",
-                alignment = Alignment.TopStart,
+            AnimatedVisibility(
+                visible = showLogo,
+                enter = fadeIn(showFade),
+                exit = fadeOut(hideFade),
+                modifier = Modifier.align(Alignment.TopStart),
+            ) {
+                CornerFade(stops = topFadeStops, fromEnd = false, modifier = Modifier.size(logoFadeSize))
+            }
+            AnimatedVisibility(
+                visible = showClockNow,
+                enter = fadeIn(showFade),
+                exit = fadeOut(hideFade),
+                modifier = Modifier.align(Alignment.TopEnd),
+            ) {
+                CornerFade(stops = topFadeStops, fromEnd = true, modifier = Modifier.size(clockFadeSize))
+            }
+            AnimatedVisibility(
+                visible = showLogo,
+                enter = slideIn(showOffset) { IntOffset(x = -it.width / 2, y = -it.height / 2) } + fadeIn(showFade),
+                exit = slideOut(hideOffset) { IntOffset(x = -it.width / 2, y = -it.height / 2) } + fadeOut(hideFade),
                 modifier =
                     Modifier
-                        .size(width = 240.dp, height = 120.dp)
-                        .padding(Spacing.md),
-            )
-        }
-        AnimatedVisibility(
-            visible = !showDebugInfo && showClock && controllerViewState.controlsVisible,
-            enter = slideIn { IntOffset(x = it.width / 2, y = -it.height / 2) } + fadeIn(),
-            exit = slideOut { IntOffset(x = it.width / 2, y = -it.height / 2) } + fadeOut(),
-            modifier =
-                Modifier
-                    .align(Alignment.TopEnd),
-        ) {
-            TimeDisplay()
+                        .align(Alignment.TopStart),
+            ) {
+                AsyncImage(
+                    model = logoImageUrl,
+                    contentDescription = "Logo",
+                    alignment = Alignment.TopStart,
+                    modifier =
+                        Modifier
+                            .padding(start = logoInsetStart, top = logoInsetTop)
+                            .size(logoMaxSize),
+                )
+            }
+            AnimatedVisibility(
+                visible = showClockNow,
+                enter = slideIn(showOffset) { IntOffset(x = it.width / 2, y = -it.height / 2) } + fadeIn(showFade),
+                exit = slideOut(hideOffset) { IntOffset(x = it.width / 2, y = -it.height / 2) } + fadeOut(hideFade),
+                modifier =
+                    Modifier
+                        .align(Alignment.TopEnd),
+            ) {
+                TimeDisplay()
+            }
         }
 
         // Debug overlay
@@ -374,4 +507,34 @@ enum class OverlayViewState {
     CONTROLLER,
     CHAPTERS,
     QUEUE,
+}
+
+/**
+ * A soft elliptical fade from a top corner, filling its size
+ *
+ * @param fromEnd true for the top end corner (the clock), false for the top start corner (the logo)
+ */
+@Composable
+private fun CornerFade(
+    stops: Array<Pair<Float, Color>>,
+    fromEnd: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
+    val atRight = fromEnd != rtl
+    Box(
+        modifier =
+            modifier.drawBehind {
+                val corner = Offset(if (atRight) size.width else 0f, 0f)
+                val radius = size.width
+                // Draw a circle around the corner, squashed to the box's height
+                scale(scaleX = 1f, scaleY = size.height / size.width, pivot = corner) {
+                    drawCircle(
+                        brush = Brush.radialGradient(*stops, center = corner, radius = radius),
+                        radius = radius,
+                        center = corner,
+                    )
+                }
+            },
+    )
 }

@@ -32,6 +32,7 @@ class PlaybackKeyHandler(
     private val onPlaybackDialogTypeClick: (PlaybackDialogType) -> Unit,
     private val isDpadSeekVisible: () -> Boolean = { false },
     private val onDpadSeek: (Long) -> Unit = { },
+    private val onDpadSeekBack: () -> Unit = { },
     private val dpadSeekMode: DpadSeekMode,
     private val onSeekToNext: () -> Unit,
     private val onPSeekToPrevious: () -> Unit,
@@ -44,6 +45,24 @@ class PlaybackKeyHandler(
 
         if (!controlsEnabled) {
             return false
+        } else if (isBackKey(it) && !controllerViewState.controlsVisible && isDpadSeekVisible()) {
+            // While the d-pad seek bar shows, Back returns to where seeking started (or closes the bar
+            // when already there) instead of leaving playback
+            if (it.type == KeyEventType.KeyUp) onDpadSeekBack.invoke()
+            return true
+        } else if (isPlayPauseKey(it)) {
+            // The remote's play/pause key toggles playback right away, like OK does with one click
+            // pause, instead of relying on the media session to pick it up
+            // Act on the first key down, like media sessions do: some remaps (e.g. Button Mapper) send
+            // only a key down, or a down without a matching up
+            if (it.type == KeyEventType.KeyDown && it.nativeKeyEvent.repeatCount == 0) {
+                when (it.key) {
+                    Key.MediaPlay -> if (Util.shouldShowPlayButton(player)) togglePlayPause()
+                    Key.MediaPause -> if (!Util.shouldShowPlayButton(player)) togglePlayPause()
+                    else -> togglePlayPause()
+                }
+            }
+            return true
         } else if (handleHoldSkip(it)) {
             return true
         } else if (it.type != KeyEventType.KeyUp) {
@@ -61,13 +80,7 @@ class PlaybackKeyHandler(
                     // If d-pad seek bar is visible, hide it
                     clearSkipIndicator.invoke()
                 } else if (oneClickPause && isEnterKey(it)) {
-                    val wasPlaying = player.isPlaying
-                    Util.handlePlayPauseButtonAction(player)
-                    if (!wasPlaying) {
-                        skipBackOnResume?.let {
-                            player.seekBack(it)
-                        }
-                    }
+                    togglePlayPause()
                 } else {
                     controllerViewState.showControls()
                 }
@@ -76,10 +89,6 @@ class PlaybackKeyHandler(
             }
         } else if (isMedia(it)) {
             when (it.key) {
-                Key.MediaPlay, Key.MediaPause, Key.MediaPlayPause -> {
-                    // no-op, MediaSession will handle
-                }
-
                 Key.MediaFastForward, Key.MediaSkipForward -> {
                     player.seekForward(seekForward)
                     updateSkipIndicator(seekForward.inWholeMilliseconds)
@@ -124,6 +133,20 @@ class PlaybackKeyHandler(
             result = false
         }
         return result
+    }
+
+    private fun isPlayPauseKey(event: KeyEvent) =
+        event.key == Key.MediaPlay || event.key == Key.MediaPause || event.key == Key.MediaPlayPause
+
+    /** Play or pause, skipping back a little on resume if that is set */
+    private fun togglePlayPause() {
+        val wasPlaying = player.isPlaying
+        Util.handlePlayPauseButtonAction(player)
+        if (!wasPlaying) {
+            skipBackOnResume?.let {
+                player.seekBack(it)
+            }
+        }
     }
 
     private fun handleHoldSkip(event: KeyEvent): Boolean {

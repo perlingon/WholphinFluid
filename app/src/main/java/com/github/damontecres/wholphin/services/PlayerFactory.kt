@@ -32,6 +32,7 @@ import com.github.damontecres.wholphin.preferences.MediaExtensionStatus
 import com.github.damontecres.wholphin.preferences.PlayerBackend
 import com.github.damontecres.wholphin.preferences.get
 import com.github.damontecres.wholphin.services.hilt.AuthOkHttpClient
+import com.github.damontecres.wholphin.ui.playback.MediaButtonCallback
 import com.github.damontecres.wholphin.ui.preferences.subtitle.SubtitleSettings.stripsEmbeddedFormatting
 import com.github.damontecres.wholphin.util.BitstreamFilteringCodecAdapterFactory
 import com.github.damontecres.wholphin.util.Hdr10PlusMaskingFilter
@@ -251,6 +252,7 @@ class PlayerFactory
         fun createMediaSession(player: Player) =
             MediaSession
                 .Builder(context, player)
+                .setCallback(MediaButtonCallback)
                 .build()
     }
 

@@ -42,6 +42,7 @@ import androidx.tv.material3.Text
 import androidx.tv.material3.surfaceColorAtElevation
 import com.github.damontecres.wholphin.R
 import com.github.damontecres.wholphin.data.model.TrackIndex
+import com.github.damontecres.wholphin.preferences.SubtitlePreferences
 import com.github.damontecres.wholphin.ui.AppColors
 import com.github.damontecres.wholphin.ui.components.SelectedLeadingContent
 import com.github.damontecres.wholphin.ui.indexOfFirstOrNull
@@ -62,6 +63,7 @@ enum class PlaybackDialogType {
     VIDEO_SCALE,
     VIDEO_ADJUST,
     SUBTITLE_DELAY,
+    SUBTITLE_STYLE,
 }
 
 data class PlaybackSettings(
@@ -76,6 +78,7 @@ data class PlaybackSettings(
     val subtitleDelay: Duration,
     val hasSubtitleDownloadPermission: Boolean,
     val playbackSpeedEnabled: Boolean,
+    val subtitleStyleHdr: Boolean = false,
 )
 
 /**
@@ -98,6 +101,7 @@ fun PlaybackDialog(
     onPlaybackActionClick: (PlaybackAction) -> Unit,
     onChangeSubtitleDelay: (Duration) -> Unit,
     onChangeVideoTransform: (VideoTransform) -> Unit,
+    onChangeSubtitleStyle: (SubtitlePreferences) -> Unit = {},
 ) {
     val isLtr = LocalLayoutDirection.current == LayoutDirection.Ltr
     // TODO, shouldn't this work out of the box?
@@ -131,6 +135,18 @@ fun PlaybackDialog(
                     onDismissRequest.invoke()
                     onPlaybackActionClick.invoke(PlaybackAction.SearchCaptions)
                 },
+                onSelectStyle = {
+                    onClickPlaybackDialogType.invoke(PlaybackDialogType.SUBTITLE_STYLE)
+                },
+                gravity = rightGravity,
+            )
+        }
+
+        PlaybackDialogType.SUBTITLE_STYLE -> {
+            SubtitleStyleDialog(
+                isHdr = settings.subtitleStyleHdr,
+                onDismissRequest = onDismissRequest,
+                onChange = onChangeSubtitleStyle,
                 gravity = rightGravity,
             )
         }
@@ -272,10 +288,12 @@ fun PlaybackDialog(
                 onDismissRequest = onDismissRequest,
                 properties = DialogProperties(usePlatformDefaultWidth = false),
             ) {
+                val sideInsetPx = rememberPictureSideInsetPx()
                 val dialogWindowProvider = LocalView.current.parent as? DialogWindowProvider
                 dialogWindowProvider?.window?.let { window ->
                     // Keep the picture fully visible while adjusting
                     window.setGravity(Gravity.BOTTOM or rightGravity)
+                    window.insetFromSide(sideInsetPx) // Over the picture on ultrawide screens
                     window.setDimAmount(0f)
                 }
                 Box(
@@ -331,10 +349,12 @@ fun SubtitleChoiceBottomDialog(
     onDismissRequest: () -> Unit,
     onSelectChoice: (Int) -> Unit,
     onSelectSearch: () -> Unit,
+    onSelectStyle: () -> Unit,
     gravity: Int,
     hasDownloadPermission: Boolean,
     currentChoice: Int? = null,
 ) {
+    // Items above the tracks: None and the divider
     val numberBefore = 2
     val initialChoice =
         remember(choices) {
@@ -358,9 +378,11 @@ fun SubtitleChoiceBottomDialog(
         onDismissRequest = onDismissRequest,
         properties = DialogProperties(usePlatformDefaultWidth = true),
     ) {
+        val sideInsetPx = rememberPictureSideInsetPx()
         val dialogWindowProvider = LocalView.current.parent as? DialogWindowProvider
         dialogWindowProvider?.window?.let { window ->
             window.setGravity(Gravity.BOTTOM or gravity) // Move down, by default dialogs are in the centre
+            window.insetFromSide(sideInsetPx) // Over the picture on ultrawide screens
             window.setDimAmount(0f) // Remove dimmed background of ongoing playback
         }
 
@@ -417,25 +439,8 @@ fun SubtitleChoiceBottomDialog(
                                 },
                     )
                 }
-                item {
-                    ListItem(
-                        selected = currentChoice == TrackIndex.ONLY_FORCED,
-                        onClick = {
-                            onSelectChoice(TrackIndex.ONLY_FORCED)
-                        },
-                        leadingContent = {
-                            SelectedLeadingContent(currentChoice == TrackIndex.ONLY_FORCED)
-                        },
-                        headlineContent = {
-                            Text(
-                                text = stringResource(R.string.only_forced_subtitles),
-                            )
-                        },
-                        supportingContent = {},
-                    )
-                    if (choices.isNotEmpty()) {
-                        HorizontalDivider()
-                    }
+                if (choices.isNotEmpty()) {
+                    item { HorizontalDivider() }
                 }
                 itemsIndexed(choices) { index, choice ->
                     val interactionSource = remember { MutableInteractionSource() }
@@ -459,10 +464,26 @@ fun SubtitleChoiceBottomDialog(
                         modifier = Modifier.focusRequester(choiceFocusRequesters[index]),
                     )
                 }
+                // Only forced subtitles comes last of the choices, after the tracks
+                item {
+                    ListItem(
+                        selected = currentChoice == TrackIndex.ONLY_FORCED,
+                        onClick = {
+                            onSelectChoice(TrackIndex.ONLY_FORCED)
+                        },
+                        leadingContent = {
+                            SelectedLeadingContent(currentChoice == TrackIndex.ONLY_FORCED)
+                        },
+                        headlineContent = {
+                            Text(
+                                text = stringResource(R.string.only_forced_subtitles),
+                            )
+                        },
+                        supportingContent = {},
+                    )
+                }
                 item {
                     HorizontalDivider()
-                    val interactionSource = remember { MutableInteractionSource() }
-                    val focused by interactionSource.collectIsFocusedAsState()
                     ListItem(
                         selected = false,
                         enabled = hasDownloadPermission,
@@ -471,6 +492,21 @@ fun SubtitleChoiceBottomDialog(
                         headlineContent = {
                             Text(
                                 text = stringResource(R.string.search_and_download),
+                            )
+                        },
+                        supportingContent = {},
+                    )
+                }
+                item {
+                    val interactionSource = remember { MutableInteractionSource() }
+                    val focused by interactionSource.collectIsFocusedAsState()
+                    ListItem(
+                        selected = false,
+                        onClick = onSelectStyle,
+                        leadingContent = {},
+                        headlineContent = {
+                            Text(
+                                text = stringResource(R.string.subtitle_style),
                             )
                         },
                         supportingContent = {},
@@ -516,9 +552,11 @@ fun StreamChoiceBottomDialog(
         onDismissRequest = onDismissRequest,
         properties = DialogProperties(usePlatformDefaultWidth = true),
     ) {
+        val sideInsetPx = rememberPictureSideInsetPx()
         val dialogWindowProvider = LocalView.current.parent as? DialogWindowProvider
         dialogWindowProvider?.window?.let { window ->
             window.setGravity(Gravity.BOTTOM or gravity) // Move down, by default dialogs are in the centre
+            window.insetFromSide(sideInsetPx) // Over the picture on ultrawide screens
             window.setDimAmount(0f) // Remove dimmed background of ongoing playback
         }
 

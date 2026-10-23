@@ -160,6 +160,23 @@ object SubtitleSettings {
             },
         )
 
+    val ShadowColor =
+        AppChoicePreference<SubtitlePreferences, Color>(
+            title = R.string.subtitle_shadow_color,
+            defaultValue = Color.Black,
+            getter = { Color(it.effectiveShadowColor) },
+            setter = { prefs, value ->
+                // Stored with full alpha, so 0 can mean "not set"
+                prefs.update { shadowColor = value.toArgb().or(0xFF000000.toInt()) }
+            },
+            displayValues = R.array.font_colors,
+            indexToValue = { colorList.getOrNull(it) ?: Color.Black },
+            valueToIndex = { value ->
+                val color = value.toArgb().and(0x00FFFFFF)
+                colorList.indexOfFirstOrNull { color == it.toArgb().and(0x00FFFFFF) } ?: 0
+            },
+        )
+
     val EdgeThickness =
         AppSliderPreference<SubtitlePreferences>(
             title = R.string.edge_size,
@@ -175,6 +192,20 @@ object SubtitleSettings {
                 prefs.update { edgeThickness = value.toInt() }
             },
             summarizer = { value -> value?.let { "${it / 2.0}" } },
+        )
+
+    val OutlineOpacity =
+        AppSliderPreference<SubtitlePreferences>(
+            title = R.string.subtitle_outline_opacity,
+            defaultValue = 100,
+            min = 10,
+            max = 100,
+            interval = 10,
+            getter = { it.effectiveOutlineOpacity.toLong() },
+            setter = { prefs, value ->
+                prefs.update { outlineOpacity = value.toInt() }
+            },
+            summarizer = { value -> value?.let { "$it%" } },
         )
 
     val ShadowOffset =
@@ -362,17 +393,17 @@ object SubtitleSettings {
                 preferences =
                     listOf(
                         EdgeStylePref,
-                        EdgeColor,
                     ),
+                // With no edge only the style shows
                 conditionalPreferences =
                     listOf(
                         ConditionalPreferences(
                             condition = { it.hasOutline },
-                            preferences = listOf(EdgeThickness),
+                            preferences = listOf(EdgeColor, EdgeThickness, OutlineOpacity),
                         ),
                         ConditionalPreferences(
                             condition = { it.hasShadow },
-                            preferences = listOf(ShadowOffset, ShadowBlur, ShadowOpacity),
+                            preferences = listOf(ShadowColor, ShadowOffset, ShadowBlur, ShadowOpacity),
                         ),
                     ),
             ),
@@ -381,8 +412,14 @@ object SubtitleSettings {
                 preferences =
                     listOf(
                         BackgroundStylePref,
-                        BackgroundColor,
-                        BackgroundOpacity,
+                    ),
+                // With no background only the style shows
+                conditionalPreferences =
+                    listOf(
+                        ConditionalPreferences(
+                            condition = { it.hasBackground },
+                            preferences = listOf(BackgroundColor, BackgroundOpacity),
+                        ),
                     ),
             ),
             PreferenceGroup(
@@ -429,8 +466,18 @@ object SubtitleSettings {
     val SubtitlePreferences.hasShadow: Boolean
         get() = edgeStyle == EdgeStyle.EDGE_SHADOW || edgeStyle == EdgeStyle.EDGE_OUTLINE_SHADOW
 
-    private val SubtitlePreferences.shadowColor: Int
-        get() = combine(edgeColor, fontOpacity * effectiveShadowOpacity / 100)
+    val SubtitlePreferences.hasBackground: Boolean
+        get() = backgroundStyle == BackgroundStyle.BG_WRAP || backgroundStyle == BackgroundStyle.BG_BOXED
+
+    // Before there was a separate shadow color, the shadow used the edge color
+    val SubtitlePreferences.effectiveShadowColor: Int
+        get() = if (shadowColor != 0) shadowColor else edgeColor
+
+    private val SubtitlePreferences.shadowLayerColor: Int
+        get() = combine(effectiveShadowColor, fontOpacity * effectiveShadowOpacity / 100)
+
+    private val SubtitlePreferences.outlineColor: Int
+        get() = combine(edgeColor, fontOpacity * effectiveOutlineOpacity / 100)
 
     @OptIn(UnstableApi::class)
     fun SubtitlePreferences.toSubtitleStyle(context: Context): CaptionStyleCompat {
@@ -444,7 +491,7 @@ object SubtitleSettings {
                 EdgeStyle.EDGE_SOLID, EdgeStyle.EDGE_OUTLINE_SHADOW -> CaptionStyleCompat.EDGE_TYPE_OUTLINE
                 EdgeStyle.EDGE_SHADOW -> CaptionStyleCompat.EDGE_TYPE_DROP_SHADOW
             },
-            if (edgeStyle == EdgeStyle.EDGE_SHADOW) shadowColor else combine(edgeColor, fontOpacity),
+            if (edgeStyle == EdgeStyle.EDGE_SHADOW) shadowLayerColor else outlineColor,
             subtitleTypeface(context),
         )
     }
@@ -460,7 +507,7 @@ object SubtitleSettings {
             0,
             0,
             CaptionStyleCompat.EDGE_TYPE_DROP_SHADOW,
-            shadowColor,
+            shadowLayerColor,
             subtitleTypeface(context),
         )
 
@@ -554,6 +601,9 @@ object SubtitleSettings {
     val SubtitlePreferences.effectiveShadowOpacity: Int
         get() = shadowOpacity.takeIf { it > 0 } ?: ShadowOpacity.defaultValue.toInt()
 
+    val SubtitlePreferences.effectiveOutlineOpacity: Int
+        get() = outlineOpacity.takeIf { it > 0 } ?: OutlineOpacity.defaultValue.toInt()
+
     /**
      * The values media3's subtitle painter draws its outline and shadow with, which it has no
      * public setting for, see [Media3SubtitleOverride]
@@ -612,7 +662,7 @@ object SubtitleSettings {
         val fo = (fontOpacity / 100.0 * 255).toInt().shl(24)
         val fc = Color(combine(fontColor, fontOpacity))
         val bg = Color(combine(backgroundColor, backgroundOpacity))
-        val edge = Color(combine(edgeColor, fontOpacity))
+        val edge = Color(outlineColor)
 
         // TODO weird, but seems to get the size to be very close to matching sizes between renderers
         val fontSizePx = with(density) { fontSize.sp.toPx() * .8 }.toInt()
@@ -643,7 +693,7 @@ object SubtitleSettings {
             -> {
                 val shadowOffsetPx = with(density) { (effectiveShadowOffset / 2f).dp.toPx() * .8 }
                 MPVLib.setPropertyInt("sub-shadow-offset", shadowOffsetPx.toInt())
-                MPVLib.setPropertyColor("sub-shadow-color", Color(shadowColor))
+                MPVLib.setPropertyColor("sub-shadow-color", Color(shadowLayerColor))
                 MPVLib.setPropertyDouble("sub-outline-size", 0.0)
             }
         }
