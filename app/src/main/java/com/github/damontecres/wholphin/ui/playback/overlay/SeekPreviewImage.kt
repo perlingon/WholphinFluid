@@ -5,6 +5,8 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
@@ -16,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.drawscope.scale
@@ -97,6 +100,13 @@ fun SeekPreviewImage(
     val previewCornerRadius = 4.dp
     val previewBorder = 1.8.dp
     val previewShape = RoundedCornerShape(previewCornerRadius)
+    // The jump text ("+1m 20s" / "Back to 12:34") sits at the bottom of the image on a dark fade.
+    // How much of the image height the fade covers, how dark it gets at the bottom, the text style
+    // and its distance from the bottom edge
+    val jumpFadeShare = 0.6f
+    val jumpFadeAlpha = 0.75f
+    val jumpTextStyle = MaterialTheme.typography.titleMedium
+    val jumpTextBottomInset = Spacing.xs
 
     if (previewImageUrl.isNotNullOrBlank()) {
         val height = previewHeight
@@ -158,15 +168,37 @@ fun SeekPreviewImage(
                 }
             }
             jumpText?.let {
-                SeekJumpChip(text = it, alpha = jumpAlpha, modifier = Modifier.align(Alignment.Center))
+                Box(
+                    contentAlignment = Alignment.BottomCenter,
+                    modifier =
+                        Modifier
+                            .align(Alignment.BottomCenter)
+                            .fillMaxWidth()
+                            .fillMaxHeight(jumpFadeShare)
+                            .graphicsLayer { alpha = jumpAlpha }
+                            .background(
+                                Brush.verticalGradient(
+                                    0f to Color.Transparent,
+                                    1f to Color.Black.copy(alpha = jumpFadeAlpha),
+                                ),
+                            ),
+                ) {
+                    Text(
+                        text = it,
+                        color = Color.White,
+                        style = jumpTextStyle,
+                        maxLines = 1,
+                        modifier = Modifier.padding(bottom = jumpTextBottomInset),
+                    )
+                }
             }
         }
     }
 }
 
 /**
- * The "+1m 20s" / "Back to 12:34" chip shown while seeking: inside the preview image, or on its own
- * when there are no trickplay images
+ * The "+1m 20s" / "Back to 12:34" chip shown while seeking when there are no trickplay images (with an
+ * image, the text sits at the bottom of the image instead)
  */
 @Composable
 internal fun SeekJumpChip(
