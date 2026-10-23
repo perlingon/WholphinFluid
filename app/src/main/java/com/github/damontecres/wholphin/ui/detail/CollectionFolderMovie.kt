@@ -14,7 +14,6 @@ import com.github.damontecres.wholphin.R
 import com.github.damontecres.wholphin.data.model.CollectionFolderFilter
 import com.github.damontecres.wholphin.data.model.GetItemsFilter
 import com.github.damontecres.wholphin.preferences.UserPreferences
-import com.github.damontecres.wholphin.preferences.enabled
 import com.github.damontecres.wholphin.ui.components.CollectionCardGrid
 import com.github.damontecres.wholphin.ui.components.CollectionFolderView
 import com.github.damontecres.wholphin.ui.components.ErrorMessage
@@ -107,7 +106,7 @@ fun CollectionFolderMovie(
                 CollectionCardGrid(
                     itemId = destination.itemId,
                     recursive = true,
-                    emojiOnly = preferences.appPreferences.experimentalPreferences.enabled { emojiCollectionsAsMain },
+                    emojiOnly = preferences.appPreferences.advancedPreferences.emojiCollectionsAsMain,
                     modifier =
                         Modifier
                             .fillMaxSize()

@@ -157,6 +157,7 @@ class AppPreferencesSerializer
                             .apply {
                                 imageDiskCacheSizeBytes =
                                     AppPreference.ImageDiskCacheSize.defaultValue * AppPreference.MEGA_BIT
+                                emojiCollectionsAsMain = AppPreference.EmojiCollectionsAsMain.defaultValue
                             }.build()
 
                     photoPreferences =
@@ -186,7 +187,6 @@ class AppPreferencesSerializer
                                 disableAudioOffload = ExperimentalPreference.DisableAudioOffload.defaultValue
                                 preferDolbyVisionOverHdr10Plus =
                                     ExperimentalPreference.PreferDolbyVisionOverHdr10Plus.defaultValue
-                                emojiCollectionsAsMain = ExperimentalPreference.EmojiCollectionsAsMain.defaultValue
                             }.build()
                 }.build()
 

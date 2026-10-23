@@ -82,17 +82,6 @@ object ExperimentalPreference {
             },
             summary = R.string.disable_audio_offload_summary,
         )
-
-    val EmojiCollectionsAsMain =
-        AppSwitchPreference<AppPreferences>(
-            title = R.string.emoji_collections_as_main,
-            defaultValue = false,
-            getter = { it.experimentalPreferences.emojiCollectionsAsMain },
-            setter = { prefs, value ->
-                prefs.updateExperimentalPreferences { emojiCollectionsAsMain = value }
-            },
-            summary = R.string.emoji_collections_as_main_summary,
-        )
 }
 
 val experimentalPreferences =
@@ -106,7 +95,6 @@ val experimentalPreferences =
                         ExperimentalPreference.PreferDolbyVisionOverHdr10Plus,
                         ExperimentalPreference.PreferAc3ForSurround,
                         ExperimentalPreference.DisableAudioOffload,
-                        ExperimentalPreference.EmojiCollectionsAsMain,
                     ),
             ),
         )
