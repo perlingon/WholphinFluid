@@ -344,6 +344,10 @@ fun CollectionCardGrid(
         ),
 ) {
     val columns = 4
+    // Emoji collections get bigger cards, this many per row
+    val emojiColumns = 3
+    // The grid is split into lcm(columns, emojiColumns) slots so both groups fit
+    val gridSlots = columns * emojiColumns
     val spacing = 16.dp
     // Extra space between the emoji collections and the rest (on top of the normal row spacing)
     val groupGap = Spacing.md
@@ -352,9 +356,9 @@ fun CollectionCardGrid(
     val cardWidthPx =
         remember(density) {
             with(density) {
-                // Same approximation as GenreCardGrid
-                (configuration.screenWidthDp.dp - (2 * 16.dp + 3 * spacing))
-                    .div(columns)
+                // Same approximation as GenreCardGrid, sized for the bigger emoji cards
+                (configuration.screenWidthDp.dp - (2 * 16.dp + (emojiColumns - 1) * spacing))
+                    .div(emojiColumns)
                     .roundToPx()
             }
         }
@@ -427,7 +431,7 @@ fun CollectionCardGrid(
                     }
                 } else {
                     LazyVerticalGrid(
-                        columns = GridCells.Fixed(columns),
+                        columns = GridCells.Fixed(gridSlots),
                         horizontalArrangement = Arrangement.spacedBy(spacing),
                         verticalArrangement = Arrangement.spacedBy(spacing),
                         contentPadding = PaddingValues(horizontal = Spacing.md, vertical = Spacing.md),
@@ -437,7 +441,11 @@ fun CollectionCardGrid(
                                 .fillMaxWidth()
                                 .focusGroup(),
                     ) {
-                        items(emojiGroup.size, key = { emojiGroup[it].gridId }) { index ->
+                        items(
+                            emojiGroup.size,
+                            key = { emojiGroup[it].gridId },
+                            span = { GridItemSpan(gridSlots / emojiColumns) },
+                        ) { index ->
                             collectionCard(emojiGroup[index], index)
                         }
                         if (emojiGroup.isNotEmpty() && restGroup.isNotEmpty()) {
@@ -446,7 +454,11 @@ fun CollectionCardGrid(
                                 Spacer(Modifier.height(groupGap))
                             }
                         }
-                        items(restGroup.size, key = { restGroup[it].gridId }) { index ->
+                        items(
+                            restGroup.size,
+                            key = { restGroup[it].gridId },
+                            span = { GridItemSpan(gridSlots / columns) },
+                        ) { index ->
                             collectionCard(restGroup[index], emojiGroup.size + index)
                         }
                     }
