@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -99,6 +100,7 @@ fun queueHeadline(
     groups: List<QueueGroup>,
     currentItem: BaseItem?,
     seriesEnded: Boolean?,
+    seriesEpisodes: List<BaseItem> = emptyList(),
 ): String {
     val current = currentItem?.data
     val season = current?.parentIndexNumber
@@ -106,19 +108,31 @@ fun queueHeadline(
         val count = groups.sumOf { it.items.size }
         return stringResource(R.string.queue) + " · " + pluralStringResource(R.plurals.items_count, count, count)
     }
-    val seriesGroups = groups.filter { it.seriesId == current?.seriesId && it.seasonNumber != null }
-    val left = seriesGroups.filter { it.seasonNumber == season }.sumOf { it.items.size }
-    // A full queue may stop before the later seasons, so the season count is only known when it isn't
-    val queueFull = groups.sumOf { it.items.size } >= Playlist.MAX_SIZE - 1
-    val lastQueuedSeason = seriesGroups.maxOfOrNull { it.seasonNumber!! } ?: season
-    val isLatestSeason = !queueFull && lastQueuedSeason <= season
-    val seasonCount = maxOf(season, lastQueuedSeason)
+    val left: Int
+    val lastSeason: Int
+    // Whether every season is known, so the season count can be trusted
+    val allSeasonsKnown: Boolean
+    val playingIndex = seriesEpisodes.indexOfFirst { it.id == currentItem?.id }
+    if (playingIndex >= 0) {
+        // The whole series is loaded, so count from it
+        left = seriesEpisodes.drop(playingIndex + 1).count { it.data.parentIndexNumber == season }
+        lastSeason = seriesEpisodes.maxOf { it.data.parentIndexNumber ?: 0 }.coerceAtLeast(season)
+        allSeasonsKnown = true
+    } else {
+        // Otherwise count from the queue, which holds the rest of the series. A full queue may stop
+        // before the later seasons
+        val seriesGroups = groups.filter { it.seriesId == current?.seriesId && it.seasonNumber != null }
+        left = seriesGroups.filter { it.seasonNumber == season }.sumOf { it.items.size }
+        lastSeason = maxOf(season, seriesGroups.maxOfOrNull { it.seasonNumber!! } ?: season)
+        allSeasonsKnown = groups.sumOf { it.items.size } < Playlist.MAX_SIZE - 1
+    }
+    val isLatestSeason = allSeasonsKnown && lastSeason <= season
     val ended = seriesEnded == true
     // Ended show: "Season 1 of 3", then "Last Season". Running show (or unknown): "Season 3"
     val seasonLabel =
         when {
             ended && isLatestSeason && season > 1 -> stringResource(R.string.last_season)
-            ended && !queueFull && seasonCount > 1 -> stringResource(R.string.season_of, season, seasonCount)
+            ended && allSeasonsKnown && lastSeason > 1 -> stringResource(R.string.season_of, season, lastSeason)
             else -> formatSeasonNumber(season)
         }
     // The newest season of a running show may still grow, so it shows just the episode number
@@ -156,13 +170,36 @@ fun QueueRowOverlay(
     onChangeState: (OverlayViewState) -> Unit,
     onClickPlaylist: (BaseItem) -> Unit,
     modifier: Modifier = Modifier,
+    seriesEpisodes: List<BaseItem> = emptyList(),
+    onClickEpisode: (BaseItem) -> Unit = onClickPlaylist,
 ) {
     val focusRequester = remember { FocusRequester() }
     val hiddenFocusRequester = remember { FocusRequester() }
-    val groups = remember(queue) { groupQueueBySeason(queue) }
+    // While an episode plays, the row lists every episode of the series, not just the queue
+    val showAllEpisodes = seriesEpisodes.isNotEmpty() && currentItem?.type == BaseItemKind.EPISODE
+    val groups =
+        remember(queue, seriesEpisodes, showAllEpisodes) {
+            if (showAllEpisodes) {
+                groupQueueBySeason(seriesEpisodes.map { PlaylistItem.Media(it) })
+            } else {
+                groupQueueBySeason(queue)
+            }
+        }
+    // The season of the playing episode, where the row opens
+    val playingGroupIndex =
+        remember(groups, currentItem) {
+            groups.indexOfFirst { group -> group.items.any { it.id == currentItem?.id } }.coerceAtLeast(0)
+        }
     // One season is shown at a time, down/up moves to the next/previous season
-    var groupIndex by remember(groups) { mutableIntStateOf(0) }
+    var groupIndex by remember(groups) { mutableIntStateOf(playingGroupIndex) }
     val group = groups.getOrNull(groupIndex) ?: return
+    // The card that takes focus when a season opens: the playing episode in its own season, else the first
+    val focusIndex =
+        if (groupIndex == playingGroupIndex) {
+            group.items.indexOfFirst { it.id == currentItem?.id }.coerceAtLeast(0)
+        } else {
+            0
+        }
     // Set when a season's row opens, so its first episode takes focus once it's composed
     var focusFirst by remember { mutableStateOf(true) }
     Column(
@@ -190,6 +227,7 @@ fun QueueRowOverlay(
         // A fresh row per season, so it starts scrolled to the season's first episode
         key(groupIndex) {
             LazyRow(
+                state = rememberLazyListState(initialFirstVisibleItemIndex = focusIndex),
                 contentPadding =
                     PaddingValues(
                         horizontal = Spacing.md,
@@ -246,7 +284,7 @@ fun QueueRowOverlay(
                     LaunchedEffect(isFocused) {
                         if (isFocused) controllerViewState.pulseControls()
                     }
-                    if (index == 0) {
+                    if (index == focusIndex) {
                         LaunchedEffect(Unit) {
                             if (focusFirst) {
                                 focusFirst = false
@@ -275,7 +313,7 @@ fun QueueRowOverlay(
                         aspectRatio = item.item.aspectRatio ?: AspectRatios.TALL,
                         showSubtitle = false,
                         onClick = {
-                            onClickPlaylist.invoke(item.item)
+                            if (showAllEpisodes) onClickEpisode.invoke(item.item) else onClickPlaylist.invoke(item.item)
                             controllerViewState.hideControls()
                         },
                         onLongClick = {},
@@ -283,7 +321,7 @@ fun QueueRowOverlay(
                         interactionSource = interactionSource,
                         modifier =
                             Modifier.ifElse(
-                                index == 0,
+                                index == focusIndex,
                                 Modifier.focusRequester(focusRequester),
                             ),
                     )

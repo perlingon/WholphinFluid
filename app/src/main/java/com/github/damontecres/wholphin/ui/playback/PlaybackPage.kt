@@ -538,6 +538,8 @@ fun PlaybackPageContent(
                 trickplayUrlFor = viewModel::getTrickplayUrl,
                 queue = remember(state.playlistIndex, state.playlist) { state.upcomingItems },
                 seriesEnded = state.seriesEnded,
+                seriesEpisodes = state.seriesEpisodes,
+                onClickEpisode = viewModel::playEpisode,
                 onClickPlaylist = viewModel::playItemInPlaylist,
                 currentSegment = state.currentSegment?.segment,
                 showClock = preferences.appPreferences.interfacePreferences.showClock,

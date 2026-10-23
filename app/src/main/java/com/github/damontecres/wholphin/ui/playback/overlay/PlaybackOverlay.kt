@@ -103,6 +103,8 @@ fun PlaybackOverlay(
     analyticsState: AnalyticsState,
     queue: List<PlaylistItem>,
     seriesEnded: Boolean?,
+    seriesEpisodes: List<BaseItem>,
+    onClickEpisode: (BaseItem) -> Unit,
     modifier: Modifier = Modifier,
     trickplayInfo: TrickplayInfo? = null,
     trickplayUrlFor: (Int) -> String? = { null },
@@ -291,7 +293,7 @@ fun PlaybackOverlay(
                             seekBarInteractionSource = seekBarInteractionSource,
                             onTitleHeightChange = { titleHeight = it },
                             chapters = chapters,
-                            queueHeadline = queueHeadline(remember(queue) { groupQueueBySeason(queue) }, item, seriesEnded),
+                            queueHeadline = queueHeadline(remember(queue) { groupQueueBySeason(queue) }, item, seriesEnded, seriesEpisodes),
                         )
                     }
 
@@ -328,6 +330,8 @@ fun PlaybackOverlay(
                                     },
                                 onChangeState = onChangeState,
                                 onClickPlaylist = onClickPlaylist,
+                                seriesEpisodes = seriesEpisodes,
+                                onClickEpisode = onClickEpisode,
                                 modifier =
                                     Modifier
                                         .widthIn(max = pictureMaxWidth)
