@@ -25,6 +25,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -59,6 +60,7 @@ import com.github.damontecres.wholphin.ui.playback.AnalyticsState
 import com.github.damontecres.wholphin.ui.playback.ControllerViewState
 import com.github.damontecres.wholphin.ui.playback.CurrentPlayback
 import com.github.damontecres.wholphin.ui.playback.PlaybackDialogType
+import com.github.damontecres.wholphin.ui.theme.FluidLayout
 import com.github.damontecres.wholphin.ui.theme.Spacing
 import org.jellyfin.sdk.model.api.ImageType
 import org.jellyfin.sdk.model.api.MediaSegmentDto
@@ -114,6 +116,9 @@ fun PlaybackOverlay(
             if (item?.subtitleLong.isNotNullOrBlank()) with(density) { subtitleTextSize.toDp() } else 0.dp
         }
 
+    // The seek bar and controls never get wider than a 16:9 video, so they stay over the picture on ultrawide screens
+    val controlsMaxWidth = FluidLayout.videoWidth()
+
     // This will be calculated after composition
     var controllerHeight by remember { mutableStateOf(0.dp) }
     var state by remember(controllerViewState.controlsVisible) {
@@ -156,6 +161,7 @@ fun PlaybackOverlay(
         AnimatedContent(
             targetState = state,
             label = "controls transition",
+            contentAlignment = Alignment.BottomCenter,
             transitionSpec = {
                 if (targetState.ordinal > initialState.ordinal) {
                     // Moving down, so move content up
@@ -211,6 +217,7 @@ fun PlaybackOverlay(
                         onChangeState = onChangeState,
                         modifier =
                             Modifier
+                                .widthIn(max = controlsMaxWidth)
                                 .padding(bottom = Spacing.sm)
                                 .onGloballyPositioned {
                                     controllerHeight = with(density) { it.size.height.toDp() }
@@ -277,6 +284,7 @@ fun PlaybackOverlay(
                     modifier =
                         Modifier
                             .align(Alignment.Center)
+                            .widthIn(max = controlsMaxWidth)
                             .fillMaxWidth(.95f),
                 ) {
                     Column(

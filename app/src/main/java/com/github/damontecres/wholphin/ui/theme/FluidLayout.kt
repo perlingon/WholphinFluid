@@ -28,6 +28,19 @@ object FluidLayout {
     }
 
     /**
+     * Width of a 16:9 video at the screen's height (vh * 16/9), capped at the screen width. On an
+     * ultrawide screen this keeps the player's seek bar and controls over the picture, e.g. at most
+     * 2858 px wide on a 3840x1608 screen
+     */
+    @Composable
+    fun videoWidth(): Dp {
+        val configuration = LocalConfiguration.current
+        val vw = configuration.screenWidthDp.dp
+        val vh = configuration.screenHeightDp.dp
+        return minOf(vw, vh * (16f / 9f))
+    }
+
+    /**
      * Gap between the left edge of the screen and the headlines: clamp(min, target, max), where
      * the target is a share of the extra width and min/max are shares of the screen width
      */

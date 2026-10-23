@@ -93,6 +93,7 @@ import com.github.damontecres.wholphin.ui.playback.overlay.rememberSeekBarState
 import com.github.damontecres.wholphin.ui.preferences.subtitle.SubtitleSettings.applyTo
 import com.github.damontecres.wholphin.ui.preferences.subtitle.SubtitleSettings.calculateEdgeSize
 import com.github.damontecres.wholphin.ui.seasonEpisode
+import com.github.damontecres.wholphin.ui.theme.FluidLayout
 import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.ui.tryRequestFocus
 import com.github.damontecres.wholphin.util.ExceptionHandler
@@ -418,6 +419,7 @@ fun PlaybackPageContent(
                             Modifier
                                 .align(Alignment.BottomCenter)
                                 .padding(bottom = Spacing.md)
+                                .widthIn(max = FluidLayout.videoWidth())
                                 .fillMaxWidth(.95f),
                     )
                 }
