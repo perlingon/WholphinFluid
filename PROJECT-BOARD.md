@@ -1,4 +1,4 @@
-# Nema project board guide
+# Phin project board guide
 
 ## GitHub project structure
 
