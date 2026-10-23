@@ -297,6 +297,13 @@ fun SeekTimecodes(
     durationMs: Long,
     modifier: Modifier = Modifier,
 ) {
+    // Tuning values for the times under the seek bar, kept local so Live Edit picks up changes.
+    // To change only size or weight: MaterialTheme.typography.labelLarge.copy(fontSize = 14.sp)
+    val timeStyle = MaterialTheme.typography.labelLarge
+    val timeColor = MaterialTheme.colorScheme.onSurface
+    // Space around each time; the top value is the gap to the seek bar
+    val timePadding = Spacing.sm
+
     val currentLayoutDirection = LocalLayoutDirection.current
     CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
         Row(
@@ -313,21 +320,21 @@ fun SeekTimecodes(
             CompositionLocalProvider(LocalLayoutDirection provides currentLayoutDirection) {
                 Text(
                     text = positionText,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    style = MaterialTheme.typography.labelLarge,
+                    color = timeColor,
+                    style = timeStyle,
                     modifier =
                         Modifier
-                            .padding(Spacing.sm),
+                            .padding(timePadding),
                 )
             }
             CompositionLocalProvider(LocalLayoutDirection provides currentLayoutDirection) {
                 Text(
                     text = remainingText,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    style = MaterialTheme.typography.labelLarge,
+                    color = timeColor,
+                    style = timeStyle,
                     modifier =
                         Modifier
-                            .padding(Spacing.sm),
+                            .padding(timePadding),
                 )
             }
         }
