@@ -697,4 +697,12 @@
     <string name="genre_movies">%1$sfilmer</string>
     <string name="quality_profile">Kvalitetsprofil</string>
     <string name="seek_back_to">Tillbaka till %1$s</string>
+    <plurals name="seasons_count">
+        <item quantity="one">%1$d säsong</item>
+        <item quantity="other">%1$d säsonger</item>
+    </plurals>
+    <plurals name="episodes_count">
+        <item quantity="one">%1$d avsnitt</item>
+        <item quantity="other">%1$d avsnitt</item>
+    </plurals>
 </resources>

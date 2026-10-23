@@ -74,6 +74,7 @@ fun PlaybackController(
     modifier: Modifier = Modifier,
     seekBarInteractionSource: MutableInteractionSource = remember { MutableInteractionSource() },
     onTitleHeightChange: (Dp) -> Unit = {},
+    queueHeadline: String? = null,
 ) {
     // Tuning values for the "Chapters"/"Queue" hint under the controls, kept local for Live Edit
     val nextHeadlineStyle = MaterialTheme.typography.labelLarge
@@ -145,7 +146,7 @@ fun PlaybackController(
 
             OverlayViewState.QUEUE -> {
                 Text(
-                    text = stringResource(R.string.queue),
+                    text = queueHeadline ?: stringResource(R.string.queue),
                     style = nextHeadlineStyle,
                     color = nextHeadlineColor,
                     modifier =
