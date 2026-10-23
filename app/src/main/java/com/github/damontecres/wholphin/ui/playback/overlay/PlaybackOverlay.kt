@@ -116,6 +116,15 @@ fun PlaybackOverlay(
 
     val density = LocalDensity.current
 
+    // Seek preview (trickplay) placement, kept local so Live Edit picks up changes
+    // true = the preview sits above the title row, false = between the title row and the seek bar
+    val previewAboveTitle = true
+    // Extra space between the preview and what is below it. Example: 0.dp, Spacing.sm (8.dp), 16.dp, -8.dp to overlap
+    val previewGap = Spacing.sm
+
+    // Height of the title row above the seek bar, measured after composition
+    var titleHeight by remember { mutableStateOf(0.dp) }
+
     // The seek bar and controls never get wider than a 16:9 video, so they stay over the picture on ultrawide screens
     val controlsMaxWidth = FluidLayout.videoWidth()
 
@@ -240,6 +249,7 @@ fun PlaybackOverlay(
                                     controllerHeight = with(density) { it.size.height.toDp() }
                                 },
                         seekBarInteractionSource = seekBarInteractionSource,
+                        onTitleHeightChange = { titleHeight = it },
                     )
                 }
 
@@ -287,10 +297,7 @@ fun PlaybackOverlay(
         }
 
         CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
-            // Trickplay. The preview sits above the whole controls block (title row included), measured
-            // from its real height. Tuning value, kept local so Live Edit picks up changes:
-            // extra space between the top of the title row and the preview (negative = overlap)
-            val previewLift = Spacing.sm
+            // Trickplay
             AnimatedVisibility(
                 visible = controllerViewState.controlsVisible && seekProgressPercent >= 0 && seekBarFocused,
                 enter =
@@ -317,7 +324,11 @@ fun PlaybackOverlay(
                                 .align(Alignment.BottomStart)
                                 .offsetByPercent(
                                     xPercentage = seekProgressPercent.coerceIn(0f, 1f),
-                                ).padding(bottom = controllerHeight + previewLift),
+                                ).padding(
+                                    bottom =
+                                        ((if (previewAboveTitle) controllerHeight else controllerHeight - titleHeight) + previewGap)
+                                            .coerceAtLeast(0.dp),
+                                ),
                     ) {
                         TrickplayPreview(
                             seekProgressMs = seekProgressMs,

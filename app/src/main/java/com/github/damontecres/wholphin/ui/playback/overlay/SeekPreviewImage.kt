@@ -90,10 +90,10 @@ fun SeekPreviewImage(
     val context = LocalContext.current
 
     // Tuning values, kept local so Live Edit picks up changes.
-    // Height of the preview image; the width follows the video's shape (96 dp is about 171 dp wide at 16:9)
-    val previewHeight = 96.dp
+    // Height of the preview image; the width follows the video's shape (64 dp is about 114 dp wide at 16:9)
+    val previewHeight = 64.dp
     val previewCornerRadius = 8.dp
-    val previewBorder = 1.5.dp
+    val previewBorder = 1.8.dp
     val previewShape = RoundedCornerShape(previewCornerRadius)
 
     if (previewImageUrl.isNotNullOrBlank()) {

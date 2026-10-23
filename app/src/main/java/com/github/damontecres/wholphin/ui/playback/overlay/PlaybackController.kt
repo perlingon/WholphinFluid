@@ -164,7 +164,6 @@ fun PlaybackController(
     }
 }
 
-
 /**
  * A wrapper for the playback controls to show title and other information, plus the actual controls
  *
@@ -192,16 +191,15 @@ fun Controller(
     onTitleHeightChange: (Dp) -> Unit = {},
 ) {
     // Tuning values for the title block above the seek bar, kept local so Live Edit picks up changes.
-    // The trickplay preview is placed with titleTextSize/subtitleTextSize, so copy the sizes back
-    // there when done.
+    // The trickplay preview measures this block, so it follows any size here.
     val titleStyle = MaterialTheme.typography.labelLarge
     val titleSize = 14.sp
-        // titleTextSize
+    // titleTextSize
     // Color.Unspecified = the theme's text color
     val titleColor = Color.Unspecified
     val subtitleStyle = MaterialTheme.typography.labelLarge
     val subtitleSize = 14.sp
-        //subtitleTextSize
+    // subtitleTextSize
     val subtitleColor = Color.Unspecified
     // Two-tone row: the name uses the title values above, the part after it (" S1 E3 · Children of the Comet")
     // is drawn in the same line with its own weight and colour
@@ -270,7 +268,12 @@ fun Controller(
                         }
                         subtitle?.let {
                             if (title != null) {
-                                withStyle(SpanStyle(color = if (separatorColor.isSpecified) separatorColor else baseColor, fontWeight = subtitleWeight)) {
+                                withStyle(
+                                    SpanStyle(
+                                        color = if (separatorColor.isSpecified) separatorColor else baseColor,
+                                        fontWeight = subtitleWeight,
+                                    ),
+                                ) {
                                     append(nameSeparator)
                                 }
                             }
