@@ -10,6 +10,7 @@ import com.github.damontecres.wholphin.data.filter.DefaultForStudiosFilterOption
 import com.github.damontecres.wholphin.data.model.SeerrItemType
 import com.github.damontecres.wholphin.preferences.PlayerBackend
 import com.github.damontecres.wholphin.preferences.UserPreferences
+import com.github.damontecres.wholphin.preferences.enabled
 import com.github.damontecres.wholphin.ui.components.CollectionCardGrid
 import com.github.damontecres.wholphin.ui.components.ItemGrid
 import com.github.damontecres.wholphin.ui.components.LicenseInfo
@@ -27,7 +28,7 @@ import com.github.damontecres.wholphin.ui.detail.FavoritesPage
 import com.github.damontecres.wholphin.ui.detail.HomeRowGrid
 import com.github.damontecres.wholphin.ui.detail.PersonPage
 import com.github.damontecres.wholphin.ui.detail.PlaylistDetails
-import com.github.damontecres.wholphin.ui.detail.collection.CollectionDetails
+import com.github.damontecres.wholphin.ui.detail.collection.CollectionPage
 import com.github.damontecres.wholphin.ui.detail.discover.DiscoverMovieDetails
 import com.github.damontecres.wholphin.ui.detail.discover.DiscoverPersonPage
 import com.github.damontecres.wholphin.ui.detail.discover.DiscoverSeriesDetails
@@ -182,7 +183,7 @@ fun DestinationContent(
 
                 BaseItemKind.BOX_SET -> {
                     LaunchedEffect(Unit) { onClearBackdrop.invoke() }
-                    CollectionDetails(
+                    CollectionPage(
                         preferences = preferences,
                         itemId = destination.itemId,
                         modifier = modifier,
@@ -461,6 +462,7 @@ fun CollectionFolder(
             CollectionCardGrid(
                 itemId = destination.itemId,
                 recursive = false,
+                emojiOnly = preferences.appPreferences.experimentalPreferences.enabled { emojiCollectionsAsMain },
                 showTitle = true,
                 modifier = modifier,
             )
