@@ -1,21 +1,35 @@
 package com.github.damontecres.wholphin.ui.components
 
+import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.focusable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.times
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -23,6 +37,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
+import com.github.damontecres.wholphin.R
 import com.github.damontecres.wholphin.data.ServerRepository
 import com.github.damontecres.wholphin.data.model.BaseItem
 import com.github.damontecres.wholphin.services.ImageUrlService
@@ -30,8 +45,8 @@ import com.github.damontecres.wholphin.services.NavigationManager
 import com.github.damontecres.wholphin.ui.OneTimeLaunchedEffect
 import com.github.damontecres.wholphin.ui.SlimItemFields
 import com.github.damontecres.wholphin.ui.cards.GenreCard
-import com.github.damontecres.wholphin.ui.detail.CardGrid
 import com.github.damontecres.wholphin.ui.detail.CardGridItem
+import com.github.damontecres.wholphin.ui.ifElse
 import com.github.damontecres.wholphin.ui.launchIO
 import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.ui.tryRequestFocus
@@ -50,7 +65,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
-import kotlinx.coroutines.withContext
 import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.client.extensions.userLibraryApi
 import org.jellyfin.sdk.model.api.BaseItemDto
@@ -62,21 +76,6 @@ import org.jellyfin.sdk.model.api.request.GetItemsRequest
 import timber.log.Timber
 import java.util.UUID
 import kotlin.time.Duration.Companion.hours
-
-/**
- * How many levels of nested collections to look through when a collection has no movie with a backdrop
- */
-private const val MAX_NESTED_DEPTH = 3
-
-/**
- * How many child collections to try at each level before giving up
- */
-private const val MAX_CHILD_COLLECTIONS = 3
-
-/**
- * How many backdrop lookups run at the same time
- */
-private const val IMAGE_CONCURRENCY = 4
 
 @HiltViewModel(assistedFactory = CollectionGridViewModel.Factory::class)
 class CollectionGridViewModel
@@ -127,6 +126,11 @@ class CollectionGridViewModel
                             .content.items
                             .filter { !emojiOnly || it.name.startsWithEmoji() }
                             .map { CollectionCardItem(BaseItem(it, false), null) }
+                            // Emoji collections first, then the rest. Both groups A-Z, ignoring the leading emoji
+                            .sortedWith(
+                                compareByDescending<CollectionCardItem> { it.isEmoji }
+                                    .thenBy(String.CASE_INSENSITIVE_ORDER) { it.sortName.withoutLeadingEmoji() },
+                            )
                     val key = CollectionCacheKey(serverRepository.currentUser?.id, itemId, emojiOnly)
                     val cached = collectionImageCache.getIfAvailable(key)
                     _state.update {
@@ -254,25 +258,6 @@ class CollectionGridViewModel
                 fillWidth = cardWidthPx,
                 backdropTags = item.backdropImageTags.orEmpty(),
             )
-
-        suspend fun positionOfLetter(letter: Char): Int {
-            if (emojiOnly) {
-                // The server can't filter by emoji, so count within the loaded list instead
-                val upper = letter.uppercaseChar().toString()
-                return _state.value.collections.count { it.sortName.uppercase() < upper }
-            }
-            return withContext(WholphinDispatchers.IO) {
-                GetItemsRequestHandler.countMatching(
-                    api = api,
-                    request =
-                        collectionsRequest().copy(
-                            nameLessThan = letter.toString(),
-                            limit = 0,
-                            enableTotalRecordCount = true,
-                        ),
-                )
-            }
-        }
     }
 
 /**
@@ -285,6 +270,17 @@ fun String?.startsWithEmoji(): Boolean {
     return Character.getType(codePoint) == Character.OTHER_SYMBOL.toInt() ||
         codePoint in 0x1F000..0x1FAFF ||
         codePoint in 0x2600..0x27BF
+}
+
+/**
+ * The name without any leading emoji, variation selectors or spaces, for sorting
+ */
+private fun String.withoutLeadingEmoji(): String {
+    var rest = this.trimStart()
+    while (rest.startsWithEmoji() || rest.firstOrNull()?.let { it == '\uFE0F' || it == '\u200D' } == true) {
+        rest = rest.substring(Character.charCount(rest.codePointAt(0))).trimStart()
+    }
+    return rest
 }
 
 data class CollectionGridState(
@@ -313,6 +309,7 @@ data class CollectionCardItem(
     override val gridId: String get() = item.gridId
     override val playable: Boolean = false
     override val sortName: String get() = item.sortName
+    val isEmoji: Boolean get() = item.name.startsWithEmoji()
 }
 
 /**
@@ -325,7 +322,6 @@ fun CollectionCardGrid(
     modifier: Modifier = Modifier,
     emojiOnly: Boolean = false,
     showTitle: Boolean = false,
-    initialPosition: Int = 0,
     viewModel: CollectionGridViewModel =
         hiltViewModel<CollectionGridViewModel, CollectionGridViewModel.Factory>(
             key = "${itemId}_collection_cards_$emojiOnly",
@@ -334,6 +330,8 @@ fun CollectionCardGrid(
 ) {
     val columns = 4
     val spacing = 16.dp
+    // Extra space between the emoji collections and the rest (on top of the normal row spacing)
+    val groupGap = Spacing.md
     val density = LocalDensity.current
     val configuration = LocalConfiguration.current
     val cardWidthPx =
@@ -375,36 +373,68 @@ fun CollectionCardGrid(
                                 .padding(horizontal = Spacing.section, vertical = Spacing.md),
                     )
                 }
-                Box(modifier = Modifier.weight(1f)) {
-                    LaunchedEffect(Unit) { gridFocusRequester.tryRequestFocus() }
-                    CardGrid(
-                        pager = state.collections,
-                        onClickItem = { index, collection ->
+                val emojiGroup = remember(state.collections) { state.collections.filter { it.isEmoji } }
+                val restGroup = remember(state.collections) { state.collections.filterNot { it.isEmoji } }
+                // Index (across both groups) of the card to focus when the page opens or is returned to
+                var focusedIndex by rememberSaveable { mutableIntStateOf(0) }
+                LaunchedEffect(Unit) { gridFocusRequester.tryRequestFocus() }
+
+                val collectionCard: @Composable (CollectionCardItem, Int) -> Unit = { collection, index ->
+                    GenreCard(
+                        genreId = collection.id,
+                        name = collection.item.name,
+                        imageUrl = collection.imageUrl,
+                        onClick = {
+                            focusedIndex = index
                             viewModel.navigationManager.navigateTo(collection.item.destination(index))
                         },
-                        onLongClickItem = { _, _ -> },
-                        onClickPlay = { _, _ -> },
-                        letterPosition = { viewModel.positionOfLetter(it) },
-                        gridFocusRequester = gridFocusRequester,
-                        showJumpButtons = false,
-                        showLetterButtons = true,
-                        modifier = Modifier.fillMaxSize(),
-                        initialPosition = initialPosition,
-                        positionCallback = { columns, position ->
-                        },
-                        columns = columns,
-                        spacing = spacing,
-                        cardContent = { (item, index, onClick, onLongClick, widthPx, mod) ->
-                            GenreCard(
-                                genreId = item?.id,
-                                name = item?.item?.name,
-                                imageUrl = item?.imageUrl,
-                                onClick = onClick,
-                                onLongClick = onLongClick,
-                                modifier = mod,
-                            )
-                        },
+                        onLongClick = {},
+                        modifier =
+                            Modifier
+                                .ifElse(index == focusedIndex, Modifier.focusRequester(gridFocusRequester))
+                                .onFocusChanged { if (it.isFocused) focusedIndex = index },
                     )
+                }
+
+                if (state.collections.isEmpty()) {
+                    Box(
+                        modifier =
+                            Modifier
+                                .weight(1f)
+                                .fillMaxWidth(),
+                    ) {
+                        Text(
+                            text = stringResource(R.string.no_results),
+                            style = MaterialTheme.typography.titleLarge,
+                            color = MaterialTheme.colorScheme.onBackground,
+                            modifier = Modifier.align(Alignment.Center),
+                        )
+                    }
+                } else {
+                    LazyVerticalGrid(
+                        columns = GridCells.Fixed(columns),
+                        horizontalArrangement = Arrangement.spacedBy(spacing),
+                        verticalArrangement = Arrangement.spacedBy(spacing),
+                        contentPadding = PaddingValues(horizontal = Spacing.md, vertical = Spacing.md),
+                        modifier =
+                            Modifier
+                                .weight(1f)
+                                .fillMaxWidth()
+                                .focusGroup(),
+                    ) {
+                        items(emojiGroup.size, key = { emojiGroup[it].gridId }) { index ->
+                            collectionCard(emojiGroup[index], index)
+                        }
+                        if (emojiGroup.isNotEmpty() && restGroup.isNotEmpty()) {
+                            // Gap between the two groups, no heading
+                            item(key = "group_gap", span = { GridItemSpan(maxLineSpan) }) {
+                                Spacer(Modifier.height(groupGap))
+                            }
+                        }
+                        items(restGroup.size, key = { restGroup[it].gridId }) { index ->
+                            collectionCard(restGroup[index], emojiGroup.size + index)
+                        }
+                    }
                 }
             }
         }
