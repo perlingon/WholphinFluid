@@ -245,7 +245,7 @@ private fun SeekBarDisplay(
     // Whether the current Back press was used to undo a seek, so its key-up is consumed too
     var backHandled by remember { mutableStateOf(false) }
     val animatedIndicatorHeight by animateDpAsState(
-        targetValue = 6.dp.times((if (isFocused) 2f else 1f)),
+        targetValue = 4.dp.times((if (isFocused) 2f else 1f)),
     )
 
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
@@ -374,9 +374,12 @@ private fun SeekBarDisplay(
                         center = Offset(x = size.width.times(originProgress), y = yOffset),
                     )
                 }
+                // Playhead dot: diameter when focused / unfocused
+                val dotFocused = 22.dp
+                val dotUnfocused = 12.dp
                 drawCircle(
                     color = Color.White,
-                    radius = size.height + 2,
+                    radius = (if (isFocused) dotFocused else dotUnfocused).toPx() / 2,
                     center =
                         Offset(
                             x = size.width.times(progress),

@@ -127,7 +127,7 @@ fun SeekPreviewImage(
             modifier =
                 modifier
                     .clip(previewShape)
-                    .border(previewBorder, color = MaterialTheme.colorScheme.border, shape = previewShape)
+                    .border(previewBorder, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f), shape = previewShape)
                     .background(Color.Black)
                     .height(height)
                     .width(width),
