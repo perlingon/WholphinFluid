@@ -926,7 +926,7 @@
     <string name="video_tunneling">Video tunneling</string>
     <string name="emoji_collections_as_main">Treat collections with emojis as main collections</string>
     <string name="group_collections">Group collections when possible</string>
-    <string name="group_collections_summary">Collections inside another collection are only shown inside that collection</string>
+    <string name="group_collections_summary">Collections that are inside the same collection are grouped together, in the same order as the emoji collections</string>
     <string name="emoji_collections_as_main_summary">Only collections whose name begins with an emoji are shown on the Collections pages</string>
 
     <string name="d_pad_seek_mode_title">D-Pad seek bar mode</string>

@@ -143,16 +143,27 @@ class CollectionGridViewModel
                         GetItemsRequestHandler
                             .execute(api, collectionsRequest())
                             .content.items
-                    val nested = if (groupNested) nestedCollectionIds(all) else emptySet()
-                    val collections =
+                    val parents = if (groupNested) parentCollections(all) else emptyMap()
+                    // Emoji collections first, then the rest. Both A-Z, ignoring the leading emoji
+                    val byName =
+                        compareByDescending<CollectionCardItem> { it.isEmoji }
+                            .thenBy(String.CASE_INSENSITIVE_ORDER) { it.sortName.withoutLeadingEmoji() }
+                    val allSorted =
                         all
-                            .filter { it.id !in nested }
-                            .filter { !emojiOnly || it.name.startsWithEmoji() }
-                            .map { CollectionCardItem(BaseItem(it, false), null) }
-                            // Emoji collections first, then the rest. Both groups A-Z, ignoring the leading emoji
+                            .map { CollectionCardItem(BaseItem(it, false), null, parents[it.id]) }
+                            .sortedWith(byName)
+                    // The non-emoji collections are grouped by the collection they're in, in the same order as
+                    // their parents. Collections that aren't in another collection come last
+                    val parentOrder = allSorted.withIndex().associate { (index, c) -> c.id to index }
+                    val collections =
+                        allSorted
+                            .filter { !emojiOnly || it.isEmoji }
                             .sortedWith(
                                 compareByDescending<CollectionCardItem> { it.isEmoji }
-                                    .thenBy(String.CASE_INSENSITIVE_ORDER) { it.sortName.withoutLeadingEmoji() },
+                                    .thenBy { c ->
+                                        if (c.isEmoji) 0 else c.parentId?.let(parentOrder::get) ?: Int.MAX_VALUE
+                                    }
+                                    .then(byName),
                             )
                     val key = CollectionCacheKey(serverRepository.currentUser?.id, itemId, emojiOnly, groupNested)
                     val cached = collectionImageCache.getIfAvailable(key)
@@ -178,38 +189,43 @@ class CollectionGridViewModel
         }
 
         /**
-         * IDs of the given collections that are inside another of the given collections
+         * Map each of the given collections that is inside another of the given collections to that parent.
+         * If it is in several, the first parent in the list wins.
          */
-        private suspend fun nestedCollectionIds(collections: List<BaseItemDto>): Set<UUID> {
+        private suspend fun parentCollections(collections: List<BaseItemDto>): Map<UUID, UUID> {
             val userId = serverRepository.currentUser?.id
             val ids = collections.map { it.id }.toSet()
             val semaphore = Semaphore(IMAGE_CONCURRENCY)
-            return collections
-                .map { collection ->
-                    viewModelScope.async(WholphinDispatchers.IO) {
-                        semaphore.withPermit {
-                            try {
-                                GetItemsRequestHandler
-                                    .execute(
-                                        api,
-                                        GetItemsRequest(
-                                            userId = userId,
-                                            parentId = collection.id,
-                                            includeItemTypes = listOf(BaseItemKind.BOX_SET),
-                                            enableTotalRecordCount = false,
-                                        ),
-                                    ).content.items
-                                    .map { it.id }
-                                    .filter { it in ids && it != collection.id }
-                            } catch (ex: Exception) {
-                                Timber.w(ex, "Error fetching child collections of %s", collection.id)
-                                emptyList()
+            val children =
+                collections
+                    .map { collection ->
+                        viewModelScope.async(WholphinDispatchers.IO) {
+                            semaphore.withPermit {
+                                try {
+                                    GetItemsRequestHandler
+                                        .execute(
+                                            api,
+                                            GetItemsRequest(
+                                                userId = userId,
+                                                parentId = collection.id,
+                                                includeItemTypes = listOf(BaseItemKind.BOX_SET),
+                                                enableTotalRecordCount = false,
+                                            ),
+                                        ).content.items
+                                        .map { it.id }
+                                        .filter { it in ids && it != collection.id }
+                                } catch (ex: Exception) {
+                                    Timber.w(ex, "Error fetching child collections of %s", collection.id)
+                                    emptyList()
+                                }
                             }
                         }
-                    }
-                }.awaitAll()
-                .flatten()
-                .toSet()
+                    }.awaitAll()
+            val parents = mutableMapOf<UUID, UUID>()
+            collections.zip(children).forEach { (parent, childIds) ->
+                childIds.forEach { parents.putIfAbsent(it, parent.id) }
+            }
+            return parents
         }
 
         /**
@@ -363,6 +379,8 @@ private val collectionImageCache by lazy {
 data class CollectionCardItem(
     val item: BaseItem,
     val imageUrl: String?,
+    /** The collection this one is inside, when grouping collections */
+    val parentId: UUID? = null,
 ) : CardGridItem {
     val id: UUID get() = item.id
     override val gridId: String get() = item.gridId
@@ -438,7 +456,20 @@ fun CollectionCardGrid(
                     )
                 }
                 val emojiGroup = remember(state.collections) { state.collections.filter { it.isEmoji } }
-                val restGroup = remember(state.collections) { state.collections.filterNot { it.isEmoji } }
+                // Non-emoji collections, split into runs that share the same parent collection
+                val restSubgroups =
+                    remember(state.collections) {
+                        state.collections
+                            .filterNot { it.isEmoji }
+                            .fold(mutableListOf<MutableList<CollectionCardItem>>()) { groups, c ->
+                                if (groups.lastOrNull()?.first()?.parentId == c.parentId) {
+                                    groups.last().add(c)
+                                } else {
+                                    groups.add(mutableListOf(c))
+                                }
+                                groups
+                            }
+                    }
                 // Index (across both groups) of the card to focus when the page opens or is returned to
                 var focusedIndex by rememberSaveable { mutableIntStateOf(0) }
                 LaunchedEffect(Unit) { gridFocusRequester.tryRequestFocus() }
@@ -512,18 +543,23 @@ fun CollectionCardGrid(
                         ) { index ->
                             collectionCard(emojiGroup[index], index)
                         }
-                        if (emojiGroup.isNotEmpty() && restGroup.isNotEmpty()) {
-                            // Gap between the two groups, no heading
-                            item(key = "group_gap", span = { GridItemSpan(maxLineSpan) }) {
-                                Spacer(Modifier.height(groupGap))
+                        var offset = emojiGroup.size
+                        restSubgroups.forEachIndexed { groupIndex, subgroup ->
+                            if (emojiGroup.isNotEmpty() || groupIndex > 0) {
+                                // Gap between groups, no heading
+                                item(key = "group_gap_$groupIndex", span = { GridItemSpan(maxLineSpan) }) {
+                                    Spacer(Modifier.height(groupGap))
+                                }
                             }
-                        }
-                        items(
-                            restGroup.size,
-                            key = { restGroup[it].gridId },
-                            span = { GridItemSpan(gridSlots / columns) },
-                        ) { index ->
-                            collectionCard(restGroup[index], emojiGroup.size + index)
+                            val start = offset
+                            items(
+                                subgroup.size,
+                                key = { subgroup[it].gridId },
+                                span = { GridItemSpan(gridSlots / columns) },
+                            ) { index ->
+                                collectionCard(subgroup[index], start + index)
+                            }
+                            offset += subgroup.size
                         }
                     }
                 }
