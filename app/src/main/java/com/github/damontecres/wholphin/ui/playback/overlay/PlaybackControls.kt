@@ -188,45 +188,46 @@ fun PlaybackControls(
                     .padding(horizontal = Spacing.sm)
                     .fillMaxWidth(),
         ) {
-            LeftPlaybackButtons(
-                onControllerInteraction = onControllerInteraction,
-                onClickPlaybackDialogType = onClickPlaybackDialogType,
-                modifier = Modifier.align(Alignment.CenterStart),
-            )
-
-            PlaybackButtons(
-                player = player,
-                initialFocusRequester = initialFocusRequester,
-                onControllerInteraction = onControllerInteraction,
-                onPlaybackActionClick = onPlaybackActionClick,
-                showPlay = showPlay,
-                previousEnabled = previousEnabled,
-                nextEnabled = nextEnabled,
-                seekBack = seekBack,
-                seekForward = seekForward,
-                skipBackOnResume = skipBackOnResume,
-                modifier = Modifier.align(Alignment.Center),
-            )
-
+            // All controls sit in one centered row, with the media controls in the middle
             Row(
-                modifier = Modifier.align(Alignment.CenterEnd),
+                horizontalArrangement = Arrangement.spacedBy(controlGroupSpacing),
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.align(Alignment.Center),
             ) {
-                currentSegment?.let { segment ->
-                    TextButton(
-                        stringRes = segment.type.skipStringRes,
-                        onClick = {
-                            player.seekTo(segment.endTicks.ticks.inWholeMilliseconds)
-                        },
-                        modifier =
-                            Modifier
-                                .align(Alignment.CenterVertically)
-                                .padding(end = Spacing.xl),
-                    )
-                }
+                LeftPlaybackButtons(
+                    onControllerInteraction = onControllerInteraction,
+                    onClickPlaybackDialogType = onClickPlaybackDialogType,
+                )
+
+                PlaybackButtons(
+                    player = player,
+                    initialFocusRequester = initialFocusRequester,
+                    onControllerInteraction = onControllerInteraction,
+                    onPlaybackActionClick = onPlaybackActionClick,
+                    showPlay = showPlay,
+                    previousEnabled = previousEnabled,
+                    nextEnabled = nextEnabled,
+                    seekBack = seekBack,
+                    seekForward = seekForward,
+                    skipBackOnResume = skipBackOnResume,
+                )
+
                 RightPlaybackButtons(
                     onControllerInteraction = onControllerInteraction,
                     onClickPlaybackDialogType = onClickPlaybackDialogType,
-                    modifier = Modifier,
+                )
+            }
+
+            currentSegment?.let { segment ->
+                TextButton(
+                    stringRes = segment.type.skipStringRes,
+                    onClick = {
+                        player.seekTo(segment.endTicks.ticks.inWholeMilliseconds)
+                    },
+                    modifier =
+                        Modifier
+                            .align(Alignment.CenterEnd)
+                            .padding(end = Spacing.xl),
                 )
             }
         }
@@ -327,7 +328,16 @@ fun SeekTimecodes(
     }
 }
 
-val buttonSpacing = 12.dp
+val buttonSpacing = Spacing.sm
+
+/** Gap between the settings, media and track groups in the centered control row */
+val controlGroupSpacing = Spacing.lg
+
+/** Playback icons are drawn at 80% of their original size */
+private const val PLAYBACK_ICON_SCALE = 0.8f
+private val playbackButtonSize = 36.dp * PLAYBACK_ICON_SCALE
+private val playbackButtonPadding = Spacing.xs * PLAYBACK_ICON_SCALE
+private val playbackFaIconSize = 18.sp * PLAYBACK_ICON_SCALE
 
 @Composable
 fun LeftPlaybackButtons(
@@ -365,7 +375,7 @@ fun RightPlaybackButtons(
         // Captions
         PlaybackButton(
             enabled = true,
-            iconRes = R.drawable.captions_svgrepo_com,
+            iconRes = R.drawable.ic_subtitles,
             onClick = {
                 onControllerInteraction.invoke()
                 onClickPlaybackDialogType.invoke(PlaybackDialogType.CAPTIONS)
@@ -480,11 +490,11 @@ fun PlaybackButton(
                 containerColor = AppColors.TransparentBlack25,
                 focusedContainerColor = selectedColor,
             ),
-        contentPadding = PaddingValues(Spacing.xs),
+        contentPadding = PaddingValues(playbackButtonPadding),
         interactionSource = interactionSource,
         modifier =
             modifier
-                .size(36.dp, 36.dp)
+                .size(playbackButtonSize)
                 .onFocusChanged { onControllerInteraction.invoke() },
     ) {
         Icon(
@@ -521,16 +531,16 @@ fun PlaybackFaButton(
                 containerColor = AppColors.TransparentBlack25,
                 focusedContainerColor = selectedColor,
             ),
-        contentPadding = PaddingValues(Spacing.xs),
+        contentPadding = PaddingValues(playbackButtonPadding),
         interactionSource = interactionSource,
         modifier =
             modifier
-                .size(36.dp, 36.dp)
+                .size(playbackButtonSize)
                 .onFocusChanged { onControllerInteraction.invoke() },
     ) {
         Text(
             text = stringResource(iconRes),
-            fontSize = 18.sp,
+            fontSize = playbackFaIconSize,
             fontFamily = FontAwesome,
             textAlign = TextAlign.Center,
             color =
