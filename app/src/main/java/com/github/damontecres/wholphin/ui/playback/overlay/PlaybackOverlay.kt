@@ -120,7 +120,7 @@ fun PlaybackOverlay(
     // The seek bar and controls never get wider than a 16:9 video, so they stay over the picture on ultrawide screens
     val controlsMaxWidth = FluidLayout.videoWidth()
 
-    // The logo and the chapter & queue rows stay over the picture: a 16:9 area, or wider for an ultrawide video
+    // The logo, clock and the chapter & queue rows stay over the picture: a 16:9 area, or wider for an ultrawide video
     val pictureMaxWidth = FluidLayout.playingVideoWidth(videoAspectRatio)
 
     // This will be calculated after composition
@@ -341,16 +341,16 @@ fun PlaybackOverlay(
                             .padding(Spacing.md),
                 )
             }
-        }
-        AnimatedVisibility(
-            visible = !showDebugInfo && showClock && controllerViewState.controlsVisible,
-            enter = slideIn { IntOffset(x = it.width / 2, y = -it.height / 2) } + fadeIn(),
-            exit = slideOut { IntOffset(x = it.width / 2, y = -it.height / 2) } + fadeOut(),
-            modifier =
-                Modifier
-                    .align(Alignment.TopEnd),
-        ) {
-            TimeDisplay()
+            AnimatedVisibility(
+                visible = !showDebugInfo && showClock && controllerViewState.controlsVisible,
+                enter = slideIn { IntOffset(x = it.width / 2, y = -it.height / 2) } + fadeIn(),
+                exit = slideOut { IntOffset(x = it.width / 2, y = -it.height / 2) } + fadeOut(),
+                modifier =
+                    Modifier
+                        .align(Alignment.TopEnd),
+            ) {
+                TimeDisplay()
+            }
         }
 
         // Debug overlay

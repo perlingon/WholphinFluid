@@ -76,6 +76,8 @@ import com.github.damontecres.wholphin.ui.formatDuration
 import com.github.damontecres.wholphin.ui.indexOfFirstOrNull
 import com.github.damontecres.wholphin.ui.playback.ControllerViewState
 import com.github.damontecres.wholphin.ui.playback.PlaybackDialogType
+import com.github.damontecres.wholphin.ui.playback.insetFromSide
+import com.github.damontecres.wholphin.ui.playback.rememberPictureSideInsetPx
 import com.github.damontecres.wholphin.ui.seekBack
 import com.github.damontecres.wholphin.ui.seekForward
 import com.github.damontecres.wholphin.ui.skipStringRes
@@ -585,9 +587,11 @@ fun <T> BottomDialog(
         onDismissRequest = onDismissRequest,
         properties = DialogProperties(usePlatformDefaultWidth = true),
     ) {
+        val sideInsetPx = rememberPictureSideInsetPx()
         val dialogWindowProvider = LocalView.current.parent as? DialogWindowProvider
         dialogWindowProvider?.window?.let { window ->
             window.setGravity(Gravity.BOTTOM or gravity) // Move down, by default dialogs are in the centre
+            window.insetFromSide(sideInsetPx) // Over the picture on ultrawide screens
             window.setDimAmount(0f) // Remove dimmed background of ongoing playback
         }
 
