@@ -205,6 +205,7 @@ fun PlaybackPageContent(
             state.currentPlayback?.subtitleDelay ?: Duration.ZERO
     }
 
+    var editingSubtitleStyle by remember { mutableStateOf<SubtitlePreferences?>(null) }
     val presentationState = rememberPresentationState(player, false)
     val videoAspectRatio =
         presentationState.videoSizeDp?.let { size -> if (size.height > 0f) size.width / size.height else null }
@@ -526,12 +527,16 @@ fun PlaybackPageContent(
             )
 
             var subtitleStyleAppliedForHdr by remember { mutableStateOf(state.currentMediaInfo.videoStream?.hdr == true) }
+            // Set by the subtitle style panel while it is open, so changes show without waiting for the saved preferences
+            val liveSubtitleStyle = editingSubtitleStyle
             val subtitleSettings =
-                remember(state.currentMediaInfo, preferences.appPreferences.interfacePreferences) {
+                remember(state.currentMediaInfo, preferences.appPreferences.interfacePreferences, liveSubtitleStyle) {
                     Timber.v("subtitle choice: ${state.currentMediaInfo.videoStream?.hdr}")
                     val useSeparate =
                         preferences.appPreferences.interfacePreferences.subtitlesPreferences.useSeparateHdr
-                    if (useSeparate && state.currentMediaInfo.videoStream?.hdr == true) {
+                    if (liveSubtitleStyle != null) {
+                        liveSubtitleStyle
+                    } else if (useSeparate && state.currentMediaInfo.videoStream?.hdr == true) {
                         preferences.appPreferences.interfacePreferences.hdrSubtitlesPreferences
                     } else {
                         preferences.appPreferences.interfacePreferences.subtitlesPreferences
@@ -815,6 +820,10 @@ fun PlaybackPageContent(
                                 state.currentMediaInfo.videoStream?.hdr == true,
                     ),
                 onDismissRequest = {
+                    if (type == PlaybackDialogType.SUBTITLE_STYLE) {
+                        // The saved preferences have the style now
+                        editingSubtitleStyle = null
+                    }
                     playbackDialog =
                         when (type) {
                             // Go back to settings dialog
@@ -846,6 +855,7 @@ fun PlaybackPageContent(
                 },
                 onPlaybackActionClick = onPlaybackActionClick,
                 onChangeSubtitleDelay = { viewModel.updateSubtitleDelay(it) },
+                onChangeSubtitleStyle = { editingSubtitleStyle = it },
                 onChangeVideoTransform = {
                     videoTransform = it
                     videoTransformStore.put(currentMediaId, it)

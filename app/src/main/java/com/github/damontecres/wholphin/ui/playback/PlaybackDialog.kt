@@ -42,6 +42,7 @@ import androidx.tv.material3.Text
 import androidx.tv.material3.surfaceColorAtElevation
 import com.github.damontecres.wholphin.R
 import com.github.damontecres.wholphin.data.model.TrackIndex
+import com.github.damontecres.wholphin.preferences.SubtitlePreferences
 import com.github.damontecres.wholphin.ui.AppColors
 import com.github.damontecres.wholphin.ui.components.SelectedLeadingContent
 import com.github.damontecres.wholphin.ui.indexOfFirstOrNull
@@ -100,6 +101,7 @@ fun PlaybackDialog(
     onPlaybackActionClick: (PlaybackAction) -> Unit,
     onChangeSubtitleDelay: (Duration) -> Unit,
     onChangeVideoTransform: (VideoTransform) -> Unit,
+    onChangeSubtitleStyle: (SubtitlePreferences) -> Unit = {},
 ) {
     val isLtr = LocalLayoutDirection.current == LayoutDirection.Ltr
     // TODO, shouldn't this work out of the box?
@@ -144,6 +146,7 @@ fun PlaybackDialog(
             SubtitleStyleDialog(
                 isHdr = settings.subtitleStyleHdr,
                 onDismissRequest = onDismissRequest,
+                onChange = onChangeSubtitleStyle,
                 gravity = rightGravity,
             )
         }
