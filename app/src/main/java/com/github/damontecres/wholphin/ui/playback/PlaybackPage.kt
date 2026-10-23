@@ -248,6 +248,17 @@ fun PlaybackPageContent(
     var skipPosition by remember { mutableLongStateOf(0L) }
     // Where d-pad seeking started, for the ghost marker and the total jump
     var dpadSeekOriginMs by remember { mutableLongStateOf(0L) }
+    // Counts Back presses during d-pad seeking, so the overlay stays up a while after one
+    var dpadSeekBackPresses by remember { mutableIntStateOf(0) }
+    val onDpadSeekBack: () -> Unit = {
+        if (skipPosition != dpadSeekOriginMs) {
+            skipPosition = dpadSeekOriginMs
+            seekBarState.onValueChange(skipPosition)
+            dpadSeekBackPresses++
+        } else {
+            skipIndicatorDuration = 0L
+        }
+    }
     val updateSkipIndicator = { delta: Long ->
         if ((skipIndicatorDuration > 0 && delta < 0) || (skipIndicatorDuration < 0 && delta > 0)) {
             skipIndicatorDuration = 0
@@ -297,6 +308,7 @@ fun PlaybackPageContent(
                     prefs.dpadSeekMode == DpadSeekMode.SEEKBAR_TRICKPLAY && skipIndicatorDuration != 0L
                 },
                 onDpadSeek = onDpadSeek,
+                onDpadSeekBack = onDpadSeekBack,
                 dpadSeekMode = prefs.dpadSeekMode,
                 onSeekToNext = viewModel::playNextUp,
                 onPSeekToPrevious = viewModel::playPrevious,
@@ -436,7 +448,7 @@ fun PlaybackPageContent(
                     )
                 }
                 // Clear the overlay after a delay
-                LaunchedEffect(skipIndicatorDuration) {
+                LaunchedEffect(skipIndicatorDuration, dpadSeekBackPresses) {
                     delay(1.5.seconds)
                     skipIndicatorDuration = 0L
                 }
