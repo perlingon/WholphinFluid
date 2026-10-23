@@ -78,7 +78,7 @@ fun PlaybackController(
     // Tuning values for the "Chapters"/"Queue" hint under the controls, kept local for Live Edit
     val nextHeadlineStyle = MaterialTheme.typography.labelLarge
     val nextHeadlineColor = Color.Unspecified
-    val nextHeadlineInset = Spacing.md
+    val nextHeadlineInset = Spacing.xl
 
     // Text of the row above the timeline: the series or movie name, then this lighter part (styled in Controller)
     val seriesName = item?.data?.seriesName
@@ -221,7 +221,7 @@ fun Controller(
     val titleGap = Spacing.sm
     val blockGap = Spacing.sm
     // Indent of the title block, and the gap after "Ends at"
-    val startInset = Spacing.md
+    val startInset = Spacing.xl
     val endInset = Spacing.xl
     // How far the title block moves up while the seek bar is focused (makes room for trickplay)
     val bumpOffset = (0).dp
