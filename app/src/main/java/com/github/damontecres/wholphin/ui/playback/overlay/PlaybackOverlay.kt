@@ -103,6 +103,8 @@ fun PlaybackOverlay(
     analyticsState: AnalyticsState,
     queue: List<PlaylistItem>,
     seriesEnded: Boolean?,
+    seriesEpisodes: List<BaseItem>,
+    onClickEpisode: (BaseItem) -> Unit,
     modifier: Modifier = Modifier,
     trickplayInfo: TrickplayInfo? = null,
     trickplayUrlFor: (Int) -> String? = { null },
@@ -328,6 +330,8 @@ fun PlaybackOverlay(
                                     },
                                 onChangeState = onChangeState,
                                 onClickPlaylist = onClickPlaylist,
+                                seriesEpisodes = seriesEpisodes,
+                                onClickEpisode = onClickEpisode,
                                 modifier =
                                     Modifier
                                         .widthIn(max = pictureMaxWidth)
