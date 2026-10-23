@@ -106,7 +106,7 @@ fun CollectionFolderMovie(
                 CollectionCardGrid(
                     itemId = destination.itemId,
                     recursive = true,
-                    emojiOnly = preferences.appPreferences.advancedPreferences.emojiCollectionsAsMain,
+                    emojiFirst = preferences.appPreferences.advancedPreferences.emojiCollectionsAsMain,
                     groupNested = preferences.appPreferences.advancedPreferences.groupCollections,
                     modifier =
                         Modifier

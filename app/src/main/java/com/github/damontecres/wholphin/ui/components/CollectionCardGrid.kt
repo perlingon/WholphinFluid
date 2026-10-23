@@ -104,7 +104,7 @@ class CollectionGridViewModel
         val navigationManager: NavigationManager,
         @Assisted private val itemId: UUID,
         @Assisted("recursive") private val recursive: Boolean,
-        @Assisted("emojiOnly") private val emojiOnly: Boolean,
+        @Assisted("emojiFirst") private val emojiFirst: Boolean,
         @Assisted("groupNested") private val groupNested: Boolean,
     ) : ViewModel() {
         @AssistedFactory
@@ -112,7 +112,7 @@ class CollectionGridViewModel
             fun create(
                 itemId: UUID,
                 @Assisted("recursive") recursive: Boolean,
-                @Assisted("emojiOnly") emojiOnly: Boolean,
+                @Assisted("emojiFirst") emojiFirst: Boolean,
                 @Assisted("groupNested") groupNested: Boolean,
             ): CollectionGridViewModel
         }
@@ -150,14 +150,20 @@ class CollectionGridViewModel
                             .thenBy(String.CASE_INSENSITIVE_ORDER) { it.sortName.withoutLeadingEmoji() }
                     val allSorted =
                         all
-                            .map { CollectionCardItem(BaseItem(it, false), null, parents[it.id]) }
+                            .map {
+                                CollectionCardItem(
+                                    item = BaseItem(it, false),
+                                    imageUrl = null,
+                                    parentId = parents[it.id],
+                                    isEmoji = emojiFirst && it.name.startsWithEmoji(),
+                                )
+                            }
                             .sortedWith(byName)
                     // The non-emoji collections are grouped by the collection they're in, in the same order as
                     // their parents. Collections that aren't in another collection come last
                     val parentOrder = allSorted.withIndex().associate { (index, c) -> c.id to index }
                     val collections =
                         allSorted
-                            .filter { !emojiOnly || it.isEmoji }
                             .sortedWith(
                                 compareByDescending<CollectionCardItem> { it.isEmoji }
                                     .thenBy { c ->
@@ -165,7 +171,7 @@ class CollectionGridViewModel
                                     }
                                     .then(byName),
                             )
-                    val key = CollectionCacheKey(serverRepository.currentUser?.id, itemId, emojiOnly, groupNested)
+                    val key = CollectionCacheKey(serverRepository.currentUser?.id, itemId, emojiFirst, groupNested)
                     val cached = collectionImageCache.getIfAvailable(key)
                     _state.update {
                         it.copy(
@@ -365,7 +371,7 @@ data class CollectionGridState(
 data class CollectionCacheKey(
     val userId: UUID?,
     val parentId: UUID,
-    val emojiOnly: Boolean,
+    val emojiFirst: Boolean,
     val groupNested: Boolean,
 )
 
@@ -381,12 +387,13 @@ data class CollectionCardItem(
     val imageUrl: String?,
     /** The collection this one is inside, when grouping collections */
     val parentId: UUID? = null,
+    /** Shown first and as a bigger card (emoji collections, when that setting is on) */
+    val isEmoji: Boolean = false,
 ) : CardGridItem {
     val id: UUID get() = item.id
     override val gridId: String get() = item.gridId
     override val playable: Boolean = false
     override val sortName: String get() = item.sortName
-    val isEmoji: Boolean get() = item.name.startsWithEmoji()
 }
 
 /**
@@ -397,13 +404,13 @@ fun CollectionCardGrid(
     itemId: UUID,
     recursive: Boolean,
     modifier: Modifier = Modifier,
-    emojiOnly: Boolean = false,
+    emojiFirst: Boolean = false,
     groupNested: Boolean = false,
     showTitle: Boolean = false,
     viewModel: CollectionGridViewModel =
         hiltViewModel<CollectionGridViewModel, CollectionGridViewModel.Factory>(
-            key = "${itemId}_collection_cards_${emojiOnly}_$groupNested",
-            creationCallback = { it.create(itemId, recursive, emojiOnly, groupNested) },
+            key = "${itemId}_collection_cards_${emojiFirst}_$groupNested",
+            creationCallback = { it.create(itemId, recursive, emojiFirst, groupNested) },
         ),
 ) {
     val columns = 4

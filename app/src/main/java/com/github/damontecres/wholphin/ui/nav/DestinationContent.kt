@@ -461,7 +461,7 @@ fun CollectionFolder(
             CollectionCardGrid(
                 itemId = destination.itemId,
                 recursive = false,
-                emojiOnly = preferences.appPreferences.advancedPreferences.emojiCollectionsAsMain,
+                emojiFirst = preferences.appPreferences.advancedPreferences.emojiCollectionsAsMain,
                 groupNested = preferences.appPreferences.advancedPreferences.groupCollections,
                 showTitle = true,
                 modifier = modifier,
