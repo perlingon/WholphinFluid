@@ -89,8 +89,15 @@ fun SeekPreviewImage(
 ) {
     val context = LocalContext.current
 
+    // Tuning values, kept local so Live Edit picks up changes.
+    // Height of the preview image; the width follows the video's shape (96 dp is about 171 dp wide at 16:9)
+    val previewHeight = 96.dp
+    val previewCornerRadius = 8.dp
+    val previewBorder = 1.5.dp
+    val previewShape = RoundedCornerShape(previewCornerRadius)
+
     if (previewImageUrl.isNotNullOrBlank()) {
-        val height = 64.dp
+        val height = previewHeight
         val width = height * (trickPlayInfo.width.toFloat() / trickPlayInfo.height)
         val scale = with(LocalDensity.current) { width.toPx() / trickPlayInfo.width }
 
@@ -117,8 +124,8 @@ fun SeekPreviewImage(
         Box(
             modifier =
                 modifier
-                    .clip(PreviewShape)
-                    .border(1.8.dp, color = MaterialTheme.colorScheme.border, shape = PreviewShape)
+                    .clip(previewShape)
+                    .border(previewBorder, color = MaterialTheme.colorScheme.border, shape = previewShape)
                     .background(Color.Black)
                     .height(height)
                     .width(width),
@@ -163,5 +170,3 @@ fun SeekPreviewImage(
         }
     }
 }
-
-private val PreviewShape = RoundedCornerShape(8.dp)
