@@ -86,15 +86,15 @@ class CollectionGridViewModel
         private val serverRepository: ServerRepository,
         val navigationManager: NavigationManager,
         @Assisted private val itemId: UUID,
-        @Assisted private val recursive: Boolean,
-        @Assisted private val emojiOnly: Boolean,
+        @Assisted("recursive") private val recursive: Boolean,
+        @Assisted("emojiOnly") private val emojiOnly: Boolean,
     ) : ViewModel() {
         @AssistedFactory
         interface Factory {
             fun create(
                 itemId: UUID,
-                recursive: Boolean,
-                emojiOnly: Boolean,
+                @Assisted("recursive") recursive: Boolean,
+                @Assisted("emojiOnly") emojiOnly: Boolean,
             ): CollectionGridViewModel
         }
 
