@@ -27,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
@@ -42,6 +43,7 @@ import com.github.damontecres.wholphin.data.ServerRepository
 import com.github.damontecres.wholphin.data.model.BaseItem
 import com.github.damontecres.wholphin.services.ImageUrlService
 import com.github.damontecres.wholphin.services.NavigationManager
+import com.github.damontecres.wholphin.ui.AspectRatios
 import com.github.damontecres.wholphin.ui.OneTimeLaunchedEffect
 import com.github.damontecres.wholphin.ui.SlimItemFields
 import com.github.damontecres.wholphin.ui.cards.GenreCard
@@ -398,6 +400,23 @@ fun CollectionCardGrid(
                 var focusedIndex by rememberSaveable { mutableIntStateOf(0) }
                 LaunchedEffect(Unit) { gridFocusRequester.tryRequestFocus() }
 
+                // Measured grid width, used to give the wider emoji cards the same height as the others
+                var gridWidthPx by remember { mutableIntStateOf(0) }
+                val emojiAspectRatio =
+                    remember(gridWidthPx) {
+                        val gapPx = with(density) { spacing.toPx() }
+                        val paddingPx = with(density) { (2 * Spacing.md).toPx() }
+                        val slotPx = (gridWidthPx - paddingPx - (gridSlots - 1) * gapPx) / gridSlots
+                        val slotsPerCard = gridSlots / columns
+                        val slotsPerEmojiCard = gridSlots / emojiColumns
+                        val cardWidth = slotsPerCard * slotPx + (slotsPerCard - 1) * gapPx
+                        val emojiCardWidth = slotsPerEmojiCard * slotPx + (slotsPerEmojiCard - 1) * gapPx
+                        if (gridWidthPx > 0 && cardWidth > 0f) {
+                            AspectRatios.WIDE * emojiCardWidth / cardWidth
+                        } else {
+                            AspectRatios.WIDE * columns / emojiColumns
+                        }
+                    }
                 val collectionCard: @Composable (CollectionCardItem, Int) -> Unit = { collection, index ->
                     GenreCard(
                         genreId = collection.id,
@@ -408,6 +427,7 @@ fun CollectionCardGrid(
                             viewModel.navigationManager.navigateTo(collection.item.destination(index))
                         },
                         onLongClick = {},
+                        aspectRatio = if (collection.isEmoji) emojiAspectRatio else AspectRatios.WIDE,
                         modifier =
                             Modifier
                                 .ifElse(index == focusedIndex, Modifier.focusRequester(gridFocusRequester))
@@ -439,6 +459,7 @@ fun CollectionCardGrid(
                             Modifier
                                 .weight(1f)
                                 .fillMaxWidth()
+                                .onSizeChanged { gridWidthPx = it.width }
                                 .focusGroup(),
                     ) {
                         items(

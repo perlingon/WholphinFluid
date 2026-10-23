@@ -60,6 +60,7 @@ fun GenreCard(
     onClick: () -> Unit,
     onLongClick: () -> Unit,
     modifier: Modifier = Modifier,
+    aspectRatio: Float = AspectRatios.WIDE,
     interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
 ) {
     val background = rememberIdColor(genreId).copy(alpha = .6f)
@@ -77,7 +78,7 @@ fun GenreCard(
             contentAlignment = Alignment.Center,
             modifier =
                 Modifier
-                    .aspectRatio(AspectRatios.WIDE)
+                    .aspectRatio(aspectRatio)
                     .fillMaxSize()
                     .clip(RoundedCornerShape(8.dp)),
         ) {
@@ -94,14 +95,14 @@ fun GenreCard(
                     modifier =
                         Modifier
                             .alpha(.75f)
-                            .aspectRatio(AspectRatios.WIDE)
+                            .aspectRatio(aspectRatio)
                             .fillMaxSize(),
                 )
             }
             Box(
                 modifier =
                     Modifier
-                        .aspectRatio(AspectRatios.WIDE)
+                        .aspectRatio(aspectRatio)
                         .fillMaxSize()
                         .background(background),
             ) {
