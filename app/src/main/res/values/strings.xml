@@ -740,6 +740,8 @@
     <string name="subtitle_shadow_distance">Shadow distance</string>
     <string name="subtitle_shadow_softness">Shadow softness</string>
     <string name="subtitle_shadow_opacity">Shadow opacity</string>
+    <string name="subtitle_outline_opacity">Outline opacity</string>
+    <string name="subtitle_shadow_color">Shadow color</string>
 
     <string name="background_style_wrap">Wrap</string>
     <string name="background_style_boxed">Boxed</string>
@@ -1022,4 +1024,22 @@
     <string name="home_settings_source_server_profile">Server user profile</string>
     <string name="home_settings_source_plugin">Server default</string>
     <string name="home_settings_source_web">User web client</string>
+    <string name="seek_back_to">Back to %1$s</string>
+    <plurals name="episodes_left">
+        <item quantity="one">%1$d episode left</item>
+        <item quantity="other">%1$d episodes left</item>
+    </plurals>
+    <plurals name="items_count">
+        <item quantity="one">%1$d Item</item>
+        <item quantity="other">%1$d Items</item>
+    </plurals>
+    <string name="chapter_of">Chapter %1$d of %2$d</string>
+    <string name="season_of">Season %1$d of %2$d</string>
+    <string name="episode_number">Episode %1$d</string>
+    <string name="last_season">Last Season</string>
+    <string name="final_episode">Final episode</string>
+    <plurals name="first_of_episodes">
+        <item quantity="one">First of %1$d episode</item>
+        <item quantity="other">First of %1$d episodes</item>
+    </plurals>
 </resources>

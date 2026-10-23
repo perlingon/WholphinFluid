@@ -7,6 +7,7 @@ import androidx.activity.compose.BackHandler
 import androidx.annotation.OptIn
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -50,6 +51,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
@@ -74,6 +76,7 @@ import com.github.damontecres.wholphin.mpv.MpvPlayer
 import com.github.damontecres.wholphin.preferences.AssPlaybackMode
 import com.github.damontecres.wholphin.preferences.DpadSeekMode
 import com.github.damontecres.wholphin.preferences.PlayerBackend
+import com.github.damontecres.wholphin.preferences.SubtitlePreferences
 import com.github.damontecres.wholphin.preferences.UserPreferences
 import com.github.damontecres.wholphin.preferences.skipBackOnResume
 import com.github.damontecres.wholphin.ui.AppColors
@@ -94,6 +97,7 @@ import com.github.damontecres.wholphin.ui.preferences.subtitle.SubtitleSettings.
 import com.github.damontecres.wholphin.ui.preferences.subtitle.SubtitleSettings.media3Override
 import com.github.damontecres.wholphin.ui.preferences.subtitle.SubtitleSettings.setSubtitleCues
 import com.github.damontecres.wholphin.ui.seasonEpisode
+import com.github.damontecres.wholphin.ui.theme.FluidLayout
 import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.ui.tryRequestFocus
 import com.github.damontecres.wholphin.util.ExceptionHandler
@@ -104,6 +108,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.jellyfin.sdk.model.extensions.ticks
 import timber.log.Timber
+import java.util.concurrent.atomic.AtomicReference
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
@@ -201,7 +206,13 @@ fun PlaybackPageContent(
             state.currentPlayback?.subtitleDelay ?: Duration.ZERO
     }
 
+    var editingSubtitleStyle by remember { mutableStateOf<SubtitlePreferences?>(null) }
     val presentationState = rememberPresentationState(player, false)
+    val videoAspectRatio =
+        presentationState.videoSizeDp?.let { size -> if (size.height > 0f) size.width / size.height else null }
+    // The picture area: 16:9, or wider for an ultrawide video. Overlays, menus and subtitles stay inside it
+    val pictureWidth = FluidLayout.playingVideoWidth(videoAspectRatio)
+    val pictureSideInset = pictureSideInset(LocalConfiguration.current.screenWidthDp.dp, pictureWidth)
     val playbackState by rememberPlayerState(player)
     var showBuffering by remember { mutableStateOf(false) }
     LaunchedEffect(playbackState) {
@@ -236,6 +247,19 @@ fun PlaybackPageContent(
         skipIndicatorDuration = 0L
     }
     var skipPosition by remember { mutableLongStateOf(0L) }
+    // Where d-pad seeking started, for the ghost marker and the total jump
+    var dpadSeekOriginMs by remember { mutableLongStateOf(0L) }
+    // Counts Back presses during d-pad seeking, so the overlay stays up a while after one
+    var dpadSeekBackPresses by remember { mutableIntStateOf(0) }
+    val onDpadSeekBack: () -> Unit = {
+        if (skipPosition != dpadSeekOriginMs) {
+            skipPosition = dpadSeekOriginMs
+            seekBarState.onValueChange(skipPosition)
+            dpadSeekBackPresses++
+        } else {
+            skipIndicatorDuration = 0L
+        }
+    }
     val updateSkipIndicator = { delta: Long ->
         if ((skipIndicatorDuration > 0 && delta < 0) || (skipIndicatorDuration < 0 && delta > 0)) {
             skipIndicatorDuration = 0
@@ -246,6 +270,7 @@ fun PlaybackPageContent(
     val onDpadSeek: (Long) -> Unit = { deltaMs ->
         if (skipIndicatorDuration == 0L) {
             skipPosition = player.currentPosition
+            dpadSeekOriginMs = player.currentPosition
         }
         if ((skipIndicatorDuration > 0 && deltaMs < 0) ||
             (skipIndicatorDuration < 0 && deltaMs > 0)
@@ -284,6 +309,7 @@ fun PlaybackPageContent(
                     prefs.dpadSeekMode == DpadSeekMode.SEEKBAR_TRICKPLAY && skipIndicatorDuration != 0L
                 },
                 onDpadSeek = onDpadSeek,
+                onDpadSeekBack = onDpadSeekBack,
                 dpadSeekMode = prefs.dpadSeekMode,
                 onSeekToNext = viewModel::playNextUp,
                 onPSeekToPrevious = viewModel::playPrevious,
@@ -413,15 +439,17 @@ fun PlaybackPageContent(
                         seekPositionMs = skipPosition,
                         trickplayInfo = state.currentMediaInfo.trickPlayInfo,
                         trickplayUrlFor = viewModel::getTrickplayUrl,
+                        seekOriginMs = dpadSeekOriginMs,
                         modifier =
                             Modifier
                                 .align(Alignment.BottomCenter)
                                 .padding(bottom = Spacing.md)
+                                .widthIn(max = FluidLayout.videoWidth())
                                 .fillMaxWidth(.95f),
                     )
                 }
                 // Clear the overlay after a delay
-                LaunchedEffect(skipIndicatorDuration) {
+                LaunchedEffect(skipIndicatorDuration, dpadSeekBackPresses) {
                     delay(1.5.seconds)
                     skipIndicatorDuration = 0L
                 }
@@ -481,6 +509,8 @@ fun PlaybackPageContent(
             }
 
             // The playback controls
+            // How much of the bottom of the screen the controls / seek preview cover, for the subtitles
+            var overlayCoveredHeight by remember { mutableStateOf(0.dp) }
 
             PlaybackOverlay(
                 modifier =
@@ -507,19 +537,28 @@ fun PlaybackPageContent(
                 trickplayInfo = state.currentMediaInfo.trickPlayInfo,
                 trickplayUrlFor = viewModel::getTrickplayUrl,
                 queue = remember(state.playlistIndex, state.playlist) { state.upcomingItems },
+                seriesEnded = state.seriesEnded,
+                seriesEpisodes = state.seriesEpisodes,
+                onClickEpisode = viewModel::playEpisode,
                 onClickPlaylist = viewModel::playItemInPlaylist,
                 currentSegment = state.currentSegment?.segment,
                 showClock = preferences.appPreferences.interfacePreferences.showClock,
                 analyticsState = state.analyticsState,
+                videoAspectRatio = videoAspectRatio,
+                onCoveredHeightChange = { overlayCoveredHeight = it },
             )
 
             var subtitleStyleAppliedForHdr by remember { mutableStateOf(state.currentMediaInfo.videoStream?.hdr == true) }
+            // Set by the subtitle style panel while it is open, so changes show without waiting for the saved preferences
+            val liveSubtitleStyle = editingSubtitleStyle
             val subtitleSettings =
-                remember(state.currentMediaInfo) {
+                remember(state.currentMediaInfo, preferences.appPreferences.interfacePreferences, liveSubtitleStyle) {
                     Timber.v("subtitle choice: ${state.currentMediaInfo.videoStream?.hdr}")
                     val useSeparate =
                         preferences.appPreferences.interfacePreferences.subtitlesPreferences.useSeparateHdr
-                    if (useSeparate && state.currentMediaInfo.videoStream?.hdr == true) {
+                    if (liveSubtitleStyle != null) {
+                        liveSubtitleStyle
+                    } else if (useSeparate && state.currentMediaInfo.videoStream?.hdr == true) {
                         preferences.appPreferences.interfacePreferences.hdrSubtitlesPreferences
                     } else {
                         preferences.appPreferences.interfacePreferences.subtitlesPreferences
@@ -537,8 +576,31 @@ fun PlaybackPageContent(
 
             // Subtitles
             val subtitleMaxSize by animateFloatAsState(if (controllerViewState.controlsVisible) .7f else 1f)
+            // While the controls show, the subtitles sit just above the controls, or above the seek
+            // preview when it is up. Tuning value, kept local so Live Edit picks up changes:
+            // space between the lowest subtitle line and the top of the controls / preview
+            val subtitleGapAboveControls = Spacing.md
+            val screenHeight = LocalConfiguration.current.screenHeightDp.dp
+            val subtitleLift by animateDpAsState(
+                if (controllerViewState.controlsVisible && overlayCoveredHeight > 0.dp) {
+                    // The view is subtitleMaxSize of the screen tall and keeps its own bottom margin;
+                    // move it so that margin ends at the top of the controls + the gap
+                    val viewHeight = screenHeight * subtitleMaxSize
+                    val cueBottom = viewHeight * (1f - subtitleSettings.margin / 100f)
+                    cueBottom - (screenHeight - overlayCoveredHeight - subtitleGapAboveControls)
+                } else {
+                    0.dp
+                },
+                label = "subtitle lift",
+            )
             val isImageSubtitles =
                 remember(state.subtitleCues) { state.subtitleCues.firstOrNull()?.bitmap != null }
+
+            // Last style given to the SubtitleView, so changes made during playback are applied right away
+            val appliedSubtitleSettings = remember { AtomicReference<SubtitlePreferences?>(null) }
+            LaunchedEffect(subtitleSettings) {
+                viewModel.applySubtitleStyleToMpv(subtitleSettings, density)
+            }
 
             // Reset cueCount when density changes to force re-applying subtitle style
             var cueCount by remember(density) { mutableIntStateOf(0) }
@@ -575,6 +637,12 @@ fun PlaybackPageContent(
                         Timber.v("Switching SDR/HDR, reapplying subtitle style")
                         subtitleSettings.applyTo(subtitleView)
                     }
+                    if (appliedSubtitleSettings.get() != subtitleSettings) {
+                        // The style was changed, e.g. from the subtitle style panel during playback
+                        subtitleSettings.applyTo(subtitleView)
+                        subtitleSettings.media3Override(density).apply(subtitleView)
+                        appliedSubtitleSettings.set(subtitleSettings)
+                    }
                     subtitleView.setSubtitleCues(subtitleCues)
                     if (state.subtitleCues.size > cueCount) {
                         Timber.i("Applying subtitle style to SubtitleView")
@@ -600,14 +668,16 @@ fun PlaybackPageContent(
                     }
                 },
                 onReset = {
-                    it.setCues(null)
+                    it.setSubtitleCues(null)
                 },
                 modifier =
                     Modifier
-                        .fillMaxSize(subtitleMaxSize)
                         .align(Alignment.TopCenter)
+                        .widthIn(max = pictureWidth)
+                        .fillMaxSize(subtitleMaxSize)
                         .background(Color.Transparent)
                         .graphicsLayer {
+                            translationY = -subtitleLift.toPx()
                             alpha =
                                 if (!subtitleVisible) {
                                     0f
@@ -620,28 +690,36 @@ fun PlaybackPageContent(
             )
         }
 
-        // Ask to skip intros, etc button
-        AnimatedVisibility(
-            showSegment,
+        // Ask to skip intros, etc button, kept over the picture (a 16:9 area, or wider for an ultrawide video)
+        Box(
             modifier =
                 Modifier
-                    .padding(Spacing.xxl)
-                    .align(Alignment.BottomEnd),
+                    .align(Alignment.BottomCenter)
+                    .widthIn(max = pictureWidth)
+                    .fillMaxWidth(),
         ) {
-            state.currentSegment?.let { segment ->
-                val focusRequester = remember { FocusRequester() }
-                LaunchedEffect(Unit) {
-                    focusRequester.tryRequestFocus()
-                    delay(10.seconds)
-                    viewModel.updateSegment(segment.segment.id, true)
+            AnimatedVisibility(
+                showSegment,
+                modifier =
+                    Modifier
+                        .padding(Spacing.xxl)
+                        .align(Alignment.BottomEnd),
+            ) {
+                state.currentSegment?.let { segment ->
+                    val focusRequester = remember { FocusRequester() }
+                    LaunchedEffect(Unit) {
+                        focusRequester.tryRequestFocus()
+                        delay(10.seconds)
+                        viewModel.updateSegment(segment.segment.id, true)
+                    }
+                    SkipSegmentButton(
+                        type = segment.segment.type,
+                        onClick = {
+                            viewModel.updateSegment(segment.segment.id, false)
+                        },
+                        modifier = Modifier.focusRequester(focusRequester),
+                    )
                 }
-                SkipSegmentButton(
-                    type = segment.segment.type,
-                    onClick = {
-                        viewModel.updateSegment(segment.segment.id, false)
-                    },
-                    modifier = Modifier.focusRequester(focusRequester),
-                )
             }
         }
 
@@ -708,6 +786,7 @@ fun PlaybackPageContent(
                             .padding(Spacing.sm)
 //                                    .height(128.dp)
                             .fillMaxHeight(1 - playerSize)
+                            .widthIn(max = pictureWidth)
                             .fillMaxWidth(.66f)
                             .align(Alignment.BottomCenter)
                             .background(
@@ -757,58 +836,73 @@ fun PlaybackPageContent(
     }
 
     playbackDialog?.let { type ->
-        PlaybackDialog(
-            type = type,
-            settings =
-                PlaybackSettings(
-                    showDebugInfo = showDebugInfo,
-                    audioIndex = state.currentPlayback?.audioIndex,
-                    audioStreams = state.currentMediaInfo.audioStreams,
-                    subtitleIndex = state.currentPlayback?.subtitleIndex,
-                    subtitleStreams = state.currentMediaInfo.subtitleStreams,
-                    playbackSpeed = playbackSpeed,
-                    contentScale = contentScale,
-                    videoTransform = videoTransform,
-                    subtitleDelay = state.currentPlayback?.subtitleDelay ?: Duration.ZERO,
-                    hasSubtitleDownloadPermission =
-                        remember(userDto) { userDto?.policy?.let { it.isAdministrator || it.enableSubtitleManagement } == true },
-                    // TODO Passing through audio prevents changing playback speed
-                    // See https://github.com/damontecres/Wholphin/issues/164
-                    playbackSpeedEnabled = playerBackend == PlayerBackend.MPV || state.currentPlayback?.audioDecoder != null,
-                ),
-            onDismissRequest = {
-                playbackDialog =
-                    when (type) {
-                        // Go back to settings dialog
-                        PlaybackDialogType.PLAYBACK_SPEED,
-                        PlaybackDialogType.VIDEO_SCALE,
-                        PlaybackDialogType.VIDEO_ADJUST,
-                        -> PlaybackDialogType.SETTINGS
-
-                        else -> null
+        CompositionLocalProvider(LocalPictureSideInset provides pictureSideInset) {
+            PlaybackDialog(
+                type = type,
+                settings =
+                    PlaybackSettings(
+                        showDebugInfo = showDebugInfo,
+                        audioIndex = state.currentPlayback?.audioIndex,
+                        audioStreams = state.currentMediaInfo.audioStreams,
+                        subtitleIndex = state.currentPlayback?.subtitleIndex,
+                        subtitleStreams = state.currentMediaInfo.subtitleStreams,
+                        playbackSpeed = playbackSpeed,
+                        contentScale = contentScale,
+                        videoTransform = videoTransform,
+                        subtitleDelay = state.currentPlayback?.subtitleDelay ?: Duration.ZERO,
+                        hasSubtitleDownloadPermission =
+                            remember(userDto) { userDto?.policy?.let { it.isAdministrator || it.enableSubtitleManagement } == true },
+                        // TODO Passing through audio prevents changing playback speed
+                        // See https://github.com/damontecres/Wholphin/issues/164
+                        playbackSpeedEnabled = playerBackend == PlayerBackend.MPV || state.currentPlayback?.audioDecoder != null,
+                        subtitleStyleHdr =
+                            preferences.appPreferences.interfacePreferences.subtitlesPreferences.useSeparateHdr &&
+                                state.currentMediaInfo.videoStream?.hdr == true,
+                    ),
+                onDismissRequest = {
+                    if (type == PlaybackDialogType.SUBTITLE_STYLE) {
+                        // The saved preferences have the style now
+                        editingSubtitleStyle = null
                     }
-                if (controllerViewState.controlsVisible) {
-                    controllerViewState.pulseControls()
-                }
-            },
-            onControllerInteraction = {
-                controllerViewState.pulseControls(Long.MAX_VALUE)
-            },
-            onClickPlaybackDialogType = {
-                if (it == PlaybackDialogType.SUBTITLE_DELAY || it == PlaybackDialogType.VIDEO_ADJUST) {
-                    // Hide controls so subtitles are fully visible
-                    controllerViewState.hideControls()
-                }
-                playbackDialog = it
-            },
-            onPlaybackActionClick = onPlaybackActionClick,
-            onChangeSubtitleDelay = { viewModel.updateSubtitleDelay(it) },
-            onChangeVideoTransform = {
-                videoTransform = it
-                videoTransformStore.put(currentMediaId, it)
-            },
-            enableSubtitleDelay = player is MpvPlayer,
-            enableVideoScale = videoAdjustEnabled,
-        )
+                    playbackDialog =
+                        when (type) {
+                            // Go back to settings dialog
+                            PlaybackDialogType.PLAYBACK_SPEED,
+                            PlaybackDialogType.VIDEO_SCALE,
+                            PlaybackDialogType.VIDEO_ADJUST,
+                            -> PlaybackDialogType.SETTINGS
+
+                            PlaybackDialogType.SUBTITLE_STYLE -> PlaybackDialogType.CAPTIONS
+
+                            else -> null
+                        }
+                    if (controllerViewState.controlsVisible) {
+                        controllerViewState.pulseControls()
+                    }
+                },
+                onControllerInteraction = {
+                    controllerViewState.pulseControls(Long.MAX_VALUE)
+                },
+                onClickPlaybackDialogType = {
+                    if (it == PlaybackDialogType.SUBTITLE_DELAY ||
+                        it == PlaybackDialogType.VIDEO_ADJUST ||
+                        it == PlaybackDialogType.SUBTITLE_STYLE
+                    ) {
+                        // Hide controls so subtitles are fully visible
+                        controllerViewState.hideControls()
+                    }
+                    playbackDialog = it
+                },
+                onPlaybackActionClick = onPlaybackActionClick,
+                onChangeSubtitleDelay = { viewModel.updateSubtitleDelay(it) },
+                onChangeSubtitleStyle = { editingSubtitleStyle = it },
+                onChangeVideoTransform = {
+                    videoTransform = it
+                    videoTransformStore.put(currentMediaId, it)
+                },
+                enableSubtitleDelay = player is MpvPlayer,
+                enableVideoScale = videoAdjustEnabled,
+            )
+        }
     }
 }

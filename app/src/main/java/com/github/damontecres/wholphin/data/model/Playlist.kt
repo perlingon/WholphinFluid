@@ -12,7 +12,7 @@ data class Playlist(
     val items: List<PlaylistItem>,
 ) {
     companion object {
-        const val MAX_SIZE = 100
+        const val MAX_SIZE = 200
 
         fun fromMedia(list: List<BaseItem>) = Playlist(list.map { PlaylistItem.Media(it) })
     }

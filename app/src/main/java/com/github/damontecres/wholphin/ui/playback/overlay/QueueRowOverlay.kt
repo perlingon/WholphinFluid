@@ -1,48 +1,219 @@
 package com.github.damontecres.wholphin.ui.playback.overlay
 
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.foundation.background
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.focusRestorer
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.media3.common.Player
+import androidx.media3.ui.compose.state.rememberPlayPauseButtonState
+import androidx.tv.material3.CardDefaults
+import androidx.tv.material3.Icon
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.github.damontecres.wholphin.R
 import com.github.damontecres.wholphin.data.model.BaseItem
+import com.github.damontecres.wholphin.data.model.Playlist
 import com.github.damontecres.wholphin.data.model.PlaylistItem
+import com.github.damontecres.wholphin.ui.AspectRatios
 import com.github.damontecres.wholphin.ui.cards.SeasonCard
+import com.github.damontecres.wholphin.ui.cards.rememberImageUrl
 import com.github.damontecres.wholphin.ui.components.HiddenFocusBox
+import com.github.damontecres.wholphin.ui.formatSeasonNumber
 import com.github.damontecres.wholphin.ui.ifElse
 import com.github.damontecres.wholphin.ui.playback.ControllerViewState
+import com.github.damontecres.wholphin.ui.playback.isBackKey
 import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.ui.theme.rowHeadline
 import com.github.damontecres.wholphin.ui.tryRequestFocus
+import java.util.UUID
+import org.jellyfin.sdk.model.api.BaseItemKind
+
+/**
+ * A run of queue items from one season of one series, in queue order. Items that aren't episodes
+ * (movies, intros) get a group without a season.
+ */
+data class QueueGroup(
+    val seriesId: UUID?,
+    val seasonNumber: Int?,
+    val items: List<PlaylistItem>,
+)
+
+fun groupQueueBySeason(queue: List<PlaylistItem>): List<QueueGroup> {
+    val groups = mutableListOf<QueueGroup>()
+    queue.forEach { item ->
+        val data = item.item.data
+        val isEpisode = data.type == BaseItemKind.EPISODE
+        val seriesId = data.seriesId.takeIf { isEpisode }
+        val seasonNumber = data.parentIndexNumber.takeIf { isEpisode }
+        val last = groups.lastOrNull()
+        if (last != null && last.seriesId == seriesId && last.seasonNumber == seasonNumber) {
+            groups[groups.lastIndex] = last.copy(items = last.items + item)
+        } else {
+            groups.add(QueueGroup(seriesId, seasonNumber, listOf(item)))
+        }
+    }
+    return groups
+}
+
+/**
+ * Heading for one season's run of episodes, e.g. "Season 2 · 10 Episodes". Null for a group without a season
+ */
+@Composable
+fun seasonHeadline(group: QueueGroup): String? {
+    val season = group.seasonNumber ?: return null
+    val count = group.items.size
+    return formatSeasonNumber(season) + " · " + pluralStringResource(R.plurals.episodes_count, count, count)
+}
+
+/**
+ * Hint under the controls, about where the playing episode sits in its show. Ended shows:
+ * "Season 1 of 3 · 4 episodes left", "Season 2 of 3 · First of 10 episodes", "Last Season · Final episode".
+ * Running shows: "Season 2 · 4 episodes left", and in the newest season "Season 3 · Episode 2". Uses the queue, which holds the rest of the series. Queues
+ * that don't follow an episode show "Queue · 8 Items"
+ */
+@Composable
+fun queueHeadline(
+    groups: List<QueueGroup>,
+    currentItem: BaseItem?,
+    seriesEnded: Boolean?,
+    seriesEpisodes: List<BaseItem> = emptyList(),
+): String {
+    val current = currentItem?.data
+    val season = current?.parentIndexNumber
+    if (currentItem?.type != BaseItemKind.EPISODE || season == null) {
+        val count = groups.sumOf { it.items.size }
+        return stringResource(R.string.queue) + " · " + pluralStringResource(R.plurals.items_count, count, count)
+    }
+    val left: Int
+    val lastSeason: Int
+    // Whether every season is known, so the season count can be trusted
+    val allSeasonsKnown: Boolean
+    val playingIndex = seriesEpisodes.indexOfFirst { it.id == currentItem?.id }
+    if (playingIndex >= 0) {
+        // The whole series is loaded, so count from it
+        left = seriesEpisodes.drop(playingIndex + 1).count { it.data.parentIndexNumber == season }
+        lastSeason = seriesEpisodes.maxOf { it.data.parentIndexNumber ?: 0 }.coerceAtLeast(season)
+        allSeasonsKnown = true
+    } else {
+        // Otherwise count from the queue, which holds the rest of the series. A full queue may stop
+        // before the later seasons
+        val seriesGroups = groups.filter { it.seriesId == current?.seriesId && it.seasonNumber != null }
+        left = seriesGroups.filter { it.seasonNumber == season }.sumOf { it.items.size }
+        lastSeason = maxOf(season, seriesGroups.maxOfOrNull { it.seasonNumber!! } ?: season)
+        allSeasonsKnown = groups.sumOf { it.items.size } < Playlist.MAX_SIZE - 1
+    }
+    val isLatestSeason = allSeasonsKnown && lastSeason <= season
+    val ended = seriesEnded == true
+    // Ended show: "Season 1 of 3", then "Last Season". Running show (or unknown): "Season 3"
+    val seasonLabel =
+        when {
+            ended && isLatestSeason && season > 1 -> stringResource(R.string.last_season)
+            ended && allSeasonsKnown && lastSeason > 1 -> stringResource(R.string.season_of, season, lastSeason)
+            else -> formatSeasonNumber(season)
+        }
+    // The newest season of a running show may still grow, so it shows just the episode number
+    val episodeNumber = current?.indexNumber
+    val episodeLabel =
+        when {
+            !ended && isLatestSeason && episodeNumber != null -> stringResource(R.string.episode_number, episodeNumber)
+            left == 0 -> stringResource(R.string.final_episode)
+            episodeNumber == 1 -> pluralStringResource(R.plurals.first_of_episodes, left + 1, left + 1)
+            else -> pluralStringResource(R.plurals.episodes_left, left, left)
+        }
+    return "$seasonLabel · $episodeLabel"
+}
+
+/**
+ * "S1 E3 · Children of the Comet" for an episode, like the title row above the timeline. Other
+ * items just show their name
+ */
+fun queueItemTitle(item: BaseItem): String? {
+    val data = item.data
+    if (item.type != BaseItemKind.EPISODE) return item.name
+    val seasonEpisode =
+        listOfNotNull(data.parentIndexNumber?.let { "S$it" }, data.indexNumber?.let { "E$it" })
+            .joinToString(" ")
+            .takeIf { it.isNotBlank() }
+    return listOfNotNull(seasonEpisode, data.name).joinToString(" · ").takeIf { it.isNotBlank() }
+}
 
 @Composable
 fun QueueRowOverlay(
+    player: Player,
     queue: List<PlaylistItem>,
+    currentItem: BaseItem?,
     controllerViewState: ControllerViewState,
     nextState: OverlayViewState,
     onChangeState: (OverlayViewState) -> Unit,
     onClickPlaylist: (BaseItem) -> Unit,
     modifier: Modifier = Modifier,
+    seriesEpisodes: List<BaseItem> = emptyList(),
+    onClickEpisode: (BaseItem) -> Unit = onClickPlaylist,
 ) {
     val focusRequester = remember { FocusRequester() }
     val hiddenFocusRequester = remember { FocusRequester() }
-    LaunchedEffect(Unit) { focusRequester.tryRequestFocus() }
+    // While an episode plays, the row lists every episode of the series, not just the queue
+    val showAllEpisodes = seriesEpisodes.isNotEmpty() && currentItem?.type == BaseItemKind.EPISODE
+    val groups =
+        remember(queue, seriesEpisodes, showAllEpisodes) {
+            if (showAllEpisodes) {
+                groupQueueBySeason(seriesEpisodes.map { PlaylistItem.Media(it) })
+            } else {
+                groupQueueBySeason(queue)
+            }
+        }
+    // The season of the playing episode, where the row opens
+    val playingGroupIndex =
+        remember(groups, currentItem) {
+            groups.indexOfFirst { group -> group.items.any { it.id == currentItem?.id } }.coerceAtLeast(0)
+        }
+    // One season is shown at a time, down/up moves to the next/previous season
+    var groupIndex by remember(groups) { mutableIntStateOf(playingGroupIndex) }
+    val group = groups.getOrNull(groupIndex) ?: return
+    // The card that takes focus when a season opens: the playing episode in its own season, else the first
+    val focusIndex =
+        if (groupIndex == playingGroupIndex) {
+            group.items.indexOfFirst { it.id == currentItem?.id }.coerceAtLeast(0)
+        } else {
+            0
+        }
+    // Set when a season's row opens, so its first episode takes focus once it's composed
+    var focusFirst by remember { mutableStateOf(true) }
     Column(
         verticalArrangement = Arrangement.spacedBy(Spacing.sm),
         modifier = modifier,
@@ -50,50 +221,182 @@ fun QueueRowOverlay(
         HiddenFocusBox(hiddenFocusRequester) {
             onChangeState.invoke(nextState)
         }
+        // Tuning values for the heading, kept local so Live Edit picks up changes. Keep in step with
+        // the headings in ChapterRowOverlay
+        val headlineStyle = MaterialTheme.typography.rowHeadline
+        val headlineColor = Color.Unspecified // Color.Unspecified = the theme's text color
+        val headlineInset = 0.dp
+        // Card image height, gap between cards and the outline on the playing episode
+        val cardImageHeight = 112.dp
+        val cardGap = Spacing.sm
+        // Extra room on each side of the focused card, on top of cardGap
+        val focusedCardGap = Spacing.sm
+        val playingOutlineColor = Color.White
+        // Outline on the playing episode while it has focus
+        val playingFocusedOutlineColor = Color.White
+        val playingFocusedOutlineWidth = 4.dp
+        // Up from the playing episode goes straight back to the controls
+        var playingCardFocused by remember { mutableStateOf(false) }
+        // How dark the cards that aren't focused get (0-1), and their size next to the focused one
+        val cardDim = .5f
+        val cardUnfocusedScale = .9f
+        val cardFocusedScale = 1f
+        // Play/pause icon on the playing episode
+        val playingIconSize = 40.dp
+        val playingIconBackground = Color.Black.copy(alpha = .5f)
+        val playPauseState = rememberPlayPauseButtonState(player)
         Text(
-            text = stringResource(R.string.queue),
-            style = MaterialTheme.typography.rowHeadline,
-        )
-        LazyRow(
-            contentPadding =
-                PaddingValues(
-                    horizontal = Spacing.md,
-                    vertical = Spacing.sm,
+            text =
+                seasonHeadline(group) ?: (
+                    stringResource(R.string.queue) + " · " +
+                        pluralStringResource(R.plurals.items_count, group.items.size, group.items.size)
                 ),
-            horizontalArrangement = Arrangement.spacedBy(Spacing.md),
-            modifier =
-                Modifier
-                    .fillMaxWidth()
-                    .focusRestorer(focusRequester)
-                    .onFocusChanged {
-                        if (it.hasFocus) {
-                            controllerViewState.pulseControls()
+            style = headlineStyle,
+            color = headlineColor,
+            modifier = Modifier.padding(start = headlineInset),
+        )
+        // A fresh row per season, so it starts scrolled to the season's first episode
+        key(groupIndex) {
+            LazyRow(
+                state = rememberLazyListState(initialFirstVisibleItemIndex = focusIndex),
+                contentPadding =
+                    PaddingValues(
+                        horizontal = Spacing.md,
+                        vertical = Spacing.sm,
+                    ),
+                horizontalArrangement = Arrangement.spacedBy(cardGap),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .focusRestorer(focusRequester)
+                        .onFocusChanged {
+                            if (it.hasFocus) {
+                                controllerViewState.pulseControls()
+                            }
+                        }.onPreviewKeyEvent {
+                            // Back returns to the controls instead of hiding them
+                            if (isBackKey(it)) {
+                                if (it.type == KeyEventType.KeyUp) onChangeState.invoke(OverlayViewState.CONTROLLER)
+                                return@onPreviewKeyEvent true
+                            }
+                            if (it.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
+                            when (it.key) {
+                                // Past the last season there is nowhere to go, so stay put
+                                Key.DirectionDown -> {
+                                    if (groupIndex < groups.lastIndex) {
+                                        groupIndex++
+                                        focusFirst = true
+                                    }
+                                    true
+                                }
+
+                                // Up from the first season or the playing episode goes back to the controls, otherwise to the
+                                // previous season
+                                Key.DirectionUp -> {
+                                    if (groupIndex > 0 && !playingCardFocused) {
+                                        groupIndex--
+                                        focusFirst = true
+                                    } else {
+                                        onChangeState.invoke(OverlayViewState.CONTROLLER)
+                                    }
+                                    true
+                                }
+
+                                else -> {
+                                    false
+                                }
+                            }
+                        },
+            ) {
+                itemsIndexed(group.items) { index, item ->
+                    val interactionSource =
+                        remember { MutableInteractionSource() }
+                    val isFocused =
+                        interactionSource.collectIsFocusedAsState().value
+                    LaunchedEffect(isFocused) {
+                        if (isFocused) controllerViewState.pulseControls()
+                    }
+                    if (index == focusIndex) {
+                        LaunchedEffect(Unit) {
+                            if (focusFirst) {
+                                focusFirst = false
+                                focusRequester.tryRequestFocus()
+                            }
                         }
-                    },
-        ) {
-            itemsIndexed(queue) { index, item ->
-                val interactionSource =
-                    remember { MutableInteractionSource() }
-                val isFocused =
-                    interactionSource.collectIsFocusedAsState().value
-                LaunchedEffect(isFocused) {
-                    if (isFocused) controllerViewState.pulseControls()
+                    }
+                    val isPlaying = item.id == currentItem?.id
+                    val sideGap by animateDpAsState(if (isFocused) focusedCardGap else 0.dp, label = "focusedCardGap")
+                    if (isPlaying) {
+                        DisposableEffect(isFocused) {
+                            playingCardFocused = isFocused
+                            onDispose { playingCardFocused = false }
+                        }
+                    }
+                    SeasonCard(
+                        title = queueItemTitle(item.item),
+                        subtitle = null,
+                        name = item.item.name,
+                        imageUrl = rememberImageUrl(item.item, cardImageHeight),
+                        isFavorite =
+                            item.item.data.userData
+                                ?.isFavorite ?: false,
+                        isPlayed =
+                            item.item.data.userData
+                                ?.played ?: false,
+                        unplayedItemCount =
+                            item.item.data.userData
+                                ?.unplayedItemCount ?: 0,
+                        playedPercentage =
+                            item.item.data.userData
+                                ?.playedPercentage ?: 0.0,
+                        numberOfVersions = item.item.data.mediaSourceCount ?: 0,
+                        aspectRatio = item.item.aspectRatio ?: AspectRatios.TALL,
+                        showSubtitle = false,
+                        onClick = {
+                            if (isPlaying) {
+                                // The playing episode toggles play/pause and keeps the row open
+                                controllerViewState.pulseControls()
+                                playPauseState.onClick()
+                            } else {
+                                if (showAllEpisodes) onClickEpisode.invoke(item.item) else onClickPlaylist.invoke(item.item)
+                                controllerViewState.hideControls()
+                            }
+                        },
+                        onLongClick = {},
+                        imageHeight = cardImageHeight,
+                        // Watched checkmark (and progress bar) on the image
+                        showImageOverlay = true,
+                        outlineColor = if (isPlaying) playingOutlineColor else Color.Unspecified,
+                        focusedOutlineColor = if (isPlaying) playingFocusedOutlineColor else Color.Unspecified,
+                        focusedOutlineWidth = playingFocusedOutlineWidth,
+                        dimAmount = if (isFocused || isPlaying) 0f else cardDim,
+                        imageOverlay = {
+                            if (isPlaying) {
+                                Icon(
+                                    painter =
+                                        painterResource(
+                                            if (playPauseState.showPlay) R.drawable.baseline_play_arrow_24 else R.drawable.baseline_pause_24,
+                                        ),
+                                    contentDescription = null,
+                                    tint = Color.White,
+                                    modifier =
+                                        Modifier
+                                            .align(Alignment.Center)
+                                            .size(playingIconSize)
+                                            .background(playingIconBackground, CircleShape)
+                                            .padding(Spacing.xs),
+                                )
+                            }
+                        },
+                        scale = CardDefaults.scale(scale = cardUnfocusedScale, focusedScale = cardFocusedScale),
+                        interactionSource = interactionSource,
+                        modifier =
+                            Modifier.padding(horizontal = sideGap).ifElse(
+                                index == focusIndex,
+                                Modifier.focusRequester(focusRequester),
+                            ),
+                    )
                 }
-                SeasonCard(
-                    item = item.item,
-                    onClick = {
-                        onClickPlaylist.invoke(item.item)
-                        controllerViewState.hideControls()
-                    },
-                    onLongClick = {},
-                    imageHeight = 140.dp,
-                    interactionSource = interactionSource,
-                    modifier =
-                        Modifier.ifElse(
-                            index == 0,
-                            Modifier.focusRequester(focusRequester),
-                        ),
-                )
             }
         }
     }

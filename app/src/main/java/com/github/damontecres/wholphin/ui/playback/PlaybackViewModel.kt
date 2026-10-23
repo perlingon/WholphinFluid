@@ -42,6 +42,7 @@ import com.github.damontecres.wholphin.preferences.AppPreference
 import com.github.damontecres.wholphin.preferences.PlayerBackend
 import com.github.damontecres.wholphin.preferences.ShowNextUpWhen
 import com.github.damontecres.wholphin.preferences.SkipSegmentBehavior
+import com.github.damontecres.wholphin.preferences.SubtitlePreferences
 import com.github.damontecres.wholphin.preferences.UserPreferences
 import com.github.damontecres.wholphin.preferences.enabled
 import com.github.damontecres.wholphin.services.DatePlayedService
@@ -56,6 +57,7 @@ import com.github.damontecres.wholphin.services.RefreshRateService
 import com.github.damontecres.wholphin.services.ScreensaverService
 import com.github.damontecres.wholphin.services.StreamChoiceService
 import com.github.damontecres.wholphin.services.UserPreferencesService
+import com.github.damontecres.wholphin.ui.DetailItemFields
 import com.github.damontecres.wholphin.ui.formatBitrate
 import com.github.damontecres.wholphin.ui.gt
 import com.github.damontecres.wholphin.ui.isNotNullOrBlank
@@ -68,6 +70,7 @@ import com.github.damontecres.wholphin.ui.seekBack
 import com.github.damontecres.wholphin.ui.seekForward
 import com.github.damontecres.wholphin.ui.showToast
 import com.github.damontecres.wholphin.util.ExceptionHandler
+import com.github.damontecres.wholphin.util.GetEpisodesRequestHandler
 import com.github.damontecres.wholphin.util.LoadingState
 import com.github.damontecres.wholphin.util.PlaybackItemState
 import com.github.damontecres.wholphin.util.TrackActivityPlaybackListener
@@ -110,6 +113,7 @@ import org.jellyfin.sdk.api.sockets.subscribe
 import org.jellyfin.sdk.model.DeviceInfo
 import org.jellyfin.sdk.model.api.BaseItemKind
 import org.jellyfin.sdk.model.api.ImageType
+import org.jellyfin.sdk.model.api.LocationType
 import org.jellyfin.sdk.model.api.MediaSegmentType
 import org.jellyfin.sdk.model.api.MediaStreamType
 import org.jellyfin.sdk.model.api.MediaType
@@ -121,6 +125,7 @@ import org.jellyfin.sdk.model.api.PlaystateRequest
 import org.jellyfin.sdk.model.api.TrickplayInfo
 import org.jellyfin.sdk.model.api.VideoRange
 import org.jellyfin.sdk.model.api.VideoRangeType
+import org.jellyfin.sdk.model.api.request.GetEpisodesRequest
 import org.jellyfin.sdk.model.extensions.inWholeTicks
 import org.jellyfin.sdk.model.extensions.ticks
 import org.jellyfin.sdk.model.serializer.toUUIDOrNull
@@ -418,6 +423,71 @@ class PlaybackViewModel
             }
         }
 
+        private var seriesStatusId: UUID? = null
+
+        /**
+         * Looks up whether the episode's series has ended (for the "Last Season" hint) and all of its
+         * episodes (for the episode row) in the player
+         */
+        private fun updateSeriesEnded(item: BaseItem) {
+            val seriesId = item.data.seriesId.takeIf { item.type == BaseItemKind.EPISODE }
+            if (seriesId == seriesStatusId) return
+            seriesStatusId = seriesId
+            _state.update { it.copy(seriesEnded = null, seriesEpisodes = emptyList()) }
+            if (seriesId == null) return
+            viewModelScope.launchIO {
+                val status =
+                    api.userLibraryApi
+                        .getItem(seriesId)
+                        .content.status
+                if (seriesStatusId == seriesId) {
+                    _state.update { it.copy(seriesEnded = status.equals("Ended", ignoreCase = true)) }
+                }
+            }
+            viewModelScope.launchIO {
+                val episodes =
+                    GetEpisodesRequestHandler
+                        .execute(api, GetEpisodesRequest(seriesId = seriesId, fields = DetailItemFields))
+                        .content.items
+                        .filter { it.locationType != LocationType.VIRTUAL }
+                        .map { BaseItem(it, false) }
+                if (seriesStatusId == seriesId) {
+                    _state.update { it.copy(seriesEpisodes = episodes) }
+                }
+            }
+        }
+
+        /**
+         * Plays an episode picked in the player's episode row. If it isn't in the queue, the queue is
+         * rebuilt to start from it
+         */
+        fun playEpisode(item: BaseItem) {
+            if (state.value.playlist.items
+                    .any { it.id == item.id }
+            ) {
+                playItemInPlaylist(item)
+                return
+            }
+            viewModelScope.launchDefault {
+                playlistMutex.withLock {
+                    val result = playlistCreator.createFrom(item.data)
+                    if (result !is PlaylistCreationResult.Success || result.playlist.items.isEmpty()) {
+                        Timber.w("Could not create a playlist from %s", item.id)
+                        return@launchDefault
+                    }
+                    _state.update { it.copy(playlist = result.playlist, playlistIndex = 0) }
+                    playlistJob?.cancel()
+                    playlistJob =
+                        viewModelScope.launchDefault {
+                            val played = play(result.playlist.items.first(), 0)
+                            if (!played) {
+                                playNextUp()
+                            }
+                        }
+                }
+            }
+        }
+
         internal fun updateCurrentPlayback(block: (CurrentPlayback?) -> CurrentPlayback?) {
             _state.update {
                 it.copy(currentPlayback = block.invoke(it.currentPlayback))
@@ -465,6 +535,7 @@ class PlaybackViewModel
                 }
                 this@PlaybackViewModel.currentItem = playlistItem
                 this@PlaybackViewModel.itemId = item.id
+                updateSeriesEnded(item)
 
                 val isLiveTv = item.type == BaseItemKind.TV_CHANNEL
                 val base = item.data
@@ -1668,6 +1739,21 @@ class PlaybackViewModel
                         configuration,
                         density,
                     )
+                }
+            }
+        }
+
+        /**
+         * Re-apply the subtitle style to MPV, e.g. after it was changed during playback
+         */
+        fun applySubtitleStyleToMpv(
+            subtitlePreferences: SubtitlePreferences,
+            density: Density,
+        ) {
+            viewModelScope.launchDefault {
+                val availableCommands = onMain { player.availableCommands }
+                if (availableCommands.contains(Player.COMMAND_PREPARE) && player is MpvPlayer) {
+                    subtitlePreferences.applyToMpv(context.resources.configuration, density)
                 }
             }
         }

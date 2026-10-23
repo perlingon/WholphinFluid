@@ -331,6 +331,11 @@
     <string name="background_style">Bakgrundsstil</string>
     <string name="backdrop_display">Bakgrundsstil</string>
     <string name="edge_size">Kantstorlek</string>
+    <string name="subtitle_outline_opacity">Konturopacitet</string>
+    <string name="subtitle_shadow_color">Skuggfärg</string>
+    <string name="subtitle_shadow_distance">Skuggavstånd</string>
+    <string name="subtitle_shadow_softness">Skuggmjukhet</string>
+    <string name="subtitle_shadow_opacity">Skuggopacitet</string>
     <string name="quick_connect_code_error">Koden måste vara 6 siffror</string>
     <string name="quick_connect_code">Ange Quick Connect-kod</string>
     <string name="quick_connect_success">Enheten har auktoriserats</string>
@@ -691,4 +696,26 @@
     <string name="user_views">Användarvisningar</string>
     <string name="genre_movies">%1$sfilmer</string>
     <string name="quality_profile">Kvalitetsprofil</string>
+    <string name="seek_back_to">Tillbaka till %1$s</string>
+    <plurals name="episodes_left">
+        <item quantity="one">%1$d avsnitt kvar</item>
+        <item quantity="other">%1$d avsnitt kvar</item>
+    </plurals>
+    <plurals name="episodes_count">
+        <item quantity="one">%1$d avsnitt</item>
+        <item quantity="other">%1$d avsnitt</item>
+    </plurals>
+    <plurals name="items_count">
+        <item quantity="one">%1$d objekt</item>
+        <item quantity="other">%1$d objekt</item>
+    </plurals>
+    <string name="chapter_of">Kapitel %1$d av %2$d</string>
+    <string name="season_of">Säsong %1$d av %2$d</string>
+    <string name="episode_number">Avsnitt %1$d</string>
+    <string name="last_season">Sista säsongen</string>
+    <string name="final_episode">Sista avsnittet</string>
+    <plurals name="first_of_episodes">
+        <item quantity="one">Första av %1$d avsnitt</item>
+        <item quantity="other">Första av %1$d avsnitt</item>
+    </plurals>
 </resources>

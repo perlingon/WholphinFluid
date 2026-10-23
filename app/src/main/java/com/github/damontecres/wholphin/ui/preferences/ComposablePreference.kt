@@ -1,7 +1,14 @@
 package com.github.damontecres.wholphin.ui.preferences
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.ReadOnlyComposable
@@ -11,6 +18,7 @@ import androidx.compose.runtime.mutableStateSetOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -36,6 +44,7 @@ import com.github.damontecres.wholphin.ui.components.DialogParams
 import com.github.damontecres.wholphin.ui.components.DialogPopup
 import com.github.damontecres.wholphin.ui.isNotNullOrBlank
 import com.github.damontecres.wholphin.ui.nav.Destination
+import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.util.ExceptionHandler
 import kotlinx.coroutines.launch
 import java.io.File
@@ -187,6 +196,15 @@ fun <T> ComposablePreference(
                 },
                 modifier = modifier,
                 interactionSource = interactionSource,
+                valueDisplay = { index, item ->
+                    // Color choices get a swatch in front of the name
+                    val color = remember(index) { preference.indexToValue(index) as? Color }
+                    if (color != null) {
+                        ColorSwatchText(color = color, text = item)
+                    } else {
+                        Text(item)
+                    }
+                },
                 subtitleDisplay = { index, _ ->
                     subtitles?.getOrNull(index)?.takeIf { it.isNotNullOrBlank() }?.let {
                         {
@@ -317,3 +335,23 @@ data class StringInput(
     val maxLines: Int = 1,
     val confirmDiscard: Boolean = false,
 )
+
+@Composable
+private fun ColorSwatchText(
+    color: Color,
+    text: String,
+) {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            modifier =
+                Modifier
+                    .size(20.dp)
+                    .background(color, RoundedCornerShape(4.dp))
+                    .border(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = .5f), RoundedCornerShape(4.dp)),
+        )
+        Text(text)
+    }
+}

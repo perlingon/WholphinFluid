@@ -9,6 +9,7 @@ import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -31,6 +32,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -76,6 +78,8 @@ import com.github.damontecres.wholphin.ui.formatDuration
 import com.github.damontecres.wholphin.ui.indexOfFirstOrNull
 import com.github.damontecres.wholphin.ui.playback.ControllerViewState
 import com.github.damontecres.wholphin.ui.playback.PlaybackDialogType
+import com.github.damontecres.wholphin.ui.playback.insetFromSide
+import com.github.damontecres.wholphin.ui.playback.rememberPictureSideInsetPx
 import com.github.damontecres.wholphin.ui.seekBack
 import com.github.damontecres.wholphin.ui.seekForward
 import com.github.damontecres.wholphin.ui.skipStringRes
@@ -163,6 +167,17 @@ fun PlaybackControls(
             initialFocusRequester.tryRequestFocus()
         }
     }
+    // Leave the seek bar (and its trickplay preview) after this long without a seek press, by moving
+    // focus to play/pause. Tuning value, kept local so Live Edit picks up changes.
+    val seekIdleMs = 3000L
+    val seekBarFocused by seekBarInteractionSource.collectIsFocusedAsState()
+    var seekPresses by remember { mutableIntStateOf(0) }
+    LaunchedEffect(seekBarFocused, seekPresses) {
+        if (seekBarFocused) {
+            delay(seekIdleMs)
+            initialFocusRequester.tryRequestFocus()
+        }
+    }
     Column(
         modifier = modifier.bringIntoViewRequester(bringIntoViewRequester),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -171,7 +186,10 @@ fun PlaybackControls(
         SeekBar(
             player = player,
             controllerViewState = controllerViewState,
-            onSeekProgress = onSeekProgress,
+            onSeekProgress = {
+                seekPresses++
+                onSeekProgress(it)
+            },
             interactionSource = seekBarInteractionSource,
             isEnabled = seekEnabled,
             intervals = seekBarIntervals,
@@ -188,45 +206,50 @@ fun PlaybackControls(
                     .padding(horizontal = Spacing.sm)
                     .fillMaxWidth(),
         ) {
-            LeftPlaybackButtons(
-                onControllerInteraction = onControllerInteraction,
-                onClickPlaybackDialogType = onClickPlaybackDialogType,
-                modifier = Modifier.align(Alignment.CenterStart),
-            )
+            // Tuning values, kept local so Live Edit picks up changes.
+            // Gap between the settings, media and track groups, e.g. Spacing.md (16) / lg (24) / xl (32)
+            val groupGap = Spacing.lg
 
-            PlaybackButtons(
-                player = player,
-                initialFocusRequester = initialFocusRequester,
-                onControllerInteraction = onControllerInteraction,
-                onPlaybackActionClick = onPlaybackActionClick,
-                showPlay = showPlay,
-                previousEnabled = previousEnabled,
-                nextEnabled = nextEnabled,
-                seekBack = seekBack,
-                seekForward = seekForward,
-                skipBackOnResume = skipBackOnResume,
-                modifier = Modifier.align(Alignment.Center),
-            )
-
+            // All controls sit in one centered row, with the media controls in the middle
             Row(
-                modifier = Modifier.align(Alignment.CenterEnd),
+                horizontalArrangement = Arrangement.spacedBy(groupGap),
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.align(Alignment.Center),
             ) {
-                currentSegment?.let { segment ->
-                    TextButton(
-                        stringRes = segment.type.skipStringRes,
-                        onClick = {
-                            player.seekTo(segment.endTicks.ticks.inWholeMilliseconds)
-                        },
-                        modifier =
-                            Modifier
-                                .align(Alignment.CenterVertically)
-                                .padding(end = Spacing.xl),
-                    )
-                }
+                LeftPlaybackButtons(
+                    onControllerInteraction = onControllerInteraction,
+                    onClickPlaybackDialogType = onClickPlaybackDialogType,
+                )
+
+                PlaybackButtons(
+                    player = player,
+                    initialFocusRequester = initialFocusRequester,
+                    onControllerInteraction = onControllerInteraction,
+                    onPlaybackActionClick = onPlaybackActionClick,
+                    showPlay = showPlay,
+                    previousEnabled = previousEnabled,
+                    nextEnabled = nextEnabled,
+                    seekBack = seekBack,
+                    seekForward = seekForward,
+                    skipBackOnResume = skipBackOnResume,
+                )
+
                 RightPlaybackButtons(
                     onControllerInteraction = onControllerInteraction,
                     onClickPlaybackDialogType = onClickPlaybackDialogType,
-                    modifier = Modifier,
+                )
+            }
+
+            currentSegment?.let { segment ->
+                TextButton(
+                    stringRes = segment.type.skipStringRes,
+                    onClick = {
+                        player.seekTo(segment.endTicks.ticks.inWholeMilliseconds)
+                    },
+                    modifier =
+                        Modifier
+                            .align(Alignment.CenterEnd)
+                            .padding(end = Spacing.xl),
                 )
             }
         }
@@ -290,6 +313,13 @@ fun SeekTimecodes(
     durationMs: Long,
     modifier: Modifier = Modifier,
 ) {
+    // Tuning values for the times under the seek bar, kept local so Live Edit picks up changes.
+    // To change only size or weight: MaterialTheme.typography.labelLarge.copy(fontSize = 14.sp)
+    val timeStyle = MaterialTheme.typography.labelLarge
+    val timeColor = MaterialTheme.colorScheme.onSurface
+    // Space around each time; the top value is the gap to the seek bar
+    val timePadding = Spacing.sm
+
     val currentLayoutDirection = LocalLayoutDirection.current
     CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
         Row(
@@ -306,28 +336,29 @@ fun SeekTimecodes(
             CompositionLocalProvider(LocalLayoutDirection provides currentLayoutDirection) {
                 Text(
                     text = positionText,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    style = MaterialTheme.typography.labelLarge,
+                    color = timeColor,
+                    style = timeStyle,
                     modifier =
                         Modifier
-                            .padding(Spacing.sm),
+                            .padding(timePadding),
                 )
             }
             CompositionLocalProvider(LocalLayoutDirection provides currentLayoutDirection) {
                 Text(
                     text = remainingText,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    style = MaterialTheme.typography.labelLarge,
+                    color = timeColor,
+                    style = timeStyle,
                     modifier =
                         Modifier
-                            .padding(Spacing.sm),
+                            .padding(timePadding),
                 )
             }
         }
     }
 }
 
-val buttonSpacing = 12.dp
+/** Gap between buttons in the music Now Playing controls */
+val buttonSpacing = Spacing.sm
 
 @Composable
 fun LeftPlaybackButtons(
@@ -335,9 +366,11 @@ fun LeftPlaybackButtons(
     onClickPlaybackDialogType: (PlaybackDialogType) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    // Gap between buttons in this group, kept local so Live Edit picks up changes
+    val buttonGap = Spacing.sm
     Row(
         modifier = modifier.focusGroup(),
-        horizontalArrangement = Arrangement.spacedBy(buttonSpacing),
+        horizontalArrangement = Arrangement.spacedBy(buttonGap),
     ) {
         PlaybackButton(
             iconRes = R.drawable.vector_settings,
@@ -358,14 +391,16 @@ fun RightPlaybackButtons(
     onClickPlaybackDialogType: (PlaybackDialogType) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    // Gap between buttons in this group, kept local so Live Edit picks up changes
+    val buttonGap = Spacing.sm
     Row(
         modifier = modifier.focusGroup(),
-        horizontalArrangement = Arrangement.spacedBy(buttonSpacing),
+        horizontalArrangement = Arrangement.spacedBy(buttonGap),
     ) {
         // Captions
         PlaybackButton(
             enabled = true,
-            iconRes = R.drawable.captions_svgrepo_com,
+            iconRes = R.drawable.ic_subtitles,
             onClick = {
                 onControllerInteraction.invoke()
                 onClickPlaybackDialogType.invoke(PlaybackDialogType.CAPTIONS)
@@ -403,9 +438,11 @@ fun PlaybackButtons(
     modifier: Modifier = Modifier,
 ) {
     CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+        // Gap between the media buttons, kept local so Live Edit picks up changes
+        val buttonGap = Spacing.sm
         Row(
             modifier = modifier.focusGroup(),
-            horizontalArrangement = Arrangement.spacedBy(buttonSpacing),
+            horizontalArrangement = Arrangement.spacedBy(buttonGap),
         ) {
             PlaybackButton(
                 iconRes = R.drawable.baseline_skip_previous_24,
@@ -470,6 +507,13 @@ fun PlaybackButton(
     enabled: Boolean = true,
     interactionSource: MutableInteractionSource? = null,
 ) {
+    // Tuning values, kept local so Live Edit picks up changes. Keep PlaybackButton and
+    // PlaybackFaButton in step.
+    // Icon scale: 1f = the original 36 dp buttons, 0.8f = 20% smaller
+    val iconScale = 0.8f
+    val buttonSize = 36.dp * iconScale
+    // Space between the button edge and the icon
+    val iconPadding = Spacing.xs * iconScale
     val selectedColor = MaterialTheme.colorScheme.border
     Button(
         enabled = enabled,
@@ -480,11 +524,11 @@ fun PlaybackButton(
                 containerColor = AppColors.TransparentBlack25,
                 focusedContainerColor = selectedColor,
             ),
-        contentPadding = PaddingValues(Spacing.xs),
+        contentPadding = PaddingValues(iconPadding),
         interactionSource = interactionSource,
         modifier =
             modifier
-                .size(36.dp, 36.dp)
+                .size(buttonSize)
                 .onFocusChanged { onControllerInteraction.invoke() },
     ) {
         Icon(
@@ -511,6 +555,15 @@ fun PlaybackFaButton(
     interactionSource: MutableInteractionSource? = null,
     textColor: Color = Color.Unspecified,
 ) {
+    // Tuning values, kept local so Live Edit picks up changes. Keep PlaybackButton and
+    // PlaybackFaButton in step.
+    // Icon scale: 1f = the original 36 dp buttons, 0.8f = 20% smaller
+    val iconScale = 0.8f
+    val buttonSize = 36.dp * iconScale
+    // Space between the button edge and the icon
+    val iconPadding = Spacing.xs * iconScale
+    // Size of the Font Awesome glyph
+    val glyphSize = 18.sp * iconScale
     val selectedColor = MaterialTheme.colorScheme.border
     Button(
         enabled = enabled,
@@ -521,16 +574,16 @@ fun PlaybackFaButton(
                 containerColor = AppColors.TransparentBlack25,
                 focusedContainerColor = selectedColor,
             ),
-        contentPadding = PaddingValues(Spacing.xs),
+        contentPadding = PaddingValues(iconPadding),
         interactionSource = interactionSource,
         modifier =
             modifier
-                .size(36.dp, 36.dp)
+                .size(buttonSize)
                 .onFocusChanged { onControllerInteraction.invoke() },
     ) {
         Text(
             text = stringResource(iconRes),
-            fontSize = 18.sp,
+            fontSize = glyphSize,
             fontFamily = FontAwesome,
             textAlign = TextAlign.Center,
             color =
@@ -575,9 +628,11 @@ fun <T> BottomDialog(
         onDismissRequest = onDismissRequest,
         properties = DialogProperties(usePlatformDefaultWidth = true),
     ) {
+        val sideInsetPx = rememberPictureSideInsetPx()
         val dialogWindowProvider = LocalView.current.parent as? DialogWindowProvider
         dialogWindowProvider?.window?.let { window ->
             window.setGravity(Gravity.BOTTOM or gravity) // Move down, by default dialogs are in the centre
+            window.insetFromSide(sideInsetPx) // Over the picture on ultrawide screens
             window.setDimAmount(0f) // Remove dimmed background of ongoing playback
         }
 
