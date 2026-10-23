@@ -8,6 +8,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
@@ -150,6 +151,8 @@ fun SeasonCard(
     outlineColor: Color = Color.Unspecified,
     dimAmount: Float = 0f,
     scale: CardScale = CardDefaults.scale(),
+    // Drawn over the image, e.g. a play/pause icon on the playing episode
+    imageOverlay: @Composable BoxScope.() -> Unit = {},
 ) {
     val dimAlpha by animateFloatAsState(dimAmount, label = "cardDim")
     val focused by interactionSource.collectIsFocusedAsState()
@@ -225,6 +228,7 @@ fun SeasonCard(
                                 .background(Color.Black.copy(alpha = dimAlpha)),
                     )
                 }
+                imageOverlay()
             }
         }
         Column(

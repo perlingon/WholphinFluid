@@ -1,5 +1,6 @@
 package com.github.damontecres.wholphin.ui.playback.overlay
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Arrangement
@@ -7,9 +8,11 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -18,6 +21,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -29,10 +33,14 @@ import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.media3.common.Player
+import androidx.media3.ui.compose.state.rememberPlayPauseButtonState
 import androidx.tv.material3.CardDefaults
+import androidx.tv.material3.Icon
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.github.damontecres.wholphin.R
@@ -50,8 +58,8 @@ import com.github.damontecres.wholphin.ui.playback.isBackKey
 import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.ui.theme.rowHeadline
 import com.github.damontecres.wholphin.ui.tryRequestFocus
-import org.jellyfin.sdk.model.api.BaseItemKind
 import java.util.UUID
+import org.jellyfin.sdk.model.api.BaseItemKind
 
 /**
  * A run of queue items from one season of one series, in queue order. Items that aren't episodes
@@ -164,6 +172,7 @@ fun queueItemTitle(item: BaseItem): String? {
 
 @Composable
 fun QueueRowOverlay(
+    player: Player,
     queue: List<PlaylistItem>,
     currentItem: BaseItem?,
     controllerViewState: ControllerViewState,
@@ -223,6 +232,10 @@ fun QueueRowOverlay(
         val cardDim = .5f
         val cardUnfocusedScale = .9f
         val cardFocusedScale = 1f
+        // Play/pause icon on the playing episode
+        val playingIconSize = 40.dp
+        val playingIconBackground = Color.Black.copy(alpha = .5f)
+        val playPauseState = rememberPlayPauseButtonState(player)
         Text(
             text =
                 seasonHeadline(group) ?: (
@@ -301,6 +314,7 @@ fun QueueRowOverlay(
                             }
                         }
                     }
+                    val isPlaying = item.id == currentItem?.id
                     SeasonCard(
                         title = queueItemTitle(item.item),
                         subtitle = null,
@@ -322,13 +336,39 @@ fun QueueRowOverlay(
                         aspectRatio = item.item.aspectRatio ?: AspectRatios.TALL,
                         showSubtitle = false,
                         onClick = {
-                            if (showAllEpisodes) onClickEpisode.invoke(item.item) else onClickPlaylist.invoke(item.item)
-                            controllerViewState.hideControls()
+                            if (isPlaying) {
+                                // The playing episode toggles play/pause and keeps the row open
+                                controllerViewState.pulseControls()
+                                playPauseState.onClick()
+                            } else {
+                                if (showAllEpisodes) onClickEpisode.invoke(item.item) else onClickPlaylist.invoke(item.item)
+                                controllerViewState.hideControls()
+                            }
                         },
                         onLongClick = {},
                         imageHeight = cardImageHeight,
-                        outlineColor = if (item.id == currentItem?.id) playingOutlineColor else Color.Unspecified,
-                        dimAmount = if (isFocused) 0f else cardDim,
+                        // Watched checkmark (and progress bar) on the image
+                        showImageOverlay = true,
+                        outlineColor = if (isPlaying) playingOutlineColor else Color.Unspecified,
+                        dimAmount = if (isFocused || isPlaying) 0f else cardDim,
+                        imageOverlay = {
+                            if (isPlaying) {
+                                Icon(
+                                    painter =
+                                        painterResource(
+                                            if (playPauseState.showPlay) R.drawable.baseline_play_arrow_24 else R.drawable.baseline_pause_24,
+                                        ),
+                                    contentDescription = null,
+                                    tint = Color.White,
+                                    modifier =
+                                        Modifier
+                                            .align(Alignment.Center)
+                                            .size(playingIconSize)
+                                            .background(playingIconBackground, CircleShape)
+                                            .padding(Spacing.xs),
+                                )
+                            }
+                        },
                         scale = CardDefaults.scale(scale = cardUnfocusedScale, focusedScale = cardFocusedScale),
                         interactionSource = interactionSource,
                         modifier =

@@ -317,6 +317,7 @@ fun PlaybackOverlay(
                     OverlayViewState.QUEUE -> {
                         if (nextEnabled) {
                             QueueRowOverlay(
+                                player = player,
                                 queue = queue,
                                 currentItem = item,
                                 controllerViewState = controllerViewState,
