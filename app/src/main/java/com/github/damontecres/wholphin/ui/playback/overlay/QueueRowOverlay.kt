@@ -29,12 +29,14 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringArrayResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.github.damontecres.wholphin.R
 import com.github.damontecres.wholphin.data.model.BaseItem
+import com.github.damontecres.wholphin.data.model.Playlist
 import com.github.damontecres.wholphin.data.model.PlaylistItem
 import com.github.damontecres.wholphin.ui.AspectRatios
 import com.github.damontecres.wholphin.ui.cards.SeasonCard
@@ -99,16 +101,41 @@ fun seasonHeadline(
 }
 
 /**
- * Hint under the controls: the next season's heading (see [seasonHeadline]), otherwise "Queue · 8 Items"
+ * Hint under the controls, about where the playing episode sits in its show:
+ * "First Season · 4 episodes left", "Second Season · First of 10 episodes",
+ * "Last Season · Final episode". Uses the queue, which holds the rest of the series. Queues
+ * that don't follow an episode show "Queue · 8 Items"
  */
 @Composable
 fun queueHeadline(
     groups: List<QueueGroup>,
     currentItem: BaseItem?,
 ): String {
-    groups.firstOrNull()?.let { seasonHeadline(it, currentItem) }?.let { return it }
-    val count = groups.sumOf { it.items.size }
-    return stringResource(R.string.queue) + " · " + pluralStringResource(R.plurals.items_count, count, count)
+    val current = currentItem?.data
+    val season = current?.parentIndexNumber
+    if (currentItem?.type != BaseItemKind.EPISODE || season == null) {
+        val count = groups.sumOf { it.items.size }
+        return stringResource(R.string.queue) + " · " + pluralStringResource(R.plurals.items_count, count, count)
+    }
+    val seriesGroups = groups.filter { it.seriesId == current?.seriesId && it.seasonNumber != null }
+    val left = seriesGroups.filter { it.seasonNumber == season }.sumOf { it.items.size }
+    // A full queue may stop before the later seasons, so only trust "last" when it isn't full
+    val queueFull = groups.sumOf { it.items.size } >= Playlist.MAX_SIZE - 1
+    val laterSeasons = seriesGroups.any { it.seasonNumber!! > season }
+    val seasonLabel =
+        if (season > 1 && !laterSeasons && !queueFull) {
+            stringResource(R.string.last_season)
+        } else {
+            stringArrayResource(R.array.season_ordinals).getOrNull(season - 1)
+                ?: formatSeasonNumber(season)
+        }
+    val episodeLabel =
+        when {
+            left == 0 -> stringResource(R.string.final_episode)
+            current?.indexNumber == 1 -> pluralStringResource(R.plurals.first_of_episodes, left + 1, left + 1)
+            else -> pluralStringResource(R.plurals.episodes_left, left, left)
+        }
+    return "$seasonLabel · $episodeLabel"
 }
 
 /**

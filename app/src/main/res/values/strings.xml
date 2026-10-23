@@ -1034,4 +1034,22 @@
         <item quantity="other">%1$d Items</item>
     </plurals>
     <string name="chapter_of">Chapter %1$d of %2$d</string>
+    <string-array name="season_ordinals">
+        <item>First Season</item>
+        <item>Second Season</item>
+        <item>Third Season</item>
+        <item>Fourth Season</item>
+        <item>Fifth Season</item>
+        <item>Sixth Season</item>
+        <item>Seventh Season</item>
+        <item>Eighth Season</item>
+        <item>Ninth Season</item>
+        <item>Tenth Season</item>
+    </string-array>
+    <string name="last_season">Last Season</string>
+    <string name="final_episode">Final episode</string>
+    <plurals name="first_of_episodes">
+        <item quantity="one">First of %1$d episode</item>
+        <item quantity="other">First of %1$d episodes</item>
+    </plurals>
 </resources>
