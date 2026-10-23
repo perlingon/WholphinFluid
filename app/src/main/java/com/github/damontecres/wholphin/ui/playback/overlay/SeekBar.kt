@@ -47,6 +47,7 @@ import androidx.compose.ui.unit.dp
 import androidx.tv.material3.MaterialTheme
 import com.github.damontecres.wholphin.ui.playback.ControllerViewState
 import com.github.damontecres.wholphin.ui.playback.calculateSeekAccelerationMultiplier
+import com.github.damontecres.wholphin.ui.playback.isBackKey
 import com.github.damontecres.wholphin.ui.playback.isDpadLeft
 import com.github.damontecres.wholphin.ui.playback.isDpadRight
 import com.github.damontecres.wholphin.ui.theme.Spacing
@@ -191,6 +192,19 @@ fun IntervalSeekBarImpl(
             hasSeeked = true
             onSeek(seekPositionMs)
         },
+        // Back while seeking returns to where seeking started (the ghost marker); otherwise Back
+        // falls through and hides the controls as before
+        onBack = {
+            if (isFocused && hasSeeked) {
+                controllerViewState.pulseControls()
+                seekPositionMs = originMs
+                hasSeeked = false
+                onSeek(originMs)
+                true
+            } else {
+                false
+            }
+        },
         interactionSource = interactionSource,
         modifier = modifier,
     )
@@ -213,6 +227,7 @@ private fun SeekBarDisplay(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     originProgress: Float? = null,
+    onBack: () -> Boolean = { false },
 ) {
     val color = MaterialTheme.colorScheme.border
     val onSurface = MaterialTheme.colorScheme.onSurface
@@ -227,6 +242,8 @@ private fun SeekBarDisplay(
     val isFocused by interactionSource.collectIsFocusedAsState()
     var leftHandledByRepeat by remember { mutableStateOf(false) }
     var rightHandledByRepeat by remember { mutableStateOf(false) }
+    // Whether the current Back press was used to undo a seek, so its key-up is consumed too
+    var backHandled by remember { mutableStateOf(false) }
     val animatedIndicatorHeight by animateDpAsState(
         targetValue = 6.dp.times((if (isFocused) 2f else 1f)),
     )
@@ -239,6 +256,15 @@ private fun SeekBarDisplay(
                     .height(animatedIndicatorHeight)
                     .padding(horizontal = Spacing.xs)
                     .onPreviewKeyEvent { event ->
+                        if (isBackKey(event)) {
+                            if (event.type == KeyEventType.KeyDown) {
+                                backHandled = onBack()
+                                return@onPreviewKeyEvent backHandled
+                            }
+                            val handled = backHandled
+                            backHandled = false
+                            return@onPreviewKeyEvent handled
+                        }
                         if (!isDpadLeft(event) && !isDpadRight(event)) {
                             Timber.v("Ignoring %s", event)
                             return@onPreviewKeyEvent false

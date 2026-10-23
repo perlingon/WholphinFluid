@@ -41,6 +41,14 @@ fun TrickplayPreview(
 
     val totalSec = totalJumpMs / 1000L
     val totalText = remember(totalSec) { if (totalSec != 0L) formatJump(totalSec) else null }
+    val resources = LocalResources.current
+    val seekProgressSec = seekProgressMs / 1000L
+    val seekText = remember(seekProgressSec) { resources.formatDuration(seekProgressSec.seconds) }
+    // After jumping away and coming back to the start (Back on the remote, or stepping back), show
+    // "Back to 12:34" in the same spot instead of a jump
+    var hasJumped by remember { mutableStateOf(false) }
+    LaunchedEffect(totalSec) { if (totalSec != 0L) hasJumped = true }
+    val chipText = totalText ?: if (hasJumped) "Back to $seekText" else null
     var chipVisible by remember { mutableStateOf(false) }
     LaunchedEffect(seekProgressMs) {
         chipVisible = true
@@ -70,7 +78,7 @@ fun TrickplayPreview(
                     previewImageUrl = imageUrl,
                     seekProgressMs = seekProgressMs,
                     trickPlayInfo = trickplayInfo,
-                    jumpText = totalText,
+                    jumpText = chipText,
                     jumpAlpha = chipAlpha,
                 )
                 imageShown = true
@@ -78,11 +86,13 @@ fun TrickplayPreview(
         }
         // Without a preview image, fall back to a label with the time and the total jump
         if (!imageShown) {
-            val resources = LocalResources.current
-            val seekProgressSec = seekProgressMs / 1000L
-            val seekText = remember(seekProgressSec) { resources.formatDuration(seekProgressSec.seconds) }
             Text(
-                text = if (totalText != null) "$seekText · $totalText" else seekText,
+                text =
+                    when {
+                        totalText != null -> "$seekText · $totalText"
+                        chipText != null -> chipText
+                        else -> seekText
+                    },
                 color = MaterialTheme.colorScheme.onSurface,
                 style = MaterialTheme.typography.labelLarge,
                 modifier =
