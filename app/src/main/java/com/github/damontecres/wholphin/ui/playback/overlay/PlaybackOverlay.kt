@@ -356,6 +356,11 @@ fun PlaybackOverlay(
                 1f to Color.Transparent,
             )
         val logoFadeSize = DpSize(560.dp, 280.dp)
+        // Logo placement: the box the logo is fitted into (it keeps its own shape inside it), and
+        // its distance from the top and start edge of the picture area
+        val logoMaxSize = DpSize(240.dp, 120.dp)
+        val logoInsetStart = Spacing.md
+        val logoInsetTop = Spacing.md
         val clockFadeSize = DpSize(400.dp, 200.dp)
         Box(
             modifier =
@@ -394,8 +399,8 @@ fun PlaybackOverlay(
                     alignment = Alignment.TopStart,
                     modifier =
                         Modifier
-                            .size(width = 240.dp, height = 120.dp)
-                            .padding(Spacing.md),
+                            .padding(start = logoInsetStart, top = logoInsetTop)
+                            .size(logoMaxSize),
                 )
             }
             AnimatedVisibility(
