@@ -96,7 +96,7 @@ fun SeekPreviewImage(
 
     // Tuning values, kept local so Live Edit picks up changes.
     // Height of the preview image; the width follows the video's shape (64 dp is about 114 dp wide at 16:9)
-    val previewHeight = 68.dp
+    val previewHeight = 72.dp
     val previewCornerRadius = 4.dp
     // Drop shadow under the preview: its size (elevation, e.g. 4.dp subtle … 16.dp strong) and colour.
     // The colour only applies on Android 9+; older boxes draw the system's grey shadow.
@@ -106,8 +106,8 @@ fun SeekPreviewImage(
     // The jump text ("+1m 20s" / "Back to 12:34") sits at the bottom of the image on a dark fade.
     // How much of the image height the fade covers, how dark it gets at the bottom, the text style
     // and its distance from the bottom edge
-    val jumpFadeShare = 0.6f
-    val jumpFadeAlpha = 0.75f
+    val jumpFadeShare = 0.72f
+    val jumpFadeAlpha = 0.8f
     val jumpTextStyle = MaterialTheme.typography.titleMedium
     val jumpTextBottomInset = Spacing.xs
 
