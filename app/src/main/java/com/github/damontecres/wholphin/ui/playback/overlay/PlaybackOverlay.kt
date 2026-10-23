@@ -215,7 +215,6 @@ fun PlaybackOverlay(
             targetState = state,
             label = "controls transition",
             contentAlignment = Alignment.BottomCenter,
-            modifier = Modifier.onSizeChanged { overlayContentHeight = with(density) { it.height.toDp() } },
             transitionSpec = {
                 if (targetState.ordinal > initialState.ordinal) {
                     // Moving down (e.g. the controls showing up), so move content up
@@ -228,99 +227,110 @@ fun PlaybackOverlay(
                 }
             },
         ) { targetState ->
-            when (targetState) {
-                OverlayViewState.HIDDEN -> {
-                    // Necessary so the bounds for animation are full width
-                    Box(Modifier.fillMaxWidth())
-                }
-
-                OverlayViewState.CONTROLLER -> {
-                    if (seekBarFocused) {
-                        LaunchedEffect(Unit) {
-                            seekProgressPercent =
-                                (player.currentPosition.toFloat() / player.duration)
+            // Measure the settled content, not the animating container, so the subtitle lift
+            // doesn't get a new height (and a recomposition of the whole page) every frame
+            Box(
+                modifier =
+                    Modifier.onSizeChanged {
+                        if (targetState == state) {
+                            overlayContentHeight = with(density) { it.height.toDp() }
                         }
+                    },
+            ) {
+                when (targetState) {
+                    OverlayViewState.HIDDEN -> {
+                        // Necessary so the bounds for animation are full width
+                        Box(Modifier.fillMaxWidth())
                     }
-                    val nextState =
-                        remember(chapters, nextEnabled) {
-                            if (chapters.isNotEmpty()) {
-                                OverlayViewState.CHAPTERS
-                            } else if (nextEnabled) {
-                                OverlayViewState.QUEUE
-                            } else {
-                                null
+
+                    OverlayViewState.CONTROLLER -> {
+                        if (seekBarFocused) {
+                            LaunchedEffect(Unit) {
+                                seekProgressPercent =
+                                    (player.currentPosition.toFloat() / player.duration)
                             }
                         }
-                    PlaybackController(
-                        item = item,
-                        nextState = nextState,
-                        player = player,
-                        controllerViewState = controllerViewState,
-                        showPlay = showPlay,
-                        previousEnabled = previousEnabled,
-                        nextEnabled = nextEnabled,
-                        seekEnabled = seekEnabled,
-                        seekBack = seekBack,
-                        skipBackOnResume = skipBackOnResume,
-                        seekForward = seekForward,
-                        onPlaybackActionClick = onPlaybackActionClick,
-                        onClickPlaybackDialogType = onClickPlaybackDialogType,
-                        onSeekBarChange = {
-                            onSeekBarChange(it)
-                            seekProgressMs = it
-                        },
-                        currentSegment = currentSegment,
-                        onChangeState = onChangeState,
-                        modifier =
-                            Modifier
-                                .widthIn(max = controlsMaxWidth)
-                                .padding(bottom = Spacing.sm)
-                                .onGloballyPositioned {
-                                    controllerHeight = with(density) { it.size.height.toDp() }
-                                },
-                        seekBarInteractionSource = seekBarInteractionSource,
-                        onTitleHeightChange = { titleHeight = it },
-                    )
-                }
-
-                OverlayViewState.CHAPTERS -> {
-                    if (chapters.isNotEmpty()) {
-                        ChapterRowOverlay(
+                        val nextState =
+                            remember(chapters, nextEnabled) {
+                                if (chapters.isNotEmpty()) {
+                                    OverlayViewState.CHAPTERS
+                                } else if (nextEnabled) {
+                                    OverlayViewState.QUEUE
+                                } else {
+                                    null
+                                }
+                            }
+                        PlaybackController(
+                            item = item,
+                            nextState = nextState,
                             player = player,
                             controllerViewState = controllerViewState,
-                            chapters = chapters,
-                            hasNext = nextEnabled,
+                            showPlay = showPlay,
+                            previousEnabled = previousEnabled,
+                            nextEnabled = nextEnabled,
+                            seekEnabled = seekEnabled,
+                            seekBack = seekBack,
+                            skipBackOnResume = skipBackOnResume,
+                            seekForward = seekForward,
+                            onPlaybackActionClick = onPlaybackActionClick,
+                            onClickPlaybackDialogType = onClickPlaybackDialogType,
+                            onSeekBarChange = {
+                                onSeekBarChange(it)
+                                seekProgressMs = it
+                            },
+                            currentSegment = currentSegment,
                             onChangeState = onChangeState,
                             modifier =
                                 Modifier
-                                    .widthIn(max = pictureMaxWidth)
-                                    .padding(horizontal = Spacing.sm)
-                                    .fillMaxWidth(),
+                                    .widthIn(max = controlsMaxWidth)
+                                    .padding(bottom = Spacing.sm)
+                                    .onGloballyPositioned {
+                                        controllerHeight = with(density) { it.size.height.toDp() }
+                                    },
+                            seekBarInteractionSource = seekBarInteractionSource,
+                            onTitleHeightChange = { titleHeight = it },
                         )
                     }
-                }
 
-                OverlayViewState.QUEUE -> {
-                    if (nextEnabled) {
-                        QueueRowOverlay(
-                            queue = queue,
-                            controllerViewState = controllerViewState,
-                            nextState =
-                                remember(chapters) {
-                                    if (chapters.isNotEmpty()) {
-                                        OverlayViewState.CHAPTERS
-                                    } else {
-                                        OverlayViewState.CONTROLLER
-                                    }
-                                },
-                            onChangeState = onChangeState,
-                            onClickPlaylist = onClickPlaylist,
-                            modifier =
-                                Modifier
-                                    .widthIn(max = pictureMaxWidth)
-                                    .padding(Spacing.sm)
-                                    .fillMaxWidth(),
-                        )
+                    OverlayViewState.CHAPTERS -> {
+                        if (chapters.isNotEmpty()) {
+                            ChapterRowOverlay(
+                                player = player,
+                                controllerViewState = controllerViewState,
+                                chapters = chapters,
+                                hasNext = nextEnabled,
+                                onChangeState = onChangeState,
+                                modifier =
+                                    Modifier
+                                        .widthIn(max = pictureMaxWidth)
+                                        .padding(horizontal = Spacing.sm)
+                                        .fillMaxWidth(),
+                            )
+                        }
+                    }
+
+                    OverlayViewState.QUEUE -> {
+                        if (nextEnabled) {
+                            QueueRowOverlay(
+                                queue = queue,
+                                controllerViewState = controllerViewState,
+                                nextState =
+                                    remember(chapters) {
+                                        if (chapters.isNotEmpty()) {
+                                            OverlayViewState.CHAPTERS
+                                        } else {
+                                            OverlayViewState.CONTROLLER
+                                        }
+                                    },
+                                onChangeState = onChangeState,
+                                onClickPlaylist = onClickPlaylist,
+                                modifier =
+                                    Modifier
+                                        .widthIn(max = pictureMaxWidth)
+                                        .padding(Spacing.sm)
+                                        .fillMaxWidth(),
+                            )
+                        }
                     }
                 }
             }
