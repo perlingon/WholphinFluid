@@ -1,11 +1,15 @@
 package com.github.damontecres.wholphin.ui.playback
 
 import android.view.Gravity
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalView
@@ -26,7 +30,7 @@ import com.github.damontecres.wholphin.ui.preferences.subtitle.SubtitleSettings
  * the real subtitles right away.
  *
  * @param isHdr edit the HDR subtitle style, i.e. the one in use for the current video
- * @param gravity The [Gravity] to align the panel to left or right
+ * @param gravity [Gravity.START] for the left side, otherwise the panel opens on the right
  */
 @Composable
 fun SubtitleStyleDialog(
@@ -40,39 +44,47 @@ fun SubtitleStyleDialog(
         onDismissRequest = onDismissRequest,
         properties = DialogProperties(usePlatformDefaultWidth = false),
     ) {
-        val sideInsetPx = rememberPictureSideInsetPx()
         val dialogWindowProvider = LocalView.current.parent as? DialogWindowProvider
-        dialogWindowProvider?.window?.let { window ->
-            window.setGravity(gravity)
-            window.insetFromSide(sideInsetPx) // Over the picture on ultrawide screens
-            window.setDimAmount(0f) // Keep the video and its subtitles fully visible
-        }
+        // Keep the video and its subtitles fully visible
+        dialogWindowProvider?.window?.setDimAmount(0f)
         val prefs =
             appPreferences?.interfacePreferences?.let {
                 if (isHdr) it.hdrSubtitlesPreferences else it.subtitlesPreferences
             }
-        if (prefs != null) {
-            SubtitlePreferencesContent(
-                title = stringResource(if (isHdr) R.string.hdr_subtitle_style else R.string.subtitle_style),
-                preferences = prefs,
-                prefList = SubtitleSettings.preferences,
-                onPreferenceChange = { newSubtitlePrefs ->
-                    viewModel.preferenceDataStore.updateData {
-                        it.updateInterfacePreferences {
-                            if (isHdr) {
-                                hdrSubtitlesPreferences = newSubtitlePrefs
-                            } else {
-                                subtitlesPreferences = newSubtitlePrefs
+        // The dialog window can fill the screen and center its content, so place the panel at the
+        // side here, moved in to the edge of the picture on ultrawide screens
+        val sideInset = LocalPictureSideInset.current
+        val atStart = gravity == Gravity.START
+        Box(
+            contentAlignment = if (atStart) Alignment.CenterStart else Alignment.CenterEnd,
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(start = if (atStart) sideInset else 0.dp, end = if (atStart) 0.dp else sideInset),
+        ) {
+            if (prefs != null) {
+                SubtitlePreferencesContent(
+                    title = stringResource(if (isHdr) R.string.hdr_subtitle_style else R.string.subtitle_style),
+                    preferences = prefs,
+                    prefList = SubtitleSettings.preferences,
+                    onPreferenceChange = { newSubtitlePrefs ->
+                        viewModel.preferenceDataStore.updateData {
+                            it.updateInterfacePreferences {
+                                if (isHdr) {
+                                    hdrSubtitlesPreferences = newSubtitlePrefs
+                                } else {
+                                    subtitlesPreferences = newSubtitlePrefs
+                                }
                             }
                         }
-                    }
-                },
-                viewModel = viewModel,
-                modifier =
-                    Modifier
-                        .fillMaxHeight()
-                        .width(LocalConfiguration.current.screenWidthDp.dp * .3f),
-            )
+                    },
+                    viewModel = viewModel,
+                    modifier =
+                        Modifier
+                            .fillMaxHeight()
+                            .width(LocalConfiguration.current.screenWidthDp.dp * .3f),
+                )
+            }
         }
     }
 }
