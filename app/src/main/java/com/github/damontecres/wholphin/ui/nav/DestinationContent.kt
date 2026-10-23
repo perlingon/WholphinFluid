@@ -10,6 +10,7 @@ import com.github.damontecres.wholphin.data.filter.DefaultForStudiosFilterOption
 import com.github.damontecres.wholphin.data.model.SeerrItemType
 import com.github.damontecres.wholphin.preferences.PlayerBackend
 import com.github.damontecres.wholphin.preferences.UserPreferences
+import com.github.damontecres.wholphin.preferences.enabled
 import com.github.damontecres.wholphin.ui.components.CollectionCardGrid
 import com.github.damontecres.wholphin.ui.components.ItemGrid
 import com.github.damontecres.wholphin.ui.components.LicenseInfo
@@ -461,6 +462,7 @@ fun CollectionFolder(
             CollectionCardGrid(
                 itemId = destination.itemId,
                 recursive = false,
+                emojiOnly = preferences.appPreferences.experimentalPreferences.enabled { emojiCollectionsAsMain },
                 showTitle = true,
                 modifier = modifier,
             )

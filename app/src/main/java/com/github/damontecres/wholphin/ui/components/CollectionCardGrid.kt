@@ -88,12 +88,14 @@ class CollectionGridViewModel
         val navigationManager: NavigationManager,
         @Assisted private val itemId: UUID,
         @Assisted private val recursive: Boolean,
+        @Assisted private val emojiOnly: Boolean,
     ) : ViewModel() {
         @AssistedFactory
         interface Factory {
             fun create(
                 itemId: UUID,
                 recursive: Boolean,
+                emojiOnly: Boolean,
             ): CollectionGridViewModel
         }
 
@@ -123,8 +125,9 @@ class CollectionGridViewModel
                         GetItemsRequestHandler
                             .execute(api, collectionsRequest())
                             .content.items
+                            .filter { !emojiOnly || it.name.startsWithEmoji() }
                             .map { CollectionCardItem(BaseItem(it, false), null) }
-                    val key = CollectionCacheKey(serverRepository.currentUser?.id, itemId)
+                    val key = CollectionCacheKey(serverRepository.currentUser?.id, itemId, emojiOnly)
                     val cached = collectionImageCache.getIfAvailable(key)
                     _state.update {
                         it.copy(
@@ -252,8 +255,13 @@ class CollectionGridViewModel
                 backdropTags = item.backdropImageTags.orEmpty(),
             )
 
-        suspend fun positionOfLetter(letter: Char): Int =
-            withContext(WholphinDispatchers.IO) {
+        suspend fun positionOfLetter(letter: Char): Int {
+            if (emojiOnly) {
+                // The server can't filter by emoji, so count within the loaded list instead
+                val upper = letter.uppercaseChar().toString()
+                return _state.value.collections.count { it.sortName.uppercase() < upper }
+            }
+            return withContext(WholphinDispatchers.IO) {
                 GetItemsRequestHandler.countMatching(
                     api = api,
                     request =
@@ -264,7 +272,20 @@ class CollectionGridViewModel
                         ),
                 )
             }
+        }
     }
+
+/**
+ * Whether the name starts with an emoji, e.g. "🎬 Marvel"
+ */
+fun String?.startsWithEmoji(): Boolean {
+    val trimmed = this?.trimStart() ?: return false
+    if (trimmed.isEmpty()) return false
+    val codePoint = trimmed.codePointAt(0)
+    return Character.getType(codePoint) == Character.OTHER_SYMBOL.toInt() ||
+        codePoint in 0x1F000..0x1FAFF ||
+        codePoint in 0x2600..0x27BF
+}
 
 data class CollectionGridState(
     val item: DataLoadingState<BaseItem> = DataLoadingState.Pending,
@@ -274,6 +295,7 @@ data class CollectionGridState(
 data class CollectionCacheKey(
     val userId: UUID?,
     val parentId: UUID,
+    val emojiOnly: Boolean,
 )
 
 private val collectionImageCache by lazy {
@@ -301,12 +323,13 @@ fun CollectionCardGrid(
     itemId: UUID,
     recursive: Boolean,
     modifier: Modifier = Modifier,
+    emojiOnly: Boolean = false,
     showTitle: Boolean = false,
     initialPosition: Int = 0,
     viewModel: CollectionGridViewModel =
         hiltViewModel<CollectionGridViewModel, CollectionGridViewModel.Factory>(
-            key = "${itemId}_collection_cards",
-            creationCallback = { it.create(itemId, recursive) },
+            key = "${itemId}_collection_cards_$emojiOnly",
+            creationCallback = { it.create(itemId, recursive, emojiOnly) },
         ),
 ) {
     val columns = 4

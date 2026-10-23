@@ -922,6 +922,8 @@
     <string name="confirm_enable_experimental_title">Enable experimental settings?</string>
     <string name="confirm_enable_experimental_body">Experimental settings may be unstable!\n\n These may removed or changed in any release.</string>
     <string name="video_tunneling">Video tunneling</string>
+    <string name="emoji_collections_as_main">Treat collections with emojis as main collections</string>
+    <string name="emoji_collections_as_main_summary">Only collections whose name begins with an emoji are shown on the Collections pages</string>
 
     <string name="d_pad_seek_mode_title">D-Pad seek bar mode</string>
     <string name="dpad_seek_mode_minimal">Minimal</string>
