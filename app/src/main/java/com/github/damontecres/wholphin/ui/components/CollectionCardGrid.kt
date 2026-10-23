@@ -143,8 +143,8 @@ class CollectionGridViewModel
                         GetItemsRequestHandler
                             .execute(api, collectionsRequest())
                             .content.items
-                    // With both settings on, collections that only hold other collections are represented by their
-                    // group heading, so their own card is hidden
+                    // With both settings on, non-emoji collections that only hold other collections are represented
+                    // by their group heading, so their own card is hidden
                     val hideContainers = emojiFirst && groupNested
                     val (parents, containers) =
                         if (groupNested) {
@@ -167,7 +167,7 @@ class CollectionGridViewModel
                                 )
                             }
                             .sortedWith(byName)
-                    val collections = layoutGroups(allSorted).filter { it.id !in containers }
+                    val collections = layoutGroups(allSorted).filter { it.isEmoji || it.id !in containers }
                     val key = CollectionCacheKey(serverRepository.currentUser?.id, itemId, emojiFirst, groupNested)
                     val cached = collectionImageCache.getIfAvailable(key)
                     _state.update {
