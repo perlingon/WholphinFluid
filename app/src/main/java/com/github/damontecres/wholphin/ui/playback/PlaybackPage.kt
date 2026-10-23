@@ -624,7 +624,7 @@ fun PlaybackPageContent(
                     }
                 },
                 onReset = {
-                    it.setCues(null)
+                    it.setSubtitleCues(null)
                 },
                 modifier =
                     Modifier
