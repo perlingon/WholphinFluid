@@ -40,13 +40,17 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.LayoutDirection
@@ -334,6 +338,20 @@ fun PlaybackOverlay(
 
         // Top
         val logoImageUrl = LocalImageUrlService.current.rememberImageUrl(item, ImageType.LOGO)
+        val showLogo = !showDebugInfo && logoImageUrl.isNotNullOrBlank() && controllerViewState.controlsVisible
+        val showClockNow = !showDebugInfo && showClock && controllerViewState.controlsVisible
+        // Fades in the top corners behind the logo and the clock, each shown only with its element.
+        // Tuning values, kept local so Live Edit picks up changes: each stop is
+        // (distance from the corner 0..1, color), and the size is how far the fade reaches.
+        val topFadeColor = Color.Black
+        val topFadeStops =
+            arrayOf(
+                0f to topFadeColor.copy(alpha = 0.6f),
+                0.5f to topFadeColor.copy(alpha = 0.3f),
+                1f to Color.Transparent,
+            )
+        val logoFadeSize = DpSize(560.dp, 280.dp)
+        val clockFadeSize = DpSize(400.dp, 200.dp)
         Box(
             modifier =
                 Modifier
@@ -342,7 +360,23 @@ fun PlaybackOverlay(
                     .fillMaxWidth(),
         ) {
             AnimatedVisibility(
-                visible = !showDebugInfo && logoImageUrl.isNotNullOrBlank() && controllerViewState.controlsVisible,
+                visible = showLogo,
+                enter = fadeIn(showFade),
+                exit = fadeOut(hideFade),
+                modifier = Modifier.align(Alignment.TopStart),
+            ) {
+                CornerFade(stops = topFadeStops, fromEnd = false, modifier = Modifier.size(logoFadeSize))
+            }
+            AnimatedVisibility(
+                visible = showClockNow,
+                enter = fadeIn(showFade),
+                exit = fadeOut(hideFade),
+                modifier = Modifier.align(Alignment.TopEnd),
+            ) {
+                CornerFade(stops = topFadeStops, fromEnd = true, modifier = Modifier.size(clockFadeSize))
+            }
+            AnimatedVisibility(
+                visible = showLogo,
                 enter = slideIn(showOffset) { IntOffset(x = -it.width / 2, y = -it.height / 2) } + fadeIn(showFade),
                 exit = slideOut(hideOffset) { IntOffset(x = -it.width / 2, y = -it.height / 2) } + fadeOut(hideFade),
                 modifier =
@@ -360,7 +394,7 @@ fun PlaybackOverlay(
                 )
             }
             AnimatedVisibility(
-                visible = !showDebugInfo && showClock && controllerViewState.controlsVisible,
+                visible = showClockNow,
                 enter = slideIn(showOffset) { IntOffset(x = it.width / 2, y = -it.height / 2) } + fadeIn(showFade),
                 exit = slideOut(hideOffset) { IntOffset(x = it.width / 2, y = -it.height / 2) } + fadeOut(hideFade),
                 modifier =
@@ -417,4 +451,34 @@ enum class OverlayViewState {
     CONTROLLER,
     CHAPTERS,
     QUEUE,
+}
+
+/**
+ * A soft elliptical fade from a top corner, filling its size
+ *
+ * @param fromEnd true for the top end corner (the clock), false for the top start corner (the logo)
+ */
+@Composable
+private fun CornerFade(
+    stops: Array<Pair<Float, Color>>,
+    fromEnd: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
+    val atRight = fromEnd != rtl
+    Box(
+        modifier =
+            modifier.drawBehind {
+                val corner = Offset(if (atRight) size.width else 0f, 0f)
+                val radius = size.width
+                // Draw a circle around the corner, squashed to the box's height
+                scale(scaleX = 1f, scaleY = size.height / size.width, pivot = corner) {
+                    drawCircle(
+                        brush = Brush.radialGradient(*stops, center = corner, radius = radius),
+                        radius = radius,
+                        center = corner,
+                    )
+                }
+            },
+    )
 }
