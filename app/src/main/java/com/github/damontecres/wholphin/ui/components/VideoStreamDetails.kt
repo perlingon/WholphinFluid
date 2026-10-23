@@ -35,7 +35,7 @@ import com.github.damontecres.wholphin.ui.PreviewTvSpec
 import com.github.damontecres.wholphin.ui.playback.audioStreamCount
 import com.github.damontecres.wholphin.ui.playback.embeddedSubtitleCount
 import com.github.damontecres.wholphin.ui.playback.externalSubtitlesCount
-import com.github.damontecres.wholphin.ui.theme.PlusJakartaSans
+import com.github.damontecres.wholphin.ui.theme.DmSans
 import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.ui.theme.WholphinTheme
 import com.github.damontecres.wholphin.ui.util.StreamFormatting.concatWithSpace
@@ -189,7 +189,7 @@ fun StreamLabel(
                 color = MaterialTheme.colorScheme.onSurface,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.SemiBold,
-                fontFamily = PlusJakartaSans,
+                fontFamily = DmSans,
             ),
         ) {
             if (icon != null) {

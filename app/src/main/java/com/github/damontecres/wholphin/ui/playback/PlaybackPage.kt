@@ -91,13 +91,12 @@ import com.github.damontecres.wholphin.ui.playback.overlay.SkipIndicator
 import com.github.damontecres.wholphin.ui.playback.overlay.SkipSegmentButton
 import com.github.damontecres.wholphin.ui.playback.overlay.rememberSeekBarState
 import com.github.damontecres.wholphin.ui.preferences.subtitle.SubtitleSettings.applyTo
-import com.github.damontecres.wholphin.ui.preferences.subtitle.SubtitleSettings.calculateEdgeSize
+import com.github.damontecres.wholphin.ui.preferences.subtitle.SubtitleSettings.media3Override
 import com.github.damontecres.wholphin.ui.seasonEpisode
 import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.ui.tryRequestFocus
 import com.github.damontecres.wholphin.util.ExceptionHandler
 import com.github.damontecres.wholphin.util.LoadingState
-import com.github.damontecres.wholphin.util.Media3SubtitleOverride
 import com.github.damontecres.wholphin.util.stripEmbeddedFormatting
 import io.github.peerless2012.ass.media.widget.AssSubtitleView
 import kotlinx.coroutines.delay
@@ -579,8 +578,7 @@ fun PlaybackPageContent(
                     if (state.subtitleCues.size > cueCount) {
                         Timber.i("Applying subtitle style to SubtitleView")
                         // The output creates a painter for each cue, so need to apply the changes when the number of cues increases
-                        Media3SubtitleOverride(subtitleSettings.calculateEdgeSize(density))
-                            .apply(subtitleView)
+                        subtitleSettings.media3Override(density).apply(subtitleView)
                         cueCount = state.subtitleCues.size
                     }
                     subtitleView.children.firstOrNull { it is AssSubtitleView }?.let {
