@@ -10,17 +10,18 @@ import androidx.tv.material3.Typography
 import com.github.damontecres.wholphin.R
 
 /**
- * The app's interface font
+ * The app's interface font, also used for text subtitles
  */
-val PlusJakartaSans =
+val DmSans =
     FontFamily(
-        Font(R.font.plus_jakarta_sans_regular, FontWeight.Normal, FontStyle.Normal),
-        Font(R.font.plus_jakarta_sans_italic, FontWeight.Normal, FontStyle.Italic),
-        Font(R.font.plus_jakarta_sans_medium, FontWeight.Medium, FontStyle.Normal),
-        Font(R.font.plus_jakarta_sans_semibold, FontWeight.SemiBold, FontStyle.Normal),
-        Font(R.font.plus_jakarta_sans_bold, FontWeight.Bold, FontStyle.Normal),
-        Font(R.font.plus_jakarta_sans_bold_italic, FontWeight.Bold, FontStyle.Italic),
-        Font(R.font.plus_jakarta_sans_extrabold, FontWeight.ExtraBold, FontStyle.Normal),
+        Font(R.font.dm_sans_regular, FontWeight.Normal, FontStyle.Normal),
+        Font(R.font.dm_sans_italic, FontWeight.Normal, FontStyle.Italic),
+        Font(R.font.dm_sans_medium, FontWeight.Medium, FontStyle.Normal),
+        Font(R.font.dm_sans_medium_italic, FontWeight.Medium, FontStyle.Italic),
+        Font(R.font.dm_sans_semibold, FontWeight.SemiBold, FontStyle.Normal),
+        Font(R.font.dm_sans_bold, FontWeight.Bold, FontStyle.Normal),
+        Font(R.font.dm_sans_bold_italic, FontWeight.Bold, FontStyle.Italic),
+        Font(R.font.dm_sans_extrabold, FontWeight.ExtraBold, FontStyle.Normal),
     )
 
 /**
@@ -30,7 +31,7 @@ const val APP_FONT_SCALE = 0.92f
 
 private fun TextStyle.withAppFont() =
     copy(
-        fontFamily = PlusJakartaSans,
+        fontFamily = DmSans,
         fontSize = if (fontSize.isSpecified) fontSize * APP_FONT_SCALE else fontSize,
         lineHeight = if (lineHeight.isSpecified) lineHeight * APP_FONT_SCALE else lineHeight,
     )

@@ -273,7 +273,8 @@ inline fun AppPreferences.updateExperimentalPreferences(block: ExperimentalPrefe
 fun SubtitlePreferences.Builder.resetSubtitles() {
     fontSize = SubtitleSettings.FontSize.defaultValue.toInt()
     fontColor = SubtitleSettings.FontColor.defaultValue.toArgb()
-    fontBold = SubtitleSettings.FontBold.defaultValue
+    fontBold = false
+    fontWeight = SubtitleSettings.FontWeight.defaultValue.toInt()
     fontItalic = SubtitleSettings.FontItalic.defaultValue
     fontOpacity = SubtitleSettings.FontOpacity.defaultValue.toInt()
     edgeColor = SubtitleSettings.EdgeColor.defaultValue.toArgb()
@@ -286,4 +287,7 @@ fun SubtitlePreferences.Builder.resetSubtitles() {
     imageSubtitleOpacity = SubtitleSettings.ImageOpacity.defaultValue.toInt()
     ignoreEmbeddedColors = SubtitleSettings.IgnoreEmbeddedColors.defaultValue
     ignoreEmbeddedStyles = SubtitleSettings.IgnoreEmbeddedStyles.defaultValue
+    shadowOffset = SubtitleSettings.ShadowOffset.defaultValue.toInt()
+    shadowBlur = SubtitleSettings.ShadowBlur.defaultValue.toInt()
+    shadowOpacity = SubtitleSettings.ShadowOpacity.defaultValue.toInt()
 }
