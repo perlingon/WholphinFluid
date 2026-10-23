@@ -354,6 +354,7 @@ fun SubtitleChoiceBottomDialog(
     hasDownloadPermission: Boolean,
     currentChoice: Int? = null,
 ) {
+    // Items above the tracks: None and the divider
     val numberBefore = 2
     val initialChoice =
         remember(choices) {
@@ -438,25 +439,8 @@ fun SubtitleChoiceBottomDialog(
                                 },
                     )
                 }
-                item {
-                    ListItem(
-                        selected = currentChoice == TrackIndex.ONLY_FORCED,
-                        onClick = {
-                            onSelectChoice(TrackIndex.ONLY_FORCED)
-                        },
-                        leadingContent = {
-                            SelectedLeadingContent(currentChoice == TrackIndex.ONLY_FORCED)
-                        },
-                        headlineContent = {
-                            Text(
-                                text = stringResource(R.string.only_forced_subtitles),
-                            )
-                        },
-                        supportingContent = {},
-                    )
-                    if (choices.isNotEmpty()) {
-                        HorizontalDivider()
-                    }
+                if (choices.isNotEmpty()) {
+                    item { HorizontalDivider() }
                 }
                 itemsIndexed(choices) { index, choice ->
                     val interactionSource = remember { MutableInteractionSource() }
@@ -478,6 +462,24 @@ fun SubtitleChoiceBottomDialog(
                         },
                         interactionSource = interactionSource,
                         modifier = Modifier.focusRequester(choiceFocusRequesters[index]),
+                    )
+                }
+                // Only forced subtitles comes last of the choices, after the tracks
+                item {
+                    ListItem(
+                        selected = currentChoice == TrackIndex.ONLY_FORCED,
+                        onClick = {
+                            onSelectChoice(TrackIndex.ONLY_FORCED)
+                        },
+                        leadingContent = {
+                            SelectedLeadingContent(currentChoice == TrackIndex.ONLY_FORCED)
+                        },
+                        headlineContent = {
+                            Text(
+                                text = stringResource(R.string.only_forced_subtitles),
+                            )
+                        },
+                        supportingContent = {},
                     )
                 }
                 item {
