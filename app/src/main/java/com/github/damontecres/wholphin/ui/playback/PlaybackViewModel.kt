@@ -42,6 +42,7 @@ import com.github.damontecres.wholphin.preferences.AppPreference
 import com.github.damontecres.wholphin.preferences.PlayerBackend
 import com.github.damontecres.wholphin.preferences.ShowNextUpWhen
 import com.github.damontecres.wholphin.preferences.SkipSegmentBehavior
+import com.github.damontecres.wholphin.preferences.SubtitlePreferences
 import com.github.damontecres.wholphin.preferences.UserPreferences
 import com.github.damontecres.wholphin.preferences.enabled
 import com.github.damontecres.wholphin.services.DatePlayedService
@@ -1668,6 +1669,21 @@ class PlaybackViewModel
                         configuration,
                         density,
                     )
+                }
+            }
+        }
+
+        /**
+         * Re-apply the subtitle style to MPV, e.g. after it was changed during playback
+         */
+        fun applySubtitleStyleToMpv(
+            subtitlePreferences: SubtitlePreferences,
+            density: Density,
+        ) {
+            viewModelScope.launchDefault {
+                val availableCommands = onMain { player.availableCommands }
+                if (availableCommands.contains(Player.COMMAND_PREPARE) && player is MpvPlayer) {
+                    subtitlePreferences.applyToMpv(context.resources.configuration, density)
                 }
             }
         }

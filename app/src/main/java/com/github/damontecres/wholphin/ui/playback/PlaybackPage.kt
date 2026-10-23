@@ -74,6 +74,7 @@ import com.github.damontecres.wholphin.mpv.MpvPlayer
 import com.github.damontecres.wholphin.preferences.AssPlaybackMode
 import com.github.damontecres.wholphin.preferences.DpadSeekMode
 import com.github.damontecres.wholphin.preferences.PlayerBackend
+import com.github.damontecres.wholphin.preferences.SubtitlePreferences
 import com.github.damontecres.wholphin.preferences.UserPreferences
 import com.github.damontecres.wholphin.preferences.skipBackOnResume
 import com.github.damontecres.wholphin.ui.AppColors
@@ -104,6 +105,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.jellyfin.sdk.model.extensions.ticks
 import timber.log.Timber
+import java.util.concurrent.atomic.AtomicReference
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.Duration.Companion.seconds
@@ -517,7 +519,7 @@ fun PlaybackPageContent(
 
             var subtitleStyleAppliedForHdr by remember { mutableStateOf(state.currentMediaInfo.videoStream?.hdr == true) }
             val subtitleSettings =
-                remember(state.currentMediaInfo) {
+                remember(state.currentMediaInfo, preferences.appPreferences.interfacePreferences) {
                     Timber.v("subtitle choice: ${state.currentMediaInfo.videoStream?.hdr}")
                     val useSeparate =
                         preferences.appPreferences.interfacePreferences.subtitlesPreferences.useSeparateHdr
@@ -541,6 +543,12 @@ fun PlaybackPageContent(
             val subtitleMaxSize by animateFloatAsState(if (controllerViewState.controlsVisible) .7f else 1f)
             val isImageSubtitles =
                 remember(state.subtitleCues) { state.subtitleCues.firstOrNull()?.bitmap != null }
+
+            // Last style given to the SubtitleView, so changes made during playback are applied right away
+            val appliedSubtitleSettings = remember { AtomicReference<SubtitlePreferences?>(null) }
+            LaunchedEffect(subtitleSettings) {
+                viewModel.applySubtitleStyleToMpv(subtitleSettings, density)
+            }
 
             // Reset cueCount when density changes to force re-applying subtitle style
             var cueCount by remember(density) { mutableIntStateOf(0) }
@@ -576,6 +584,12 @@ fun PlaybackPageContent(
                         // If the media has switched between SDR & HDR, reapply subtitle settings
                         Timber.v("Switching SDR/HDR, reapplying subtitle style")
                         subtitleSettings.applyTo(subtitleView)
+                    }
+                    if (appliedSubtitleSettings.value != subtitleSettings) {
+                        // The style was changed, e.g. from the subtitle style panel during playback
+                        subtitleSettings.applyTo(subtitleView)
+                        subtitleSettings.media3Override(density).apply(subtitleView)
+                        appliedSubtitleSettings.value = subtitleSettings
                     }
                     subtitleView.setCues(subtitleCues)
                     if (state.subtitleCues.size > cueCount) {
@@ -777,6 +791,9 @@ fun PlaybackPageContent(
                     // TODO Passing through audio prevents changing playback speed
                     // See https://github.com/damontecres/Wholphin/issues/164
                     playbackSpeedEnabled = playerBackend == PlayerBackend.MPV || state.currentPlayback?.audioDecoder != null,
+                    subtitleStyleHdr =
+                        preferences.appPreferences.interfacePreferences.subtitlesPreferences.useSeparateHdr &&
+                            state.currentMediaInfo.videoStream?.hdr == true,
                 ),
             onDismissRequest = {
                 playbackDialog =
@@ -786,6 +803,8 @@ fun PlaybackPageContent(
                         PlaybackDialogType.VIDEO_SCALE,
                         PlaybackDialogType.VIDEO_ADJUST,
                         -> PlaybackDialogType.SETTINGS
+
+                        PlaybackDialogType.SUBTITLE_STYLE -> PlaybackDialogType.CAPTIONS
 
                         else -> null
                     }
@@ -797,7 +816,10 @@ fun PlaybackPageContent(
                 controllerViewState.pulseControls(Long.MAX_VALUE)
             },
             onClickPlaybackDialogType = {
-                if (it == PlaybackDialogType.SUBTITLE_DELAY || it == PlaybackDialogType.VIDEO_ADJUST) {
+                if (it == PlaybackDialogType.SUBTITLE_DELAY ||
+                    it == PlaybackDialogType.VIDEO_ADJUST ||
+                    it == PlaybackDialogType.SUBTITLE_STYLE
+                ) {
                     // Hide controls so subtitles are fully visible
                     controllerViewState.hideControls()
                 }

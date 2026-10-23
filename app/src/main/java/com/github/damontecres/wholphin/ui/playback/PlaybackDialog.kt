@@ -62,6 +62,7 @@ enum class PlaybackDialogType {
     VIDEO_SCALE,
     VIDEO_ADJUST,
     SUBTITLE_DELAY,
+    SUBTITLE_STYLE,
 }
 
 data class PlaybackSettings(
@@ -76,6 +77,7 @@ data class PlaybackSettings(
     val subtitleDelay: Duration,
     val hasSubtitleDownloadPermission: Boolean,
     val playbackSpeedEnabled: Boolean,
+    val subtitleStyleHdr: Boolean = false,
 )
 
 /**
@@ -131,6 +133,17 @@ fun PlaybackDialog(
                     onDismissRequest.invoke()
                     onPlaybackActionClick.invoke(PlaybackAction.SearchCaptions)
                 },
+                onSelectStyle = {
+                    onClickPlaybackDialogType.invoke(PlaybackDialogType.SUBTITLE_STYLE)
+                },
+                gravity = rightGravity,
+            )
+        }
+
+        PlaybackDialogType.SUBTITLE_STYLE -> {
+            SubtitleStyleDialog(
+                isHdr = settings.subtitleStyleHdr,
+                onDismissRequest = onDismissRequest,
                 gravity = rightGravity,
             )
         }
@@ -331,6 +344,7 @@ fun SubtitleChoiceBottomDialog(
     onDismissRequest: () -> Unit,
     onSelectChoice: (Int) -> Unit,
     onSelectSearch: () -> Unit,
+    onSelectStyle: () -> Unit,
     gravity: Int,
     hasDownloadPermission: Boolean,
     currentChoice: Int? = null,
@@ -461,8 +475,6 @@ fun SubtitleChoiceBottomDialog(
                 }
                 item {
                     HorizontalDivider()
-                    val interactionSource = remember { MutableInteractionSource() }
-                    val focused by interactionSource.collectIsFocusedAsState()
                     ListItem(
                         selected = false,
                         enabled = hasDownloadPermission,
@@ -471,6 +483,21 @@ fun SubtitleChoiceBottomDialog(
                         headlineContent = {
                             Text(
                                 text = stringResource(R.string.search_and_download),
+                            )
+                        },
+                        supportingContent = {},
+                    )
+                }
+                item {
+                    val interactionSource = remember { MutableInteractionSource() }
+                    val focused by interactionSource.collectIsFocusedAsState()
+                    ListItem(
+                        selected = false,
+                        onClick = onSelectStyle,
+                        leadingContent = {},
+                        headlineContent = {
+                            Text(
+                                text = stringResource(R.string.subtitle_style),
                             )
                         },
                         supportingContent = {},
