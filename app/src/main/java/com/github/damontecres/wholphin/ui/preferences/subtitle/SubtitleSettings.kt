@@ -27,12 +27,14 @@ import com.github.damontecres.wholphin.preferences.AppSwitchPreference
 import com.github.damontecres.wholphin.preferences.BackgroundStyle
 import com.github.damontecres.wholphin.preferences.EdgeStyle
 import com.github.damontecres.wholphin.preferences.InterfacePreferences
+import com.github.damontecres.wholphin.preferences.SubtitleFontWeight
 import com.github.damontecres.wholphin.preferences.SubtitlePreferences
 import com.github.damontecres.wholphin.preferences.resetSubtitles
 import com.github.damontecres.wholphin.ui.indexOfFirstOrNull
 import com.github.damontecres.wholphin.ui.nav.Destination
 import com.github.damontecres.wholphin.ui.preferences.ConditionalPreferences
 import com.github.damontecres.wholphin.ui.preferences.PreferenceGroup
+import com.github.damontecres.wholphin.util.Media3SubtitleOverride
 import com.github.damontecres.wholphin.util.mpv.setPropertyColor
 import timber.log.Timber
 
@@ -83,14 +85,20 @@ object SubtitleSettings {
             },
         )
 
-    val FontBold =
-        AppSwitchPreference<SubtitlePreferences>(
-            title = R.string.bold_font,
-            defaultValue = false,
-            getter = { it.fontBold },
+    val FontWeight =
+        AppChoicePreference<SubtitlePreferences, SubtitleFontWeight>(
+            title = R.string.subtitle_font_weight,
+            defaultValue = SubtitleFontWeight.SUBTITLE_WEIGHT_REGULAR,
+            getter = { it.effectiveFontWeight },
             setter = { prefs, value ->
-                prefs.update { fontBold = value }
+                prefs.update {
+                    fontWeight = value
+                    fontBold = false
+                }
             },
+            displayValues = R.array.subtitle_font_weights,
+            indexToValue = { SubtitleFontWeight.forNumber(it) ?: SubtitleFontWeight.SUBTITLE_WEIGHT_REGULAR },
+            valueToIndex = { it.number },
         )
     val FontItalic =
         AppSwitchPreference<SubtitlePreferences>(
@@ -164,6 +172,48 @@ object SubtitleSettings {
                 prefs.update { edgeThickness = value.toInt() }
             },
             summarizer = { value -> value?.let { "${it / 2.0}" } },
+        )
+
+    val ShadowOffset =
+        AppSliderPreference<SubtitlePreferences>(
+            title = R.string.subtitle_shadow_distance,
+            defaultValue = 4,
+            min = 1,
+            max = 16,
+            interval = 1,
+            getter = { it.effectiveShadowOffset.toLong() },
+            setter = { prefs, value ->
+                prefs.update { shadowOffset = value.toInt() }
+            },
+            summarizer = { value -> value?.let { "${it / 2.0}" } },
+        )
+
+    val ShadowBlur =
+        AppSliderPreference<SubtitlePreferences>(
+            title = R.string.subtitle_shadow_softness,
+            defaultValue = 4,
+            min = 1,
+            max = 32,
+            interval = 1,
+            getter = { it.effectiveShadowBlur.toLong() },
+            setter = { prefs, value ->
+                prefs.update { shadowBlur = value.toInt() }
+            },
+            summarizer = { value -> value?.let { "${it / 2.0}" } },
+        )
+
+    val ShadowOpacity =
+        AppSliderPreference<SubtitlePreferences>(
+            title = R.string.subtitle_shadow_opacity,
+            defaultValue = 100,
+            min = 10,
+            max = 100,
+            interval = 10,
+            getter = { it.effectiveShadowOpacity.toLong() },
+            setter = { prefs, value ->
+                prefs.update { shadowOpacity = value.toInt() }
+            },
+            summarizer = { value -> value?.let { "$it%" } },
         )
 
     val BackgroundColor =
@@ -299,7 +349,7 @@ object SubtitleSettings {
                     listOf(
                         FontSize,
                         FontColor,
-                        FontBold,
+                        FontWeight,
                         FontItalic,
                         FontOpacity,
                     ),
@@ -310,7 +360,17 @@ object SubtitleSettings {
                     listOf(
                         EdgeStylePref,
                         EdgeColor,
-                        EdgeThickness,
+                    ),
+                conditionalPreferences =
+                    listOf(
+                        ConditionalPreferences(
+                            condition = { it.edgeStyle == EdgeStyle.EDGE_SOLID },
+                            preferences = listOf(EdgeThickness),
+                        ),
+                        ConditionalPreferences(
+                            condition = { it.edgeStyle == EdgeStyle.EDGE_SHADOW },
+                            preferences = listOf(ShadowOffset, ShadowBlur, ShadowOpacity),
+                        ),
                     ),
             ),
             PreferenceGroup(
@@ -372,29 +432,76 @@ object SubtitleSettings {
                 EdgeStyle.EDGE_SOLID -> CaptionStyleCompat.EDGE_TYPE_OUTLINE
                 EdgeStyle.EDGE_SHADOW -> CaptionStyleCompat.EDGE_TYPE_DROP_SHADOW
             },
-            combine(edgeColor, fontOpacity),
-            Typeface.create(
-                subtitleTypeface(context),
-                when {
-                    fontBold && fontItalic -> Typeface.BOLD_ITALIC
-                    fontBold -> Typeface.BOLD
-                    fontItalic -> Typeface.ITALIC
-                    else -> Typeface.NORMAL
-                },
-            ),
+            if (edgeStyle == EdgeStyle.EDGE_SHADOW) {
+                combine(edgeColor, fontOpacity * effectiveShadowOpacity / 100)
+            } else {
+                combine(edgeColor, fontOpacity)
+            },
+            subtitleTypeface(context),
         )
     }
 
     /**
-     * The font used for text subtitles, same as the interface font
+     * The font used for text subtitles: DM Sans, in the chosen weight and style. Each weight is
+     * its own font file, so nothing is synthesized
      */
-    private fun subtitleTypeface(context: Context): Typeface =
-        try {
-            ResourcesCompat.getFont(context, R.font.plus_jakarta_sans)
+    private fun SubtitlePreferences.subtitleTypeface(context: Context): Typeface {
+        val font =
+            when (effectiveFontWeight) {
+                SubtitleFontWeight.SUBTITLE_WEIGHT_MEDIUM -> {
+                    if (fontItalic) R.font.dm_sans_medium_italic else R.font.dm_sans_medium
+                }
+
+                SubtitleFontWeight.SUBTITLE_WEIGHT_BOLD -> {
+                    if (fontItalic) R.font.dm_sans_bold_italic else R.font.dm_sans_bold
+                }
+
+                else -> {
+                    if (fontItalic) R.font.dm_sans_italic else R.font.dm_sans_regular
+                }
+            }
+        return try {
+            ResourcesCompat.getFont(context, font)
         } catch (ex: Resources.NotFoundException) {
             Timber.w(ex, "Could not load subtitle font")
             null
         } ?: Typeface.DEFAULT
+    }
+
+    /**
+     * The chosen weight. Settings saved before there was a choice of weight only had a bold
+     * switch, so that counts as Bold
+     */
+    val SubtitlePreferences.effectiveFontWeight: SubtitleFontWeight
+        get() =
+            when {
+                fontBold && fontWeight == SubtitleFontWeight.SUBTITLE_WEIGHT_REGULAR -> SubtitleFontWeight.SUBTITLE_WEIGHT_BOLD
+                fontWeight == SubtitleFontWeight.UNRECOGNIZED -> SubtitleFontWeight.SUBTITLE_WEIGHT_REGULAR
+                else -> fontWeight
+            }
+
+    // The shadow settings are 0 until changed, which means the default
+    val SubtitlePreferences.effectiveShadowOffset: Int
+        get() = shadowOffset.takeIf { it > 0 } ?: ShadowOffset.defaultValue.toInt()
+
+    val SubtitlePreferences.effectiveShadowBlur: Int
+        get() = shadowBlur.takeIf { it > 0 } ?: ShadowBlur.defaultValue.toInt()
+
+    val SubtitlePreferences.effectiveShadowOpacity: Int
+        get() = shadowOpacity.takeIf { it > 0 } ?: ShadowOpacity.defaultValue.toInt()
+
+    /**
+     * The values media3's subtitle painter draws its outline and shadow with, which it has no
+     * public setting for, see [Media3SubtitleOverride]
+     */
+    fun SubtitlePreferences.media3Override(density: Density): Media3SubtitleOverride =
+        with(density) {
+            Media3SubtitleOverride(
+                outlineThicknessPx = calculateEdgeSize(density),
+                shadowOffsetPx = (effectiveShadowOffset / 2f).dp.toPx(),
+                shadowRadiusPx = (effectiveShadowBlur / 2f).dp.toPx(),
+            )
+        }
 
     @OptIn(UnstableApi::class)
     fun SubtitlePreferences.applyTo(view: SubtitleView) {
@@ -439,7 +546,12 @@ object SubtitleSettings {
             }
 
             EdgeStyle.EDGE_SHADOW -> {
-                MPVLib.setPropertyInt("sub-shadow-offset", 4)
+                val shadowOffsetPx = with(density) { (effectiveShadowOffset / 2f).dp.toPx() * .8 }
+                MPVLib.setPropertyInt("sub-shadow-offset", shadowOffsetPx.toInt())
+                MPVLib.setPropertyColor(
+                    "sub-shadow-color",
+                    Color(combine(edgeColor, fontOpacity * effectiveShadowOpacity / 100)),
+                )
                 MPVLib.setPropertyDouble("sub-outline-size", 0.0)
             }
         }
@@ -451,7 +563,8 @@ object SubtitleSettings {
 //        } else {
 //            MPVLib.setPropertyString("sub-font", "Roboto Regular")
 //        }
-        MPVLib.setPropertyBoolean("sub-bold", fontBold)
+        // MPV uses its own font file, so it can only show bold or not
+        MPVLib.setPropertyBoolean("sub-bold", effectiveFontWeight == SubtitleFontWeight.SUBTITLE_WEIGHT_BOLD)
         MPVLib.setPropertyBoolean("sub-italic", fontItalic)
 
         MPVLib.setPropertyColor("sub-back-color", bg)

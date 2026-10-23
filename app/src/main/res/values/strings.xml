@@ -734,6 +734,19 @@
         <item>@string/subtitle_edge_shadow</item>
     </string-array>
 
+    <string name="subtitle_font_weight">Font weight</string>
+    <string name="subtitle_font_weight_regular">Regular</string>
+    <string name="subtitle_font_weight_medium">Medium</string>
+    <string name="subtitle_font_weight_bold">Bold</string>
+    <string-array name="subtitle_font_weights">
+        <item>@string/subtitle_font_weight_regular</item>
+        <item>@string/subtitle_font_weight_medium</item>
+        <item>@string/subtitle_font_weight_bold</item>
+    </string-array>
+    <string name="subtitle_shadow_distance">Shadow distance</string>
+    <string name="subtitle_shadow_softness">Shadow softness</string>
+    <string name="subtitle_shadow_opacity">Shadow opacity</string>
+
     <string name="background_style_wrap">Wrap</string>
     <string name="background_style_boxed">Boxed</string>
     <string-array name="background_style">
