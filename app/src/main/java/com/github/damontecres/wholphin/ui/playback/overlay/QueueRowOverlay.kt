@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.runtime.Composable
@@ -16,6 +17,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.focusRestorer
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.MaterialTheme
@@ -50,9 +52,16 @@ fun QueueRowOverlay(
         HiddenFocusBox(hiddenFocusRequester) {
             onChangeState.invoke(nextState)
         }
+        // Tuning values for the heading, kept local so Live Edit picks up changes. Keep in step with
+        // the headings in ChapterRowOverlay
+        val headlineStyle = MaterialTheme.typography.rowHeadline
+        val headlineColor = Color.Unspecified // Color.Unspecified = the theme's text color
+        val headlineInset = 0.dp
         Text(
             text = stringResource(R.string.queue),
-            style = MaterialTheme.typography.rowHeadline,
+            style = headlineStyle,
+            color = headlineColor,
+            modifier = Modifier.padding(start = headlineInset),
         )
         LazyRow(
             contentPadding =

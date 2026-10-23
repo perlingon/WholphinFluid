@@ -22,6 +22,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -66,6 +67,11 @@ fun PlaybackController(
     modifier: Modifier = Modifier,
     seekBarInteractionSource: MutableInteractionSource = remember { MutableInteractionSource() },
 ) {
+    // Tuning values for the "Chapters"/"Queue" hint under the controls, kept local for Live Edit
+    val nextHeadlineStyle = MaterialTheme.typography.titleLarge
+    val nextHeadlineColor = Color.Unspecified
+    val nextHeadlineInset = Spacing.md
+
     Column(
         verticalArrangement = Arrangement.spacedBy(Spacing.sm),
         modifier = modifier,
@@ -93,10 +99,11 @@ fun PlaybackController(
             OverlayViewState.CHAPTERS -> {
                 Text(
                     text = stringResource(R.string.chapters),
-                    style = MaterialTheme.typography.titleLarge,
+                    style = nextHeadlineStyle,
+                    color = nextHeadlineColor,
                     modifier =
                         Modifier
-                            .padding(start = Spacing.md, top = 0.dp)
+                            .padding(start = nextHeadlineInset, top = 0.dp)
                             .onFocusChanged {
                                 if (it.isFocused) onChangeState.invoke(nextState)
                             }.focusable(),
@@ -106,10 +113,11 @@ fun PlaybackController(
             OverlayViewState.QUEUE -> {
                 Text(
                     text = stringResource(R.string.queue),
-                    style = MaterialTheme.typography.titleLarge,
+                    style = nextHeadlineStyle,
+                    color = nextHeadlineColor,
                     modifier =
                         Modifier
-                            .padding(start = Spacing.md, top = 0.dp)
+                            .padding(start = nextHeadlineInset, top = 0.dp)
                             .onFocusChanged {
                                 if (it.isFocused) onChangeState.invoke(nextState)
                             }.focusable(),
@@ -151,9 +159,32 @@ fun Controller(
     subtitle: String? = null,
     seekBarInteractionSource: MutableInteractionSource = remember { MutableInteractionSource() },
 ) {
+    // Tuning values for the title block above the seek bar, kept local so Live Edit picks up changes.
+    // The trickplay preview is placed with titleTextSize/subtitleTextSize, so copy the sizes back
+    // there when done.
+    val titleStyle = MaterialTheme.typography.titleLarge
+    val titleSize = titleTextSize
+    // Color.Unspecified = the theme's text color
+    val titleColor = Color.Unspecified
+    val subtitleStyle = MaterialTheme.typography.titleMedium
+    val subtitleSize = subtitleTextSize
+    val subtitleColor = Color.Unspecified
+    val endsAtStyle = MaterialTheme.typography.labelLarge
+    val endsAtColor = MaterialTheme.colorScheme.onSurface
+    // How much of the width the title and subtitle may use before they are cut off
+    val textWidthFraction = .75f
+    // Gap between the title and the subtitle row, and between the title block and the seek bar
+    val titleGap = Spacing.sm
+    val blockGap = Spacing.sm
+    // Indent of the title block, and the gap after "Ends at"
+    val startInset = Spacing.md
+    val endInset = Spacing.xl
+    // How far the title block moves up while the seek bar is focused (makes room for trickplay)
+    val bumpOffset = (-32).dp
+
     val seekBarFocused by seekBarInteractionSource.collectIsFocusedAsState()
     val verticalOffset by animateDpAsState(
-        targetValue = if (seekBarFocused) (-32).dp else 0.dp,
+        targetValue = if (seekBarFocused) bumpOffset else 0.dp,
         label = "TitleBumpOffset",
         animationSpec =
             spring(
@@ -163,24 +194,25 @@ fun Controller(
     )
 
     Column(
-        verticalArrangement = Arrangement.spacedBy(Spacing.sm),
+        verticalArrangement = Arrangement.spacedBy(blockGap),
         modifier = modifier,
     ) {
         Column(
-            verticalArrangement = Arrangement.spacedBy(Spacing.sm),
+            verticalArrangement = Arrangement.spacedBy(titleGap),
             modifier =
                 Modifier
-                    .padding(start = Spacing.md)
+                    .padding(start = startInset)
                     .offset(y = verticalOffset),
         ) {
             title?.let {
                 Text(
                     text = it,
-                    style = MaterialTheme.typography.titleLarge,
-                    fontSize = titleTextSize,
+                    style = titleStyle,
+                    fontSize = titleSize,
+                    color = titleColor,
                     maxLines = 1,
                     overflow = TextOverflow.MiddleEllipsis,
-                    modifier = Modifier.fillMaxWidth(.75f),
+                    modifier = Modifier.fillMaxWidth(textWidthFraction),
                 )
             }
             Row(
@@ -193,11 +225,12 @@ fun Controller(
                 subtitle?.let {
                     Text(
                         text = it,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontSize = subtitleTextSize,
+                        style = subtitleStyle,
+                        fontSize = subtitleSize,
+                        color = subtitleColor,
                         maxLines = 1,
                         overflow = TextOverflow.MiddleEllipsis,
-                        modifier = Modifier.fillMaxWidth(.75f),
+                        modifier = Modifier.fillMaxWidth(textWidthFraction),
                     )
                 }
 
@@ -217,11 +250,11 @@ fun Controller(
                 }
                 Text(
                     text = stringResource(R.string.ends_at, endTimeStr),
-                    color = MaterialTheme.colorScheme.onSurface,
-                    style = MaterialTheme.typography.labelLarge,
+                    color = endsAtColor,
+                    style = endsAtStyle,
                     modifier =
                         Modifier
-                            .padding(end = Spacing.xl),
+                            .padding(end = endInset),
                 )
             }
         }

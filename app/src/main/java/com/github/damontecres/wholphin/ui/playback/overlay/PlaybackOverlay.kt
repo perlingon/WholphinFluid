@@ -2,9 +2,13 @@ package com.github.damontecres.wholphin.ui.playback.overlay
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Easing
+import androidx.compose.animation.core.FastOutLinearInEasing
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.VisibilityThreshold
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -132,28 +136,40 @@ fun PlaybackOverlay(
         state = newState
     }
 
+    // How the controls show up and go away. Tuning values, kept local so Live Edit picks up changes.
+    // Durations in ms. Easings: FastOutSlowInEasing (standard), LinearOutSlowInEasing (soft landing),
+    // FastOutLinearInEasing (quick exit), LinearEasing, or CubicBezierEasing(a, b, c, d)
+    val showMs = 350
+    val hideMs = 250
+    val showEasing: Easing = FastOutSlowInEasing
+    val hideEasing: Easing = FastOutLinearInEasing
+    // How far the controls slide, as a share of their own height (0f = fade only)
+    val slideFraction = 0.5f
+    val showOffset = tween<IntOffset>(showMs, easing = showEasing)
+    val hideOffset = tween<IntOffset>(hideMs, easing = hideEasing)
+    val showFade = tween<Float>(showMs, easing = showEasing)
+    val hideFade = tween<Float>(hideMs, easing = hideEasing)
+
     Box(
         modifier = modifier,
         contentAlignment = Alignment.BottomCenter,
     ) {
         AnimatedVisibility(
             visible = controllerViewState.controlsVisible && !showDebugInfo,
-            enter = fadeIn(),
-            exit = fadeOut(),
+            enter = fadeIn(showFade),
+            exit = fadeOut(hideFade),
             modifier = Modifier.matchParentSize(),
         ) {
-            // Background scrim for OSD readability
-            val scrimBrush =
-                remember {
-                    Brush.verticalGradient(
-                        colors =
-                            listOf(
-                                Color.Transparent,
-                                Color.Black.copy(alpha = 0.5f),
-                                Color.Black.copy(alpha = 0.80f),
-                            ),
-                    )
-                }
+            // Background fade behind the controls, for readability. Tuning values, kept local so
+            // Live Edit picks up changes: each stop is (position from top 0..1, color)
+            val scrimColor = Color.Black
+            val scrimStops =
+                arrayOf(
+                    0f to Color.Transparent,
+                    0.5f to scrimColor.copy(alpha = 0.5f),
+                    1f to scrimColor.copy(alpha = 0.80f),
+                )
+            val scrimBrush = Brush.verticalGradient(*scrimStops)
             Box(
                 modifier =
                     Modifier
@@ -168,11 +184,13 @@ fun PlaybackOverlay(
             contentAlignment = Alignment.BottomCenter,
             transitionSpec = {
                 if (targetState.ordinal > initialState.ordinal) {
-                    // Moving down, so move content up
-                    (slideInVertically { it / 2 } + fadeIn()).togetherWith(slideOutVertically { -it / 2 } + fadeOut())
+                    // Moving down (e.g. the controls showing up), so move content up
+                    (slideInVertically(showOffset) { (it * slideFraction).toInt() } + fadeIn(showFade))
+                        .togetherWith(slideOutVertically(hideOffset) { -(it * slideFraction).toInt() } + fadeOut(hideFade))
                 } else {
-                    // Moving up
-                    (slideInVertically { -it / 2 } + fadeIn()).togetherWith(slideOutVertically { it / 2 } + fadeOut())
+                    // Moving up (e.g. the controls going away)
+                    (slideInVertically(showOffset) { -(it * slideFraction).toInt() } + fadeIn(showFade))
+                        .togetherWith(slideOutVertically(hideOffset) { (it * slideFraction).toInt() } + fadeOut(hideFade))
                 }
             },
         ) { targetState ->
@@ -325,8 +343,8 @@ fun PlaybackOverlay(
         ) {
             AnimatedVisibility(
                 visible = !showDebugInfo && logoImageUrl.isNotNullOrBlank() && controllerViewState.controlsVisible,
-                enter = slideIn { IntOffset(x = -it.width / 2, y = -it.height / 2) } + fadeIn(),
-                exit = slideOut { IntOffset(x = -it.width / 2, y = -it.height / 2) } + fadeOut(),
+                enter = slideIn(showOffset) { IntOffset(x = -it.width / 2, y = -it.height / 2) } + fadeIn(showFade),
+                exit = slideOut(hideOffset) { IntOffset(x = -it.width / 2, y = -it.height / 2) } + fadeOut(hideFade),
                 modifier =
                     Modifier
                         .align(Alignment.TopStart),
@@ -343,8 +361,8 @@ fun PlaybackOverlay(
             }
             AnimatedVisibility(
                 visible = !showDebugInfo && showClock && controllerViewState.controlsVisible,
-                enter = slideIn { IntOffset(x = it.width / 2, y = -it.height / 2) } + fadeIn(),
-                exit = slideOut { IntOffset(x = it.width / 2, y = -it.height / 2) } + fadeOut(),
+                enter = slideIn(showOffset) { IntOffset(x = it.width / 2, y = -it.height / 2) } + fadeIn(showFade),
+                exit = slideOut(hideOffset) { IntOffset(x = it.width / 2, y = -it.height / 2) } + fadeOut(hideFade),
                 modifier =
                     Modifier
                         .align(Alignment.TopEnd),

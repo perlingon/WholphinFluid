@@ -190,9 +190,13 @@ fun PlaybackControls(
                     .padding(horizontal = Spacing.sm)
                     .fillMaxWidth(),
         ) {
+            // Tuning values, kept local so Live Edit picks up changes.
+            // Gap between the settings, media and track groups, e.g. Spacing.md (16) / lg (24) / xl (32)
+            val groupGap = Spacing.lg
+
             // All controls sit in one centered row, with the media controls in the middle
             Row(
-                horizontalArrangement = Arrangement.spacedBy(controlGroupSpacing),
+                horizontalArrangement = Arrangement.spacedBy(groupGap),
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.align(Alignment.Center),
             ) {
@@ -330,16 +334,8 @@ fun SeekTimecodes(
     }
 }
 
+/** Gap between buttons in the music Now Playing controls */
 val buttonSpacing = Spacing.sm
-
-/** Gap between the settings, media and track groups in the centered control row */
-val controlGroupSpacing = Spacing.lg
-
-/** Playback icons are drawn at 80% of their original size */
-private const val PLAYBACK_ICON_SCALE = 0.8f
-private val playbackButtonSize = 36.dp * PLAYBACK_ICON_SCALE
-private val playbackButtonPadding = Spacing.xs * PLAYBACK_ICON_SCALE
-private val playbackFaIconSize = 18.sp * PLAYBACK_ICON_SCALE
 
 @Composable
 fun LeftPlaybackButtons(
@@ -347,9 +343,11 @@ fun LeftPlaybackButtons(
     onClickPlaybackDialogType: (PlaybackDialogType) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    // Gap between buttons in this group, kept local so Live Edit picks up changes
+    val buttonGap = Spacing.sm
     Row(
         modifier = modifier.focusGroup(),
-        horizontalArrangement = Arrangement.spacedBy(buttonSpacing),
+        horizontalArrangement = Arrangement.spacedBy(buttonGap),
     ) {
         PlaybackButton(
             iconRes = R.drawable.vector_settings,
@@ -370,9 +368,11 @@ fun RightPlaybackButtons(
     onClickPlaybackDialogType: (PlaybackDialogType) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    // Gap between buttons in this group, kept local so Live Edit picks up changes
+    val buttonGap = Spacing.sm
     Row(
         modifier = modifier.focusGroup(),
-        horizontalArrangement = Arrangement.spacedBy(buttonSpacing),
+        horizontalArrangement = Arrangement.spacedBy(buttonGap),
     ) {
         // Captions
         PlaybackButton(
@@ -415,9 +415,11 @@ fun PlaybackButtons(
     modifier: Modifier = Modifier,
 ) {
     CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+        // Gap between the media buttons, kept local so Live Edit picks up changes
+        val buttonGap = Spacing.sm
         Row(
             modifier = modifier.focusGroup(),
-            horizontalArrangement = Arrangement.spacedBy(buttonSpacing),
+            horizontalArrangement = Arrangement.spacedBy(buttonGap),
         ) {
             PlaybackButton(
                 iconRes = R.drawable.baseline_skip_previous_24,
@@ -482,6 +484,13 @@ fun PlaybackButton(
     enabled: Boolean = true,
     interactionSource: MutableInteractionSource? = null,
 ) {
+    // Tuning values, kept local so Live Edit picks up changes. Keep PlaybackButton and
+    // PlaybackFaButton in step.
+    // Icon scale: 1f = the original 36 dp buttons, 0.8f = 20% smaller
+    val iconScale = 0.8f
+    val buttonSize = 36.dp * iconScale
+    // Space between the button edge and the icon
+    val iconPadding = Spacing.xs * iconScale
     val selectedColor = MaterialTheme.colorScheme.border
     Button(
         enabled = enabled,
@@ -492,11 +501,11 @@ fun PlaybackButton(
                 containerColor = AppColors.TransparentBlack25,
                 focusedContainerColor = selectedColor,
             ),
-        contentPadding = PaddingValues(playbackButtonPadding),
+        contentPadding = PaddingValues(iconPadding),
         interactionSource = interactionSource,
         modifier =
             modifier
-                .size(playbackButtonSize)
+                .size(buttonSize)
                 .onFocusChanged { onControllerInteraction.invoke() },
     ) {
         Icon(
@@ -523,6 +532,15 @@ fun PlaybackFaButton(
     interactionSource: MutableInteractionSource? = null,
     textColor: Color = Color.Unspecified,
 ) {
+    // Tuning values, kept local so Live Edit picks up changes. Keep PlaybackButton and
+    // PlaybackFaButton in step.
+    // Icon scale: 1f = the original 36 dp buttons, 0.8f = 20% smaller
+    val iconScale = 0.8f
+    val buttonSize = 36.dp * iconScale
+    // Space between the button edge and the icon
+    val iconPadding = Spacing.xs * iconScale
+    // Size of the Font Awesome glyph
+    val glyphSize = 18.sp * iconScale
     val selectedColor = MaterialTheme.colorScheme.border
     Button(
         enabled = enabled,
@@ -533,16 +551,16 @@ fun PlaybackFaButton(
                 containerColor = AppColors.TransparentBlack25,
                 focusedContainerColor = selectedColor,
             ),
-        contentPadding = PaddingValues(playbackButtonPadding),
+        contentPadding = PaddingValues(iconPadding),
         interactionSource = interactionSource,
         modifier =
             modifier
-                .size(playbackButtonSize)
+                .size(buttonSize)
                 .onFocusChanged { onControllerInteraction.invoke() },
     ) {
         Text(
             text = stringResource(iconRes),
-            fontSize = playbackFaIconSize,
+            fontSize = glyphSize,
             fontFamily = FontAwesome,
             textAlign = TextAlign.Center,
             color =
