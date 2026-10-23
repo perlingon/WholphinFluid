@@ -1,5 +1,6 @@
 package com.github.damontecres.wholphin.ui.playback.overlay
 
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
@@ -227,7 +228,9 @@ fun QueueRowOverlay(
         val headlineInset = 0.dp
         // Card image height, gap between cards and the outline on the playing episode
         val cardImageHeight = 112.dp
-        val cardGap = Spacing.lg
+        val cardGap = Spacing.sm
+        // Extra room on each side of the focused card, on top of cardGap
+        val focusedCardGap = Spacing.sm
         val playingOutlineColor = Color.White
         // Outline on the playing episode while it has focus
         val playingFocusedOutlineColor = Color.White
@@ -322,6 +325,7 @@ fun QueueRowOverlay(
                         }
                     }
                     val isPlaying = item.id == currentItem?.id
+                    val sideGap by animateDpAsState(if (isFocused) focusedCardGap else 0.dp, label = "focusedCardGap")
                     if (isPlaying) {
                         DisposableEffect(isFocused) {
                             playingCardFocused = isFocused
@@ -387,7 +391,7 @@ fun QueueRowOverlay(
                         scale = CardDefaults.scale(scale = cardUnfocusedScale, focusedScale = cardFocusedScale),
                         interactionSource = interactionSource,
                         modifier =
-                            Modifier.ifElse(
+                            Modifier.padding(horizontal = sideGap).ifElse(
                                 index == focusIndex,
                                 Modifier.focusRequester(focusRequester),
                             ),
