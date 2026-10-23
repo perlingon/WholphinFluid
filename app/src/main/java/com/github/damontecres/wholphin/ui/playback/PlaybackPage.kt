@@ -7,6 +7,7 @@ import androidx.activity.compose.BackHandler
 import androidx.annotation.OptIn
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -508,6 +509,8 @@ fun PlaybackPageContent(
             }
 
             // The playback controls
+            // How much of the bottom of the screen the controls / seek preview cover, for the subtitles
+            var overlayCoveredHeight by remember { mutableStateOf(0.dp) }
 
             PlaybackOverlay(
                 modifier =
@@ -539,6 +542,7 @@ fun PlaybackPageContent(
                 showClock = preferences.appPreferences.interfacePreferences.showClock,
                 analyticsState = state.analyticsState,
                 videoAspectRatio = videoAspectRatio,
+                onCoveredHeightChange = { overlayCoveredHeight = it },
             )
 
             var subtitleStyleAppliedForHdr by remember { mutableStateOf(state.currentMediaInfo.videoStream?.hdr == true) }
@@ -569,6 +573,23 @@ fun PlaybackPageContent(
 
             // Subtitles
             val subtitleMaxSize by animateFloatAsState(if (controllerViewState.controlsVisible) .7f else 1f)
+            // While the controls show, the subtitles sit just above the controls, or above the seek
+            // preview when it is up. Tuning value, kept local so Live Edit picks up changes:
+            // space between the lowest subtitle line and the top of the controls / preview
+            val subtitleGapAboveControls = Spacing.md
+            val screenHeight = LocalConfiguration.current.screenHeightDp.dp
+            val subtitleLift by animateDpAsState(
+                if (controllerViewState.controlsVisible && overlayCoveredHeight > 0.dp) {
+                    // The view is subtitleMaxSize of the screen tall and keeps its own bottom margin;
+                    // move it so that margin ends at the top of the controls + the gap
+                    val viewHeight = screenHeight * subtitleMaxSize
+                    val cueBottom = viewHeight * (1f - subtitleSettings.margin / 100f)
+                    cueBottom - (screenHeight - overlayCoveredHeight - subtitleGapAboveControls)
+                } else {
+                    0.dp
+                },
+                label = "subtitle lift",
+            )
             val isImageSubtitles =
                 remember(state.subtitleCues) { state.subtitleCues.firstOrNull()?.bitmap != null }
 
@@ -653,6 +674,7 @@ fun PlaybackPageContent(
                         .fillMaxSize(subtitleMaxSize)
                         .background(Color.Transparent)
                         .graphicsLayer {
+                            translationY = -subtitleLift.toPx()
                             alpha =
                                 if (!subtitleVisible) {
                                     0f

@@ -47,9 +47,11 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
@@ -106,6 +108,7 @@ fun PlaybackOverlay(
     onClickPlaylist: (BaseItem) -> Unit = {},
     videoAspectRatio: Float? = null,
     seekBarInteractionSource: MutableInteractionSource = remember { MutableInteractionSource() },
+    onCoveredHeightChange: (Dp) -> Unit = {},
 ) {
     val seekBarFocused by seekBarInteractionSource.collectIsFocusedAsState()
     // Will be used for preview/trick play images
@@ -133,6 +136,10 @@ fun PlaybackOverlay(
 
     // This will be calculated after composition
     var controllerHeight by remember { mutableStateOf(0.dp) }
+    // Heights of the shown overlay content (controls or chapter/queue row) and of the seek preview,
+    // so the subtitles can sit just above whatever covers the bottom of the screen
+    var overlayContentHeight by remember { mutableStateOf(0.dp) }
+    var previewBlockHeight by remember { mutableStateOf(0.dp) }
     var state by remember(controllerViewState.controlsVisible) {
         mutableStateOf(if (controllerViewState.controlsVisible) OverlayViewState.CONTROLLER else OverlayViewState.HIDDEN)
     }
@@ -153,6 +160,28 @@ fun PlaybackOverlay(
     val hideOffset = tween<IntOffset>(hideMs, easing = hideEasing)
     val showFade = tween<Float>(showMs, easing = showEasing)
     val hideFade = tween<Float>(hideMs, easing = hideEasing)
+
+    // How much of the bottom of the screen the overlay covers: the controls (or row), or the seek
+    // preview above them when it shows. Reported so the subtitles can move above it.
+    val previewShowing = controllerViewState.controlsVisible && seekBarFocused
+    val previewBottom =
+        ((if (previewAboveTitle) controllerHeight else controllerHeight - titleHeight) + previewGap)
+            .coerceAtLeast(0.dp)
+    val coveredHeight =
+        when {
+            !controllerViewState.controlsVisible || showDebugInfo -> {
+                0.dp
+            }
+
+            previewShowing && previewBlockHeight > 0.dp -> {
+                maxOf(overlayContentHeight, previewBottom + previewBlockHeight)
+            }
+
+            else -> {
+                overlayContentHeight
+            }
+        }
+    LaunchedEffect(coveredHeight) { onCoveredHeightChange(coveredHeight) }
 
     Box(
         modifier = modifier,
@@ -186,6 +215,7 @@ fun PlaybackOverlay(
             targetState = state,
             label = "controls transition",
             contentAlignment = Alignment.BottomCenter,
+            modifier = Modifier.onSizeChanged { overlayContentHeight = with(density) { it.height.toDp() } },
             transitionSpec = {
                 if (targetState.ordinal > initialState.ordinal) {
                     // Moving down (e.g. the controls showing up), so move content up
@@ -324,17 +354,14 @@ fun PlaybackOverlay(
                                 .align(Alignment.BottomStart)
                                 .offsetByPercent(
                                     xPercentage = seekProgressPercent.coerceIn(0f, 1f),
-                                ).padding(
-                                    bottom =
-                                        ((if (previewAboveTitle) controllerHeight else controllerHeight - titleHeight) + previewGap)
-                                            .coerceAtLeast(0.dp),
-                                ),
+                                ).padding(bottom = previewBottom),
                     ) {
                         TrickplayPreview(
                             seekProgressMs = seekProgressMs,
                             trickplayInfo = trickplayInfo,
                             trickplayUrlFor = trickplayUrlFor,
                             totalJumpMs = seekProgressMs - seekStartMs,
+                            modifier = Modifier.onSizeChanged { previewBlockHeight = with(density) { it.height.toDp() } },
                         )
                     }
                 }
