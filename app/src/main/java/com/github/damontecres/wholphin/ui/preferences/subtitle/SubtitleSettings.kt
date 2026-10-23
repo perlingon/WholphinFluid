@@ -90,7 +90,7 @@ object SubtitleSettings {
             defaultValue = 400,
             min = 300,
             max = 700,
-            interval = 100,
+            interval = 10,
             getter = { it.effectiveFontWeight.toLong() },
             setter = { prefs, value ->
                 prefs.update {
@@ -442,17 +442,44 @@ object SubtitleSettings {
     }
 
     /**
-     * The font used for text subtitles: DM Sans, in the chosen weight and style. Each weight is
-     * its own font file, so nothing is synthesized
+     * The font used for text subtitles: DM Sans in the chosen weight and style. From Android 8 the
+     * variable font is drawn at exactly that weight; before that, the nearest of the fixed weights
+     * (300 to 700) is used. Nothing is synthesized
      */
     private fun SubtitlePreferences.subtitleTypeface(context: Context): Typeface {
+        val weight = effectiveFontWeight
+        val italic = fontItalic
+        return subtitleTypefaces.getOrPut(weight to italic) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                try {
+                    val file = if (italic) "dm_sans_variable_italic.ttf" else "dm_sans_variable.ttf"
+                    // opsz 14 matches the fixed weights Google Fonts serves, which the interface uses
+                    return@getOrPut Typeface
+                        .Builder(context.assets, "font-dm-sans/$file")
+                        .setFontVariationSettings("'wght' $weight, 'opsz' 14")
+                        .build()
+                } catch (ex: Exception) {
+                    Timber.w(ex, "Could not load variable subtitle font")
+                }
+            }
+            staticSubtitleTypeface(context, (weight + 50) / 100 * 100, italic)
+        }
+    }
+
+    private val subtitleTypefaces = mutableMapOf<Pair<Int, Boolean>, Typeface>()
+
+    private fun staticSubtitleTypeface(
+        context: Context,
+        weight: Int,
+        italic: Boolean,
+    ): Typeface {
         val font =
-            when (effectiveFontWeight) {
-                300 -> if (fontItalic) R.font.dm_sans_light_italic else R.font.dm_sans_light
-                500 -> if (fontItalic) R.font.dm_sans_medium_italic else R.font.dm_sans_medium
-                600 -> if (fontItalic) R.font.dm_sans_semibold_italic else R.font.dm_sans_semibold
-                700 -> if (fontItalic) R.font.dm_sans_bold_italic else R.font.dm_sans_bold
-                else -> if (fontItalic) R.font.dm_sans_italic else R.font.dm_sans_regular
+            when (weight) {
+                300 -> if (italic) R.font.dm_sans_light_italic else R.font.dm_sans_light
+                500 -> if (italic) R.font.dm_sans_medium_italic else R.font.dm_sans_medium
+                600 -> if (italic) R.font.dm_sans_semibold_italic else R.font.dm_sans_semibold
+                700 -> if (italic) R.font.dm_sans_bold_italic else R.font.dm_sans_bold
+                else -> if (italic) R.font.dm_sans_italic else R.font.dm_sans_regular
             }
         return try {
             ResourcesCompat.getFont(context, font)
@@ -463,13 +490,13 @@ object SubtitleSettings {
     }
 
     /**
-     * The chosen weight, 300 to 700 in steps of 100. Settings saved before there was a choice of
+     * The chosen weight, 300 to 700 in steps of 10. Settings saved before there was a choice of
      * weight only had a bold switch, so that counts as 700
      */
     val SubtitlePreferences.effectiveFontWeight: Int
         get() =
             when {
-                fontWeight > 0 -> (fontWeight / 100 * 100).coerceIn(300, 700)
+                fontWeight > 0 -> (fontWeight / 10 * 10).coerceIn(300, 700)
                 fontBold -> 700
                 else -> FontWeight.defaultValue.toInt()
             }

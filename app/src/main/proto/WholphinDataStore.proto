@@ -165,7 +165,7 @@ message SubtitlePreferences{
   bool use_separate_hdr = 14;
   bool ignore_embedded_colors = 15;
   bool ignore_embedded_styles = 16;
-  // 300 to 700 in steps of 100; 0 means not set, so the default is used
+  // 300 to 700 in steps of 10; 0 means not set, so the default is used
   int32 font_weight = 17;
   // Shadow settings; 0 means not set, so the default is used
   int32 shadow_offset = 18;
