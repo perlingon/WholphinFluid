@@ -358,9 +358,9 @@ fun PlaybackOverlay(
         val logoFadeSize = DpSize(560.dp, 280.dp)
         // Logo placement: the box the logo is fitted into (it keeps its own shape inside it), and
         // its distance from the top and start edge of the picture area
-        val logoMaxSize = DpSize(208.dp, 88.dp)
+        val logoMaxSize = DpSize(180.dp, 80.dp)
         val logoInsetStart = Spacing.md
-        val logoInsetTop = Spacing.md
+        val logoInsetTop = Spacing.lg
         val clockFadeSize = DpSize(400.dp, 200.dp)
         Box(
             modifier =
