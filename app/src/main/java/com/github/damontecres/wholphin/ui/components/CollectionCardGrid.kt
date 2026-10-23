@@ -77,6 +77,21 @@ import timber.log.Timber
 import java.util.UUID
 import kotlin.time.Duration.Companion.hours
 
+/**
+ * How many levels of nested collections to look through when a collection has no movie with a backdrop
+ */
+private const val MAX_NESTED_DEPTH = 3
+
+/**
+ * How many child collections to try at each level before giving up
+ */
+private const val MAX_CHILD_COLLECTIONS = 3
+
+/**
+ * How many backdrop lookups run at the same time
+ */
+private const val IMAGE_CONCURRENCY = 4
+
 @HiltViewModel(assistedFactory = CollectionGridViewModel.Factory::class)
 class CollectionGridViewModel
     @AssistedInject
