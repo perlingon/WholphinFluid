@@ -77,12 +77,15 @@ fun groupQueueBySeason(queue: List<PlaylistItem>): List<QueueGroup> {
 }
 
 /**
- * "3 Seasons · 24 Episodes" for a queue of episodes, otherwise "Queue"
+ * "3 Seasons · 24 Episodes" for a queue of episodes, otherwise "Queue · 8 Items"
  */
 @Composable
 fun queueHeadline(groups: List<QueueGroup>): String {
     val seasonGroups = groups.filter { it.seasonNumber != null }
-    if (seasonGroups.isEmpty()) return stringResource(R.string.queue)
+    if (seasonGroups.isEmpty()) {
+        val count = groups.sumOf { it.items.size }
+        return stringResource(R.string.queue) + " · " + pluralStringResource(R.plurals.items_count, count, count)
+    }
     val seasons = seasonGroups.map { it.seriesId to it.seasonNumber }.distinct().size
     val episodes = seasonGroups.sumOf { it.items.size }
     return pluralStringResource(R.plurals.seasons_count, seasons, seasons) + " · " +
@@ -137,7 +140,10 @@ fun QueueRowOverlay(
                 group.seasonNumber?.let {
                     formatSeasonNumber(it) + " · " +
                         pluralStringResource(R.plurals.episodes_count, group.items.size, group.items.size)
-                } ?: stringResource(R.string.queue),
+                } ?: (
+                    stringResource(R.string.queue) + " · " +
+                        pluralStringResource(R.plurals.items_count, group.items.size, group.items.size)
+                ),
             style = headlineStyle,
             color = headlineColor,
             modifier = Modifier.padding(start = headlineInset),

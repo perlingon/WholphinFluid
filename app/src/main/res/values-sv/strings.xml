@@ -705,4 +705,8 @@
         <item quantity="one">%1$d avsnitt</item>
         <item quantity="other">%1$d avsnitt</item>
     </plurals>
+    <plurals name="items_count">
+        <item quantity="one">%1$d objekt</item>
+        <item quantity="other">%1$d objekt</item>
+    </plurals>
 </resources>
