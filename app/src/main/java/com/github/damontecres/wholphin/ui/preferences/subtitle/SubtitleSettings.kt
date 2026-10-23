@@ -27,7 +27,6 @@ import com.github.damontecres.wholphin.preferences.AppSwitchPreference
 import com.github.damontecres.wholphin.preferences.BackgroundStyle
 import com.github.damontecres.wholphin.preferences.EdgeStyle
 import com.github.damontecres.wholphin.preferences.InterfacePreferences
-import com.github.damontecres.wholphin.preferences.SubtitleFontWeight
 import com.github.damontecres.wholphin.preferences.SubtitlePreferences
 import com.github.damontecres.wholphin.preferences.resetSubtitles
 import com.github.damontecres.wholphin.ui.indexOfFirstOrNull
@@ -86,19 +85,20 @@ object SubtitleSettings {
         )
 
     val FontWeight =
-        AppChoicePreference<SubtitlePreferences, SubtitleFontWeight>(
+        AppSliderPreference<SubtitlePreferences>(
             title = R.string.subtitle_font_weight,
-            defaultValue = SubtitleFontWeight.SUBTITLE_WEIGHT_REGULAR,
-            getter = { it.effectiveFontWeight },
+            defaultValue = 400,
+            min = 300,
+            max = 700,
+            interval = 100,
+            getter = { it.effectiveFontWeight.toLong() },
             setter = { prefs, value ->
                 prefs.update {
-                    fontWeight = value
+                    fontWeight = value.toInt()
                     fontBold = false
                 }
             },
-            displayValues = R.array.subtitle_font_weights,
-            indexToValue = { SubtitleFontWeight.forNumber(it) ?: SubtitleFontWeight.SUBTITLE_WEIGHT_REGULAR },
-            valueToIndex = { it.number },
+            summarizer = { value -> value?.toString() },
         )
     val FontItalic =
         AppSwitchPreference<SubtitlePreferences>(
@@ -448,17 +448,11 @@ object SubtitleSettings {
     private fun SubtitlePreferences.subtitleTypeface(context: Context): Typeface {
         val font =
             when (effectiveFontWeight) {
-                SubtitleFontWeight.SUBTITLE_WEIGHT_MEDIUM -> {
-                    if (fontItalic) R.font.dm_sans_medium_italic else R.font.dm_sans_medium
-                }
-
-                SubtitleFontWeight.SUBTITLE_WEIGHT_BOLD -> {
-                    if (fontItalic) R.font.dm_sans_bold_italic else R.font.dm_sans_bold
-                }
-
-                else -> {
-                    if (fontItalic) R.font.dm_sans_italic else R.font.dm_sans_regular
-                }
+                300 -> if (fontItalic) R.font.dm_sans_light_italic else R.font.dm_sans_light
+                500 -> if (fontItalic) R.font.dm_sans_medium_italic else R.font.dm_sans_medium
+                600 -> if (fontItalic) R.font.dm_sans_semibold_italic else R.font.dm_sans_semibold
+                700 -> if (fontItalic) R.font.dm_sans_bold_italic else R.font.dm_sans_bold
+                else -> if (fontItalic) R.font.dm_sans_italic else R.font.dm_sans_regular
             }
         return try {
             ResourcesCompat.getFont(context, font)
@@ -469,15 +463,15 @@ object SubtitleSettings {
     }
 
     /**
-     * The chosen weight. Settings saved before there was a choice of weight only had a bold
-     * switch, so that counts as Bold
+     * The chosen weight, 300 to 700 in steps of 100. Settings saved before there was a choice of
+     * weight only had a bold switch, so that counts as 700
      */
-    val SubtitlePreferences.effectiveFontWeight: SubtitleFontWeight
+    val SubtitlePreferences.effectiveFontWeight: Int
         get() =
             when {
-                fontBold && fontWeight == SubtitleFontWeight.SUBTITLE_WEIGHT_REGULAR -> SubtitleFontWeight.SUBTITLE_WEIGHT_BOLD
-                fontWeight == SubtitleFontWeight.UNRECOGNIZED -> SubtitleFontWeight.SUBTITLE_WEIGHT_REGULAR
-                else -> fontWeight
+                fontWeight > 0 -> (fontWeight / 100 * 100).coerceIn(300, 700)
+                fontBold -> 700
+                else -> FontWeight.defaultValue.toInt()
             }
 
     // The shadow settings are 0 until changed, which means the default
@@ -564,7 +558,7 @@ object SubtitleSettings {
 //            MPVLib.setPropertyString("sub-font", "Roboto Regular")
 //        }
         // MPV uses its own font file, so it can only show bold or not
-        MPVLib.setPropertyBoolean("sub-bold", effectiveFontWeight == SubtitleFontWeight.SUBTITLE_WEIGHT_BOLD)
+        MPVLib.setPropertyBoolean("sub-bold", effectiveFontWeight >= 600)
         MPVLib.setPropertyBoolean("sub-italic", fontItalic)
 
         MPVLib.setPropertyColor("sub-back-color", bg)

@@ -141,12 +141,6 @@ enum EdgeStyle{
   EDGE_SHADOW = 2;
 }
 
-enum SubtitleFontWeight{
-  SUBTITLE_WEIGHT_REGULAR = 0;
-  SUBTITLE_WEIGHT_MEDIUM = 1;
-  SUBTITLE_WEIGHT_BOLD = 2;
-}
-
 enum BackgroundStyle{
   BG_NONE = 0;
   BG_WRAP = 1;
@@ -171,7 +165,8 @@ message SubtitlePreferences{
   bool use_separate_hdr = 14;
   bool ignore_embedded_colors = 15;
   bool ignore_embedded_styles = 16;
-  SubtitleFontWeight font_weight = 17;
+  // 300 to 700 in steps of 100; 0 means not set, so the default is used
+  int32 font_weight = 17;
   // Shadow settings; 0 means not set, so the default is used
   int32 shadow_offset = 18;
   int32 shadow_blur = 19;

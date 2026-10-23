@@ -274,7 +274,7 @@ fun SubtitlePreferences.Builder.resetSubtitles() {
     fontSize = SubtitleSettings.FontSize.defaultValue.toInt()
     fontColor = SubtitleSettings.FontColor.defaultValue.toArgb()
     fontBold = false
-    fontWeight = SubtitleSettings.FontWeight.defaultValue
+    fontWeight = SubtitleSettings.FontWeight.defaultValue.toInt()
     fontItalic = SubtitleSettings.FontItalic.defaultValue
     fontOpacity = SubtitleSettings.FontOpacity.defaultValue.toInt()
     edgeColor = SubtitleSettings.EdgeColor.defaultValue.toArgb()
