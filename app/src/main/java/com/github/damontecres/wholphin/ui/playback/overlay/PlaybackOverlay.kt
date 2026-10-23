@@ -102,6 +102,7 @@ fun PlaybackOverlay(
     currentSegment: MediaSegmentDto?,
     analyticsState: AnalyticsState,
     queue: List<PlaylistItem>,
+    seriesEnded: Boolean?,
     modifier: Modifier = Modifier,
     trickplayInfo: TrickplayInfo? = null,
     trickplayUrlFor: (Int) -> String? = { null },
@@ -290,7 +291,7 @@ fun PlaybackOverlay(
                             seekBarInteractionSource = seekBarInteractionSource,
                             onTitleHeightChange = { titleHeight = it },
                             chapters = chapters,
-                            queueHeadline = queueHeadline(remember(queue) { groupQueueBySeason(queue) }, item),
+                            queueHeadline = queueHeadline(remember(queue) { groupQueueBySeason(queue) }, item, seriesEnded),
                         )
                     }
 

@@ -103,13 +103,14 @@ fun seasonHeadline(
 /**
  * Hint under the controls, about where the playing episode sits in its show:
  * "First Season · 4 episodes left", "Second Season · First of 10 episodes",
- * "Last Season · Final episode". Uses the queue, which holds the rest of the series. Queues
+ * "Last Season · Final episode" (only for ended shows). Uses the queue, which holds the rest of the series. Queues
  * that don't follow an episode show "Queue · 8 Items"
  */
 @Composable
 fun queueHeadline(
     groups: List<QueueGroup>,
     currentItem: BaseItem?,
+    seriesEnded: Boolean?,
 ): String {
     val current = currentItem?.data
     val season = current?.parentIndexNumber
@@ -119,11 +120,12 @@ fun queueHeadline(
     }
     val seriesGroups = groups.filter { it.seriesId == current?.seriesId && it.seasonNumber != null }
     val left = seriesGroups.filter { it.seasonNumber == season }.sumOf { it.items.size }
-    // A full queue may stop before the later seasons, so only trust "last" when it isn't full
+    // "Last Season" only for shows that have ended (running ones keep the ordinal). A full queue
+    // may stop before the later seasons, so only trust it when it isn't full
     val queueFull = groups.sumOf { it.items.size } >= Playlist.MAX_SIZE - 1
     val laterSeasons = seriesGroups.any { it.seasonNumber!! > season }
     val seasonLabel =
-        if (season > 1 && !laterSeasons && !queueFull) {
+        if (seriesEnded == true && season > 1 && !laterSeasons && !queueFull) {
             stringResource(R.string.last_season)
         } else {
             stringArrayResource(R.array.season_ordinals).getOrNull(season - 1)

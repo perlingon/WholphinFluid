@@ -419,6 +419,28 @@ class PlaybackViewModel
             }
         }
 
+        private var seriesStatusId: UUID? = null
+
+        /**
+         * Looks up whether the episode's series has ended, for the "Last Season" hint in the player
+         */
+        private fun updateSeriesEnded(item: BaseItem) {
+            val seriesId = item.data.seriesId.takeIf { item.type == BaseItemKind.EPISODE }
+            if (seriesId == seriesStatusId) return
+            seriesStatusId = seriesId
+            _state.update { it.copy(seriesEnded = null) }
+            if (seriesId == null) return
+            viewModelScope.launchIO {
+                val status =
+                    api.userLibraryApi
+                        .getItem(seriesId)
+                        .content.status
+                if (seriesStatusId == seriesId) {
+                    _state.update { it.copy(seriesEnded = status.equals("Ended", ignoreCase = true)) }
+                }
+            }
+        }
+
         internal fun updateCurrentPlayback(block: (CurrentPlayback?) -> CurrentPlayback?) {
             _state.update {
                 it.copy(currentPlayback = block.invoke(it.currentPlayback))
@@ -466,6 +488,7 @@ class PlaybackViewModel
                 }
                 this@PlaybackViewModel.currentItem = playlistItem
                 this@PlaybackViewModel.itemId = item.id
+                updateSeriesEnded(item)
 
                 val isLiveTv = item.type == BaseItemKind.TV_CHANNEL
                 val base = item.data
