@@ -123,7 +123,7 @@ fun PlaybackOverlay(
     // true = the preview sits above the title row, false = between the title row and the seek bar
     val previewAboveTitle = true
     // Extra space between the preview and what is below it. Example: 0.dp, Spacing.sm (8.dp), 16.dp, -8.dp to overlap
-    val previewGap = Spacing.sm
+    val previewGap = Spacing.md
 
     // Height of the title row above the seek bar, measured after composition
     var titleHeight by remember { mutableStateOf(0.dp) }

@@ -93,8 +93,8 @@ fun SeekPreviewImage(
 
     // Tuning values, kept local so Live Edit picks up changes.
     // Height of the preview image; the width follows the video's shape (64 dp is about 114 dp wide at 16:9)
-    val previewHeight = 64.dp
-    val previewCornerRadius = 8.dp
+    val previewHeight = 68.dp
+    val previewCornerRadius = 4.dp
     val previewBorder = 1.8.dp
     val previewShape = RoundedCornerShape(previewCornerRadius)
 
@@ -127,7 +127,7 @@ fun SeekPreviewImage(
             modifier =
                 modifier
                     .clip(previewShape)
-                    .border(previewBorder, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f), shape = previewShape)
+                    .border(previewBorder, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f), shape = previewShape)
                     .background(Color.Black)
                     .height(height)
                     .width(width),
