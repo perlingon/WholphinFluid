@@ -214,6 +214,10 @@ fun QueueRowOverlay(
         val headlineStyle = MaterialTheme.typography.rowHeadline
         val headlineColor = Color.Unspecified // Color.Unspecified = the theme's text color
         val headlineInset = 0.dp
+        // Card image height, gap between cards and the outline on the playing episode
+        val cardImageHeight = 112.dp
+        val cardGap = Spacing.lg
+        val playingOutlineColor = Color.White
         Text(
             text =
                 seasonHeadline(group) ?: (
@@ -233,7 +237,7 @@ fun QueueRowOverlay(
                         horizontal = Spacing.md,
                         vertical = Spacing.sm,
                     ),
-                horizontalArrangement = Arrangement.spacedBy(Spacing.md),
+                horizontalArrangement = Arrangement.spacedBy(cardGap),
                 modifier =
                     Modifier
                         .fillMaxWidth()
@@ -296,7 +300,7 @@ fun QueueRowOverlay(
                         title = queueItemTitle(item.item),
                         subtitle = null,
                         name = item.item.name,
-                        imageUrl = rememberImageUrl(item.item, 140.dp),
+                        imageUrl = rememberImageUrl(item.item, cardImageHeight),
                         isFavorite =
                             item.item.data.userData
                                 ?.isFavorite ?: false,
@@ -317,7 +321,8 @@ fun QueueRowOverlay(
                             controllerViewState.hideControls()
                         },
                         onLongClick = {},
-                        imageHeight = 140.dp,
+                        imageHeight = cardImageHeight,
+                        outlineColor = if (item.id == currentItem?.id) playingOutlineColor else Color.Unspecified,
                         interactionSource = interactionSource,
                         modifier =
                             Modifier.ifElse(

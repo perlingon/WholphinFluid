@@ -93,6 +93,9 @@ fun ChapterRowOverlay(
         val headlineStyle = MaterialTheme.typography.rowHeadline
         val headlineColor = Color.Unspecified // Color.Unspecified = the theme's text color
         val headlineInset = 0.dp
+        // Card height and gap between cards
+        val cardHeight = 96.dp
+        val cardGap = Spacing.lg
         Text(
             text = stringResource(R.string.chapters),
             style = headlineStyle,
@@ -102,7 +105,7 @@ fun ChapterRowOverlay(
         LazyRow(
             state = listState,
             contentPadding = PaddingValues(Spacing.md),
-            horizontalArrangement = Arrangement.spacedBy(Spacing.md),
+            horizontalArrangement = Arrangement.spacedBy(cardGap),
             modifier =
                 Modifier
                     .fillMaxWidth()
@@ -124,6 +127,7 @@ fun ChapterRowOverlay(
                 }
                 ChapterCard(
                     chapter = chapter,
+                    cardHeight = cardHeight,
                     onClick = {
                         player.seekTo(chapter.position.inWholeMilliseconds)
                         controllerViewState.hideControls()

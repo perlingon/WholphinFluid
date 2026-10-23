@@ -1,6 +1,7 @@
 package com.github.damontecres.wholphin.ui.cards
 
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Arrangement
@@ -11,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -18,6 +20,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.isSpecified
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
@@ -25,6 +28,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.isSpecified
+import androidx.tv.material3.Border
 import androidx.tv.material3.Card
 import androidx.tv.material3.CardDefaults
 import androidx.tv.material3.MaterialTheme
@@ -140,6 +144,7 @@ fun SeasonCard(
     showImageOverlay: Boolean = false,
     aspectRatio: Float = AspectRatios.TALL,
     showSubtitle: Boolean = true,
+    outlineColor: Color = Color.Unspecified,
 ) {
     val focused by interactionSource.collectIsFocusedAsState()
     // Do not use `by` here, this way we are Defer reads and recompositions to only when modifier calculates
@@ -166,6 +171,20 @@ fun SeasonCard(
             onClick = onClick,
             onLongClick = onLongClick,
             interactionSource = interactionSource,
+            // An outline while not focused (e.g. the playing episode in the player); focus keeps its own
+            border =
+                if (outlineColor.isSpecified) {
+                    CardDefaults.border(
+                        border =
+                            Border(
+                                border = BorderStroke(2.dp, outlineColor),
+                                // Matches the Card's default shape
+                                shape = RoundedCornerShape(8.dp),
+                            ),
+                    )
+                } else {
+                    CardDefaults.border()
+                },
             colors =
                 CardDefaults.colors(
                     containerColor = Color.Transparent,
