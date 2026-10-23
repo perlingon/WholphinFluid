@@ -110,8 +110,8 @@ fun PlaybackOverlay(
     val seekBarFocused by seekBarInteractionSource.collectIsFocusedAsState()
     // Will be used for preview/trick play images
     var seekProgressMs by remember(seekBarFocused) { mutableLongStateOf(player.currentPosition) }
-    // Where seeking started, so the preview can show how far the user has jumped
-    val seekStartMs = remember(seekBarFocused) { player.currentPosition }
+    // Size of the latest seek step, shown in the preview (e.g. +10s or -30s)
+    var lastStepMs by remember(seekBarFocused) { mutableLongStateOf(0L) }
     var seekProgressPercent = (seekProgressMs.toDouble() / player.duration).toFloat()
 
     val density = LocalDensity.current
@@ -237,6 +237,7 @@ fun PlaybackOverlay(
                         onClickPlaybackDialogType = onClickPlaybackDialogType,
                         onSeekBarChange = {
                             onSeekBarChange(it)
+                            lastStepMs = it - seekProgressMs
                             seekProgressMs = it
                         },
                         currentSegment = currentSegment,
@@ -334,7 +335,7 @@ fun PlaybackOverlay(
                             seekProgressMs = seekProgressMs,
                             trickplayInfo = trickplayInfo,
                             trickplayUrlFor = trickplayUrlFor,
-                            jumpMs = seekProgressMs - seekStartMs,
+                            jumpMs = lastStepMs,
                         )
                     }
                 }
