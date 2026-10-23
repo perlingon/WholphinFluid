@@ -100,6 +100,7 @@ fun queueHeadline(
     groups: List<QueueGroup>,
     currentItem: BaseItem?,
     seriesEnded: Boolean?,
+    seriesEpisodes: List<BaseItem> = emptyList(),
 ): String {
     val current = currentItem?.data
     val season = current?.parentIndexNumber
@@ -107,19 +108,31 @@ fun queueHeadline(
         val count = groups.sumOf { it.items.size }
         return stringResource(R.string.queue) + " · " + pluralStringResource(R.plurals.items_count, count, count)
     }
-    val seriesGroups = groups.filter { it.seriesId == current?.seriesId && it.seasonNumber != null }
-    val left = seriesGroups.filter { it.seasonNumber == season }.sumOf { it.items.size }
-    // A full queue may stop before the later seasons, so the season count is only known when it isn't
-    val queueFull = groups.sumOf { it.items.size } >= Playlist.MAX_SIZE - 1
-    val lastQueuedSeason = seriesGroups.maxOfOrNull { it.seasonNumber!! } ?: season
-    val isLatestSeason = !queueFull && lastQueuedSeason <= season
-    val seasonCount = maxOf(season, lastQueuedSeason)
+    val left: Int
+    val lastSeason: Int
+    // Whether every season is known, so the season count can be trusted
+    val allSeasonsKnown: Boolean
+    val playingIndex = seriesEpisodes.indexOfFirst { it.id == currentItem?.id }
+    if (playingIndex >= 0) {
+        // The whole series is loaded, so count from it
+        left = seriesEpisodes.drop(playingIndex + 1).count { it.data.parentIndexNumber == season }
+        lastSeason = seriesEpisodes.maxOf { it.data.parentIndexNumber ?: 0 }.coerceAtLeast(season)
+        allSeasonsKnown = true
+    } else {
+        // Otherwise count from the queue, which holds the rest of the series. A full queue may stop
+        // before the later seasons
+        val seriesGroups = groups.filter { it.seriesId == current?.seriesId && it.seasonNumber != null }
+        left = seriesGroups.filter { it.seasonNumber == season }.sumOf { it.items.size }
+        lastSeason = maxOf(season, seriesGroups.maxOfOrNull { it.seasonNumber!! } ?: season)
+        allSeasonsKnown = groups.sumOf { it.items.size } < Playlist.MAX_SIZE - 1
+    }
+    val isLatestSeason = allSeasonsKnown && lastSeason <= season
     val ended = seriesEnded == true
     // Ended show: "Season 1 of 3", then "Last Season". Running show (or unknown): "Season 3"
     val seasonLabel =
         when {
             ended && isLatestSeason && season > 1 -> stringResource(R.string.last_season)
-            ended && !queueFull && seasonCount > 1 -> stringResource(R.string.season_of, season, seasonCount)
+            ended && allSeasonsKnown && lastSeason > 1 -> stringResource(R.string.season_of, season, lastSeason)
             else -> formatSeasonNumber(season)
         }
     // The newest season of a running show may still grow, so it shows just the episode number
