@@ -90,7 +90,7 @@ fun GenreCard(
                             .data(imageUrl)
                             .crossfade(true)
                             .build(),
-                    contentScale = ContentScale.FillBounds,
+                    contentScale = ContentScale.Crop,
                     contentDescription = null,
                     modifier =
                         Modifier
