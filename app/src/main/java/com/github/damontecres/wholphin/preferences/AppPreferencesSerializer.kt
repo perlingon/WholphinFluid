@@ -290,4 +290,5 @@ fun SubtitlePreferences.Builder.resetSubtitles() {
     shadowOffset = SubtitleSettings.ShadowOffset.defaultValue.toInt()
     shadowBlur = SubtitleSettings.ShadowBlur.defaultValue.toInt()
     shadowOpacity = SubtitleSettings.ShadowOpacity.defaultValue.toInt()
+    outlineOpacity = SubtitleSettings.OutlineOpacity.defaultValue.toInt()
 }
