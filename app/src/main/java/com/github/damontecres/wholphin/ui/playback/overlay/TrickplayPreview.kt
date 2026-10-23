@@ -1,12 +1,18 @@
 package com.github.damontecres.wholphin.ui.playback.overlay
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -16,6 +22,7 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.github.damontecres.wholphin.ui.formatDuration
 import com.github.damontecres.wholphin.ui.theme.Spacing
+import kotlinx.coroutines.delay
 import org.jellyfin.sdk.model.api.TrickplayInfo
 import kotlin.time.Duration.Companion.seconds
 
@@ -26,9 +33,28 @@ fun TrickplayPreview(
     trickplayUrlFor: (Int) -> String?,
     modifier: Modifier = Modifier,
     jumpMs: Long = 0L,
+    totalJumpMs: Long = 0L,
 ) {
+    // How long the step chip ("+10s") stays after a press, and how long it takes to fade out.
+    // Tuning values, kept local so Live Edit picks up changes.
+    val chipShowMs = 600L
+    val chipFadeMs = 300
+
     val jumpSec = jumpMs / 1000L
     val jumpText = remember(jumpSec) { if (jumpSec != 0L) formatJump(jumpSec) else null }
+    val totalSec = totalJumpMs / 1000L
+    val totalText = remember(totalSec) { if (totalSec != 0L) formatJump(totalSec) else null }
+    var chipVisible by remember { mutableStateOf(false) }
+    LaunchedEffect(seekProgressMs) {
+        chipVisible = true
+        delay(chipShowMs)
+        chipVisible = false
+    }
+    val chipAlpha by animateFloatAsState(
+        targetValue = if (chipVisible) 1f else 0f,
+        animationSpec = tween(if (chipVisible) 0 else chipFadeMs),
+        label = "step chip",
+    )
     var jumpShown = false
     Column(
         verticalArrangement = Arrangement.spacedBy(Spacing.sm),
@@ -48,6 +74,7 @@ fun TrickplayPreview(
                     seekProgressMs = seekProgressMs,
                     trickPlayInfo = trickplayInfo,
                     jumpText = jumpText,
+                    jumpAlpha = chipAlpha,
                 )
                 jumpShown = true
             }
@@ -55,8 +82,14 @@ fun TrickplayPreview(
         val resources = LocalResources.current
         val seekProgressSec = seekProgressMs / 1000L
         val seekText = remember(seekProgressSec) { resources.formatDuration(seekProgressSec.seconds) }
-        // Without a preview image, the jump goes next to the timestamp instead
-        val labelText = if (!jumpShown && jumpText != null) "$seekText  $jumpText" else seekText
+        // The label shows the total jump since seeking started, e.g. "12:34 · +1m 20s". Without a
+        // preview image, the step goes next to it instead.
+        val labelText =
+            when {
+                totalText != null -> "$seekText · $totalText"
+                !jumpShown && jumpText != null -> "$seekText  $jumpText"
+                else -> seekText
+            }
         Text(
             text = labelText,
             color = MaterialTheme.colorScheme.onSurface,

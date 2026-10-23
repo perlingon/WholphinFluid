@@ -74,6 +74,8 @@ fun SteppedSeekBarImpl(
     val isFocused by interactionSource.collectIsFocusedAsState()
     var hasSeeked by remember { mutableStateOf(false) }
     var seekProgress by remember { mutableFloatStateOf(progress) }
+    // Where playback was when seeking started, for the ghost marker
+    var originProgress by remember { mutableFloatStateOf(progress) }
     val progressToUse = if (isFocused && hasSeeked) seekProgress else progress
     LaunchedEffect(isFocused) {
         if (!isFocused) hasSeeked = false
@@ -90,14 +92,17 @@ fun SteppedSeekBarImpl(
         progress = progressToUse,
         bufferedProgress = bufferedProgress,
         durationMs = durationMs,
+        originProgress = if (isFocused && hasSeeked) originProgress else null,
         onLeft = { multiplier ->
             controllerViewState.pulseControls()
+            if (!hasSeeked) originProgress = progressToUse
             seekProgress = (progressToUse - offset * multiplier).coerceAtLeast(0f)
             hasSeeked = true
             seek(seekProgress)
         },
         onRight = { multiplier ->
             controllerViewState.pulseControls()
+            if (!hasSeeked) originProgress = progressToUse
             seekProgress = (progressToUse + offset * multiplier).coerceAtMost(1f)
             hasSeeked = true
             seek(seekProgress)
@@ -118,10 +123,12 @@ fun StaticSeekBarImpl(
     durationMs: Long,
     bufferedProgress: Float,
     modifier: Modifier = Modifier,
+    originProgress: Float? = null,
 ) {
     SeekBarDisplay(
         enabled = false,
         progress = progress,
+        originProgress = originProgress,
         bufferedProgress = bufferedProgress,
         durationMs = durationMs,
         onLeft = {},
@@ -151,6 +158,8 @@ fun IntervalSeekBarImpl(
     val isFocused by interactionSource.collectIsFocusedAsState()
     var hasSeeked by remember { mutableStateOf(false) }
     var seekPositionMs by remember { mutableLongStateOf((progress * durationMs).toLong()) }
+    // Where playback was when seeking started, for the ghost marker
+    var originMs by remember { mutableLongStateOf(0L) }
 //    val progressToUse by remember { derivedStateOf { if (isFocused && hasSeeked) seekPositionMs else (progress * durationMs).toLong() } }
     val progressToUse =
         if (isFocused && hasSeeked) seekPositionMs else (progress * durationMs).toLong()
@@ -162,10 +171,12 @@ fun IntervalSeekBarImpl(
     SeekBarDisplay(
         enabled = enabled,
         progress = (progressToUse.toDouble() / durationMs).toFloat(),
+        originProgress = if (isFocused && hasSeeked) (originMs.toDouble() / durationMs).toFloat() else null,
         bufferedProgress = bufferedProgress,
         durationMs = durationMs,
         onLeft = { multiplier ->
             controllerViewState.pulseControls()
+            if (!hasSeeked) originMs = progressToUse
             seekPositionMs =
                 (progressToUse - seekBack.inWholeMilliseconds * multiplier).coerceAtLeast(0L)
             hasSeeked = true
@@ -173,6 +184,7 @@ fun IntervalSeekBarImpl(
         },
         onRight = { multiplier ->
             controllerViewState.pulseControls()
+            if (!hasSeeked) originMs = progressToUse
             seekPositionMs =
                 (progressToUse + seekForward.inWholeMilliseconds * multiplier)
                     .coerceAtMost(durationMs)
@@ -200,9 +212,17 @@ private fun SeekBarDisplay(
     interactionSource: MutableInteractionSource,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
+    originProgress: Float? = null,
 ) {
     val color = MaterialTheme.colorScheme.border
     val onSurface = MaterialTheme.colorScheme.onSurface
+
+    // While seeking: a ghost marker where playback was, and a tint over the stretch to the new
+    // position. Tuning values, kept local so Live Edit picks up changes.
+    val seekSpanColor = Color.White.copy(alpha = 0.45f)
+    val ghostColor = Color.White.copy(alpha = 0.6f)
+    // Ghost marker size as a share of the bar's height (the playhead is about 2.3)
+    val ghostSizeFactor = 1.2f
 
     val isFocused by interactionSource.collectIsFocusedAsState()
     var leftHandledByRepeat by remember { mutableStateOf(false) }
@@ -314,6 +334,20 @@ private fun SeekBarDisplay(
                     strokeWidth = size.height,
                     cap = StrokeCap.Round,
                 )
+                if (originProgress != null && originProgress != progress) {
+                    drawLine(
+                        color = seekSpanColor,
+                        start = Offset(x = size.width.times(originProgress), y = yOffset),
+                        end = Offset(x = size.width.times(progress), y = yOffset),
+                        strokeWidth = size.height,
+                        cap = StrokeCap.Butt,
+                    )
+                    drawCircle(
+                        color = ghostColor,
+                        radius = size.height * ghostSizeFactor / 2,
+                        center = Offset(x = size.width.times(originProgress), y = yOffset),
+                    )
+                }
                 drawCircle(
                     color = Color.White,
                     radius = size.height + 2,

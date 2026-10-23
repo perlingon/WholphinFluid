@@ -112,6 +112,8 @@ fun PlaybackOverlay(
     var seekProgressMs by remember(seekBarFocused) { mutableLongStateOf(player.currentPosition) }
     // Size of the latest seek step, shown in the preview (e.g. +10s or -30s)
     var lastStepMs by remember(seekBarFocused) { mutableLongStateOf(0L) }
+    // Where seeking started, for the total jump in the preview's label
+    val seekStartMs = remember(seekBarFocused) { player.currentPosition }
     var seekProgressPercent = (seekProgressMs.toDouble() / player.duration).toFloat()
 
     val density = LocalDensity.current
@@ -336,6 +338,7 @@ fun PlaybackOverlay(
                             trickplayInfo = trickplayInfo,
                             trickplayUrlFor = trickplayUrlFor,
                             jumpMs = lastStepMs,
+                            totalJumpMs = seekProgressMs - seekStartMs,
                         )
                     }
                 }

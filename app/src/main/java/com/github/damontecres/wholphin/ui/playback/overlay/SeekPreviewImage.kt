@@ -20,6 +20,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.drawscope.translate
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalContext
@@ -86,6 +87,7 @@ fun SeekPreviewImage(
     trickPlayInfo: TrickplayInfo,
     modifier: Modifier = Modifier,
     jumpText: String? = null,
+    jumpAlpha: Float = 1f,
 ) {
     val context = LocalContext.current
 
@@ -163,6 +165,7 @@ fun SeekPreviewImage(
                     modifier =
                         Modifier
                             .align(Alignment.Center)
+                            .graphicsLayer { alpha = jumpAlpha }
                             .background(Color.Black.copy(alpha = 0.6f), shape = RoundedCornerShape(4.dp))
                             .padding(horizontal = Spacing.sm, vertical = Spacing.xs),
                 )
