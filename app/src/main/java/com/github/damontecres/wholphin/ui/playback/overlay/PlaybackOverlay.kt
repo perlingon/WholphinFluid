@@ -465,8 +465,8 @@ fun PlaybackOverlay(
         val topFadeColor = Color.Black
         val topFadeStops =
             arrayOf(
-                0f to topFadeColor.copy(alpha = 0.6f),
-                0.5f to topFadeColor.copy(alpha = 0.3f),
+                0f to topFadeColor.copy(alpha = 0.7f),
+                0.5f to topFadeColor.copy(alpha = 0.4f),
                 1f to Color.Transparent,
             )
         val titleFadeSize = DpSize(560.dp, 280.dp)
@@ -487,8 +487,10 @@ fun PlaybackOverlay(
         // Distance of the restart button from the top and start edge of the picture area
         val restartInsetStart = Spacing.lg
         val restartInsetTop = Spacing.lg
-        // Gap between the back and restart buttons
+        // Gap between the back and restart buttons, and their background without focus (none:
+        // the corner fade behind them gives the icons their contrast)
         val topButtonGap = Spacing.sm
+        val topButtonBackground = Color.Transparent
         val clockFadeSize = DpSize(400.dp, 200.dp)
         Box(
             modifier =
@@ -548,6 +550,7 @@ fun PlaybackOverlay(
                         label = stringResource(R.string.back),
                         onClick = { onBack() },
                         onControllerInteraction = { controllerViewState.pulseControls() },
+                        containerColor = topButtonBackground,
                         modifier =
                             Modifier
                                 .focusRequester(restartFocusRequester)
@@ -562,6 +565,7 @@ fun PlaybackOverlay(
                             controllerViewState.pulseControls()
                         },
                         onControllerInteraction = { controllerViewState.pulseControls() },
+                        containerColor = topButtonBackground,
                         modifier = downToPlay,
                     ) {
                         Icon(
