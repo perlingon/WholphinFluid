@@ -47,6 +47,7 @@ import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.tv.material3.Icon
@@ -244,6 +245,7 @@ fun ExpandablePlayButton(
     interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
     mirrorIcon: Boolean = false,
     enabled: Boolean = true,
+    buttonSize: Dp = MinButtonSize,
 ) = ExpandablePlayButton(
     title = title,
     resume = resume,
@@ -261,6 +263,7 @@ fun ExpandablePlayButton(
     modifier = modifier,
     interactionSource = interactionSource,
     enabled = enabled,
+    buttonSize = buttonSize,
 )
 
 @Composable
@@ -273,6 +276,7 @@ fun ExpandablePlayButton(
     interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
     mirrorIcon: Boolean = false,
     enabled: Boolean = true,
+    buttonSize: Dp = MinButtonSize,
 ) = ExpandablePlayButton(
     title = title,
     resume = resume,
@@ -290,6 +294,7 @@ fun ExpandablePlayButton(
     modifier = modifier,
     interactionSource = interactionSource,
     enabled = enabled,
+    buttonSize = buttonSize,
 )
 
 @Composable
@@ -301,6 +306,7 @@ fun ExpandablePlayButton(
     modifier: Modifier = Modifier,
     interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
     enabled: Boolean = true,
+    buttonSize: Dp = MinButtonSize,
 ) {
     val isFocused = interactionSource.collectIsFocusedAsState().value
     Button(
@@ -308,9 +314,9 @@ fun ExpandablePlayButton(
         enabled = enabled,
         modifier =
             modifier.requiredSizeIn(
-                minWidth = MinButtonSize,
-                minHeight = MinButtonSize,
-                maxHeight = MinButtonSize,
+                minWidth = buttonSize,
+                minHeight = buttonSize,
+                maxHeight = buttonSize,
             ),
         contentPadding = DefaultButtonPadding,
         interactionSource = interactionSource,
@@ -320,7 +326,7 @@ fun ExpandablePlayButton(
             modifier =
                 Modifier
                     .padding(start = Spacing.xs)
-                    .height(MinButtonSize),
+                    .height(buttonSize),
         ) {
             icon.invoke(this)
         }

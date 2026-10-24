@@ -450,8 +450,10 @@ fun PlaybackOverlay(
         // Distance of the restart button from the top and start edge of the picture area
         val restartInsetStart = Spacing.lg
         val restartInsetTop = Spacing.lg
-        // Gap between the back and restart buttons
+        // Gap between the back and restart buttons, and their size (keep in step with the
+        // player buttons, PlaybackButton's 36 dp)
         val topButtonGap = Spacing.sm
+        val topButtonSize = 36.dp
         val clockFadeSize = DpSize(400.dp, 200.dp)
         Box(
             modifier =
@@ -511,6 +513,7 @@ fun PlaybackOverlay(
                         title = R.string.back,
                         resume = Duration.ZERO,
                         icon = Icons.AutoMirrored.Filled.ArrowBack,
+                        buttonSize = topButtonSize,
                         onClick = { onBack() },
                         modifier =
                             Modifier
@@ -523,6 +526,7 @@ fun PlaybackOverlay(
                         resume = Duration.ZERO,
                         icon = Icons.Default.Refresh,
                         mirrorIcon = true,
+                        buttonSize = topButtonSize,
                         onClick = {
                             player.seekTo(0)
                             controllerViewState.pulseControls()
