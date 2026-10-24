@@ -154,25 +154,11 @@ class CollectionGridViewModel
                 } else {
                     emptySet()
                 }
-            // Inside a nested collection: its own movies etc. and its child collections that hold collections
-            // themselves come first
-            val bigIds =
-                if (contentsMode) {
-                    collectionTreeService
-                        .entry(itemId)
-                        ?.children
-                        .orEmpty()
-                        .filter {
-                            it.type != BaseItemKind.BOX_SET ||
-                                collectionTreeService.entry(it.id)?.childCollections?.isNotEmpty() == true
-                        }.map { it.id }
-                        .toSet()
-                } else {
-                    emptySet()
-                }
-            // Emoji collections first, then the rest. Both A-Z, ignoring the leading emoji
+            // Emoji collections first, then the rest. Both A-Z, ignoring the leading emoji. Inside a nested
+            // collection, the collections that hold collections come first.
             val byName =
                 compareByDescending<CollectionCardItem> { it.isEmoji }
+                    .thenByDescending { contentsMode && it.hasChildCollections }
                     .thenBy(String.CASE_INSENSITIVE_ORDER) { it.sortName.withoutLeadingEmoji() }
             val allSorted =
                 all
@@ -184,19 +170,15 @@ class CollectionGridViewModel
                             hasChildCollections =
                                 it.type == BaseItemKind.BOX_SET &&
                                     collectionTreeService.entry(it.id)?.childCollections?.isNotEmpty() == true,
+                            // Inside a nested collection everything directly in it comes first, as small cards
                             isEmoji =
-                                if (contentsMode) {
-                                    it.id in bigIds
-                                } else {
-                                    emojiFirst && it.name.startsWithEmoji()
-                                },
-                            // Inside a nested collection everything directly in it is a big card
-                            big =
                                 if (contentsMode) {
                                     it.id in directIds
                                 } else {
                                     emojiFirst && it.name.startsWithEmoji()
                                 },
+                            big = !contentsMode && emojiFirst && it.name.startsWithEmoji(),
+                            compact = contentsMode && it.id in directIds,
                         )
                     }.sortedWith(byName)
             val collections =
@@ -342,6 +324,8 @@ data class CollectionCardItem(
     val hasChildCollections: Boolean = false,
     /** Shown as a bigger card, three per row */
     val big: Boolean = isEmoji,
+    /** Shown as a smaller card, six per row */
+    val compact: Boolean = false,
     /** Which group of cards this belongs to (-1 for the emoji collections), groups are separated by a gap */
     val groupIndex: Int = 0,
     /** Heading shown above this card's group, if any */
@@ -374,8 +358,18 @@ fun CollectionCardGrid(
     val columns = 4
     // Emoji collections get bigger cards, this many per row
     val emojiColumns = 3
-    // The grid is split into lcm(columns, emojiColumns) slots so both groups fit
-    val gridSlots = columns * emojiColumns
+    // The top of a nested collection (e.g. Platser) gets smaller cards, this many per row
+    val compactColumns = 6
+    // The grid is split into the least common multiple of the column counts so every group fits
+    val gridSlots = lcm(lcm(columns, emojiColumns), compactColumns)
+
+    fun spanFor(card: CollectionCardItem) =
+        gridSlots /
+            when {
+                card.compact -> compactColumns
+                card.big -> emojiColumns
+                else -> columns
+            }
     val spacing = 16.dp
     // Extra space between the emoji collections and the rest (on top of the normal row spacing)
     val groupGap = Spacing.md
@@ -505,7 +499,7 @@ fun CollectionCardGrid(
                         items(
                             emojiGroup.size,
                             key = { emojiGroup[it].gridId },
-                            span = { GridItemSpan(gridSlots / emojiColumns) },
+                            span = { GridItemSpan(spanFor(emojiGroup[it])) },
                         ) { index ->
                             collectionCard(emojiGroup[index], index)
                         }
@@ -530,7 +524,7 @@ fun CollectionCardGrid(
                             items(
                                 subgroup.size,
                                 key = { subgroup[it].gridId },
-                                span = { GridItemSpan(gridSlots / if (subgroup[it].big) emojiColumns else columns) },
+                                span = { GridItemSpan(spanFor(subgroup[it])) },
                             ) { index ->
                                 collectionCard(subgroup[index], start + index)
                             }
@@ -542,3 +536,13 @@ fun CollectionCardGrid(
         }
     }
 }
+
+private tailrec fun gcd(
+    a: Int,
+    b: Int,
+): Int = if (b == 0) a else gcd(b, a % b)
+
+private fun lcm(
+    a: Int,
+    b: Int,
+): Int = a / gcd(a, b) * b
