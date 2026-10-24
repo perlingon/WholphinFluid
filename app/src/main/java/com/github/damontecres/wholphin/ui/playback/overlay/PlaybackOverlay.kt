@@ -276,7 +276,8 @@ fun PlaybackOverlay(
             // old one leaves upwards; moving up it is the other way round
             val slide by transition.animateFloat(
                 transitionSpec = {
-                    if (targetState == EnterExitState.Visible) {
+                    // this.targetState: the segment's state, not the overlay state named targetState above
+                    if (this.targetState == EnterExitState.Visible) {
                         tween(showMs, easing = showEasing)
                     } else {
                         tween(hideMs, easing = hideEasing)
