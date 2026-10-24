@@ -84,6 +84,7 @@ import com.github.damontecres.wholphin.ui.AppColors
 import com.github.damontecres.wholphin.ui.FontAwesome
 import com.github.damontecres.wholphin.ui.PreviewTvSpec
 import com.github.damontecres.wholphin.ui.components.Button
+import com.github.damontecres.wholphin.ui.components.MinButtonSize
 import com.github.damontecres.wholphin.ui.components.SelectedLeadingContent
 import com.github.damontecres.wholphin.ui.components.TextButton
 import com.github.damontecres.wholphin.ui.formatDuration
@@ -218,7 +219,12 @@ fun PlaybackControls(
             onBarStartChange = onBarStartChange,
             leading = {
                 // Play/pause sits to the left of the seek bar, centered on it
+                // Same circle and icon size as the back and restart buttons in the top corner
+                val playButtonSize = MinButtonSize
+                val playIconSize = 28.dp
                 PlaybackButton(
+                    size = playButtonSize,
+                    padding = (playButtonSize - playIconSize) / 2,
                     modifier = Modifier.focusRequester(initialFocusRequester),
                     iconRes = if (showPlay) R.drawable.baseline_play_arrow_24 else R.drawable.baseline_pause_24,
                     onClick = {
@@ -565,14 +571,17 @@ fun PlaybackButton(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     interactionSource: MutableInteractionSource? = null,
+    // Overrides the size below, e.g. for the play button next to the seek bar
+    size: Dp? = null,
+    padding: Dp? = null,
 ) {
     // Tuning values, kept local so Live Edit picks up changes. Keep PlaybackButton and
     // PlaybackFaButton in step.
     // Icon scale: 1f = the original 36 dp buttons, 0.8f = 20% smaller
     val iconScale = 0.8f
-    val buttonSize = 36.dp * iconScale
+    val buttonSize = size ?: (36.dp * iconScale)
     // Space between the button edge and the icon
-    val iconPadding = Spacing.xs * iconScale
+    val iconPadding = padding ?: (Spacing.xs * iconScale)
     val selectedColor = MaterialTheme.colorScheme.border
     Button(
         enabled = enabled,
