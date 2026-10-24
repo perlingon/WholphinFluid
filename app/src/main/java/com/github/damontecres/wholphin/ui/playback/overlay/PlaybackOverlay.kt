@@ -170,6 +170,9 @@ fun PlaybackOverlay(
     var state by remember(controllerViewState.controlsVisible) {
         mutableStateOf(if (controllerViewState.controlsVisible) OverlayViewState.CONTROLLER else OverlayViewState.HIDDEN)
     }
+    // Chapters only when there's no episode queue: chapter navigation is rarely useful in an
+    // episode, so the episode row takes its place
+    val showChapters = chapters.isNotEmpty() && !nextEnabled
     // Coming back up from the chapter or episode row
     var returningFromRow by remember(controllerViewState.controlsVisible) { mutableStateOf(false) }
     val onChangeState = { newState: OverlayViewState ->
@@ -312,8 +315,8 @@ fun PlaybackOverlay(
                             }
                         }
                         val nextState =
-                            remember(chapters, nextEnabled) {
-                                if (chapters.isNotEmpty()) {
+                            remember(showChapters, nextEnabled) {
+                                if (showChapters) {
                                     OverlayViewState.CHAPTERS
                                 } else if (nextEnabled) {
                                     OverlayViewState.QUEUE
@@ -360,7 +363,7 @@ fun PlaybackOverlay(
                     }
 
                     OverlayViewState.CHAPTERS -> {
-                        if (chapters.isNotEmpty()) {
+                        if (showChapters) {
                             ChapterRowOverlay(
                                 player = player,
                                 controllerViewState = controllerViewState,
@@ -384,8 +387,8 @@ fun PlaybackOverlay(
                                 currentItem = item,
                                 controllerViewState = controllerViewState,
                                 nextState =
-                                    remember(chapters) {
-                                        if (chapters.isNotEmpty()) {
+                                    remember(showChapters) {
+                                        if (showChapters) {
                                             OverlayViewState.CHAPTERS
                                         } else {
                                             OverlayViewState.CONTROLLER
