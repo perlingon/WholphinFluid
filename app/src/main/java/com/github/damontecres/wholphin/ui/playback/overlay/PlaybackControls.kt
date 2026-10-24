@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
@@ -55,6 +54,7 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.layout.positionInRoot
@@ -289,6 +289,11 @@ fun PlaybackControls(
             // Tuning values, kept local so Live Edit picks up changes.
             // Gap between the settings, media and track groups, e.g. Spacing.md (16) / lg (24) / xl (32)
             val groupGap = Spacing.lg
+            // Buttons in this row: smaller than the play button and without a background (the
+            // dark fade behind the controls gives the icons their contrast)
+            val rowButtonSize = 32.dp
+            val rowIconSize = 24.dp
+            val rowButtonBackground = Color.Transparent
 
             // All controls sit in one row on the left, under the play/pause button
             Row(
@@ -303,11 +308,17 @@ fun PlaybackControls(
                     subtitlesModifier = Modifier.focusRequester(rowFocusRequester),
                     subtitleLabel = subtitleLabel,
                     audioLabel = audioLabel,
+                    buttonSize = rowButtonSize,
+                    iconSize = rowIconSize,
+                    containerColor = rowButtonBackground,
                 )
 
                 LeftPlaybackButtons(
                     onControllerInteraction = onControllerInteraction,
                     onClickPlaybackDialogType = onClickPlaybackDialogType,
+                    buttonSize = rowButtonSize,
+                    iconSize = rowIconSize,
+                    containerColor = rowButtonBackground,
                 )
             }
 
@@ -423,9 +434,15 @@ fun SeekBar(
                 Modifier
                     .padding(start = if (leading != null) leadingWidth + leadingGap else 0.dp)
                     .fillMaxWidth()
-                    // Drawn up next to the bar, but the space it leaves stays, so the buttons
-                    // below keep their distance
-                    .offset(y = -timecodeLift),
+                    // Drawn up next to the bar, and the space under the bar is given back, so
+                    // the button row below comes closer too
+                    .layout { measurable, constraints ->
+                        val placeable = measurable.measure(constraints)
+                        val lift = timecodeLift.roundToPx()
+                        layout(placeable.width, (placeable.height - lift).coerceAtLeast(0)) {
+                            placeable.place(0, -lift)
+                        }
+                    },
         )
     }
 }
@@ -488,6 +505,9 @@ fun LeftPlaybackButtons(
     onControllerInteraction: () -> Unit,
     onClickPlaybackDialogType: (PlaybackDialogType) -> Unit,
     modifier: Modifier = Modifier,
+    buttonSize: Dp = 36.dp,
+    iconSize: Dp = 28.dp,
+    containerColor: Color = AppColors.TransparentBlack25,
 ) {
     // Gap between buttons in this group, kept local so Live Edit picks up changes
     val buttonGap = Spacing.sm
@@ -502,6 +522,9 @@ fun LeftPlaybackButtons(
                 onClickPlaybackDialogType.invoke(PlaybackDialogType.SETTINGS)
             },
             onControllerInteraction = onControllerInteraction,
+            buttonSize = buttonSize,
+            iconSize = iconSize,
+            containerColor = containerColor,
         ) {
             Icon(painter = painterResource(R.drawable.ic_video_settings), contentDescription = null, modifier = it)
         }
@@ -516,6 +539,9 @@ fun RightPlaybackButtons(
     subtitlesModifier: Modifier = Modifier,
     subtitleLabel: String = "",
     audioLabel: String = "",
+    buttonSize: Dp = 36.dp,
+    iconSize: Dp = 28.dp,
+    containerColor: Color = AppColors.TransparentBlack25,
 ) {
     // Gap between buttons in this group, kept local so Live Edit picks up changes
     val buttonGap = Spacing.sm
@@ -531,6 +557,9 @@ fun RightPlaybackButtons(
                 onClickPlaybackDialogType.invoke(PlaybackDialogType.CAPTIONS)
             },
             onControllerInteraction = onControllerInteraction,
+            buttonSize = buttonSize,
+            iconSize = iconSize,
+            containerColor = containerColor,
             modifier = subtitlesModifier,
         ) {
             Icon(painter = painterResource(R.drawable.ic_subtitles), contentDescription = null, modifier = it)
@@ -543,11 +572,15 @@ fun RightPlaybackButtons(
                 onClickPlaybackDialogType.invoke(PlaybackDialogType.AUDIO)
             },
             onControllerInteraction = onControllerInteraction,
+            buttonSize = buttonSize,
+            iconSize = iconSize,
+            containerColor = containerColor,
         ) { iconModifier ->
             Box(modifier = iconModifier, contentAlignment = Alignment.Center) {
                 Text(
                     text = stringResource(R.string.fa_volume_high),
-                    fontSize = 18.sp,
+                    // 18 sp at the 28 dp icon size, scaled with it
+                    fontSize = (iconSize.value * 18f / 28f).sp,
                     fontFamily = FontAwesome,
                     textAlign = TextAlign.Center,
                     color = LocalContentColor.current,
@@ -605,19 +638,20 @@ fun PlayerLabelButton(
     onControllerInteraction: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
+    // Circle size without focus and icon size; the row under the seek bar passes smaller ones
+    buttonSize: Dp = 36.dp,
+    iconSize: Dp = 28.dp,
+    // Background without focus
+    containerColor: Color = AppColors.TransparentBlack25,
     icon: @Composable (Modifier) -> Unit,
 ) {
-    // Tuning values, kept local so Live Edit picks up changes. Same sizes as PlaybackButton, so
-    // the button is a 36 dp circle while it has no focus.
-    val buttonSize = 36.dp
-    val iconSize = 28.dp
+    // Tuning values, kept local so Live Edit picks up changes
     // Gap between the icon and the label, and after the label
     val labelGap = Spacing.sm
     // Longest label before it is cut off with "…"
     val labelMaxWidth = 180.dp
     val labelStyle = MaterialTheme.typography.titleSmall
     // Dark and see-through without focus; white with dark icon and label with focus
-    val containerColor = AppColors.TransparentBlack25
     val contentColor = MaterialTheme.colorScheme.onSurface
     val focusedContainerColor = MaterialTheme.colorScheme.onSurface
     val focusedContentColor = MaterialTheme.colorScheme.inverseOnSurface
