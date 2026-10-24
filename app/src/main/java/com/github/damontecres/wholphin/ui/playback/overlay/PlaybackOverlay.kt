@@ -141,7 +141,6 @@ fun PlaybackOverlay(
     // Focus targets for Up/Down between the back button (top corner) and the play button
     val playFocusRequester = remember { FocusRequester() }
     val restartFocusRequester = remember { FocusRequester() }
-    val settingsFocusRequester = remember { FocusRequester() }
 
     // Seek preview (trickplay) placement, kept local so Live Edit picks up changes
     // true = the preview sits above the title row, false = between the title row and the seek bar
@@ -167,7 +166,7 @@ fun PlaybackOverlay(
     var state by remember(controllerViewState.controlsVisible) {
         mutableStateOf(if (controllerViewState.controlsVisible) OverlayViewState.CONTROLLER else OverlayViewState.HIDDEN)
     }
-    // Coming back up from the chapter or episode row puts focus on settings instead of play/pause
+    // Coming back up from the chapter or episode row
     var returningFromRow by remember(controllerViewState.controlsVisible) { mutableStateOf(false) }
     val onChangeState = { newState: OverlayViewState ->
         returningFromRow =
@@ -183,12 +182,12 @@ fun PlaybackOverlay(
     val hideMs = 250
     // When coming back up from the chapter or episode row, the row's focused card goes away with
     // its exit animation and focus can land on the top corner buttons. Once the animation is
-    // done, put focus on settings.
+    // done, put focus back on play/pause.
     LaunchedEffect(state, returningFromRow) {
         if (state == OverlayViewState.CONTROLLER && returningFromRow) {
-            settingsFocusRequester.tryRequestFocus()
+            playFocusRequester.tryRequestFocus()
             delay(maxOf(showMs, hideMs) + 50L)
-            settingsFocusRequester.tryRequestFocus()
+            playFocusRequester.tryRequestFocus()
         }
     }
     val showEasing: Easing = FastOutSlowInEasing
@@ -331,8 +330,6 @@ fun PlaybackOverlay(
                             chapters = chapters,
                             queueHeadline = queueHeadline(remember(queue) { groupQueueBySeason(queue) }, item, seriesEnded, seriesEpisodes),
                             playFocusRequester = playFocusRequester,
-                            focusSettingsFirst = returningFromRow,
-                            settingsFocusRequester = settingsFocusRequester,
                             restartFocusRequester = restartFocusRequester.takeIf { !showDebugInfo },
                         )
                     }

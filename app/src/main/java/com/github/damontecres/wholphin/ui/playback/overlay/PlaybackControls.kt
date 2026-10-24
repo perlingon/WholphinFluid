@@ -162,11 +162,9 @@ fun PlaybackControls(
     seekBarInteractionSource: MutableInteractionSource = remember { MutableInteractionSource() },
     // Where Up from the play button or seek bar goes (the back button), null when it isn't shown
     upFocusRequester: FocusRequester? = null,
-    // Start on settings instead of play/pause, e.g. when coming back up from the episode row
-    focusSettingsFirst: Boolean = false,
-    // Down from the play button or seek bar goes to settings, the first button in the row below
-    settingsFocusRequester: FocusRequester = remember { FocusRequester() },
 ) {
+    // Down from the play button or seek bar goes to settings, the first button in the row below
+    val settingsFocusRequester = remember { FocusRequester() }
     val scope = rememberCoroutineScope()
 
     val bringIntoViewRequester = remember { BringIntoViewRequester() }
@@ -178,11 +176,7 @@ fun PlaybackControls(
     }
     LaunchedEffect(controllerViewState.controlsVisible) {
         if (controllerViewState.controlsVisible) {
-            if (focusSettingsFirst) {
-                settingsFocusRequester.tryRequestFocus()
-            } else {
-                initialFocusRequester.tryRequestFocus()
-            }
+            initialFocusRequester.tryRequestFocus()
         }
     }
     // Leave the seek bar (and its trickplay preview) after this long without a seek press, by moving

@@ -26,7 +26,9 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.isSpecified
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
@@ -47,6 +49,7 @@ import com.github.damontecres.wholphin.data.model.Chapter
 import com.github.damontecres.wholphin.ui.formatTime
 import com.github.damontecres.wholphin.ui.playback.ControllerViewState
 import com.github.damontecres.wholphin.ui.playback.PlaybackDialogType
+import com.github.damontecres.wholphin.ui.theme.FluidLayout
 import com.github.damontecres.wholphin.ui.theme.Spacing
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -81,13 +84,16 @@ fun PlaybackController(
     chapters: List<Chapter> = emptyList(),
     playFocusRequester: FocusRequester = remember { FocusRequester() },
     restartFocusRequester: FocusRequester? = null,
-    focusSettingsFirst: Boolean = false,
-    settingsFocusRequester: FocusRequester = remember { FocusRequester() },
 ) {
     // Tuning values for the "Chapters"/"Queue" hint under the controls, kept local for Live Edit
     val nextHeadlineStyle = MaterialTheme.typography.labelLarge
     val nextHeadlineColor = Color.Unspecified
-    val nextHeadlineInset = Spacing.xl
+    // Distance from the screen's left edge, the same as the episode row's headline, so on a wide
+    // screen it sits outside the 16:9 controls
+    val nextHeadlineInset = maxOf(FluidLayout.leftMargin(), Spacing.xl)
+    // Where this column starts on screen, so the hint can be placed from the screen's edge
+    val density = LocalDensity.current
+    var columnStart by remember { mutableStateOf(0.dp) }
 
     // Text of the row above the timeline: the series or movie name, then this lighter part (styled in Controller)
     val seriesName = item?.data?.seriesName
@@ -115,7 +121,10 @@ fun PlaybackController(
 
     Column(
         verticalArrangement = Arrangement.spacedBy(Spacing.sm),
-        modifier = modifier,
+        modifier =
+            modifier.onGloballyPositioned {
+                columnStart = with(density) { it.positionInRoot().x.toDp() }
+            },
     ) {
         Controller(
             title = rowTitle,
@@ -137,8 +146,6 @@ fun PlaybackController(
             onTitleHeightChange = onTitleHeightChange,
             playFocusRequester = playFocusRequester,
             restartFocusRequester = restartFocusRequester,
-            focusSettingsFirst = focusSettingsFirst,
-            settingsFocusRequester = settingsFocusRequester,
             modifier = Modifier,
         )
         when (nextState) {
@@ -164,7 +171,7 @@ fun PlaybackController(
                     color = nextHeadlineColor,
                     modifier =
                         Modifier
-                            .padding(start = nextHeadlineInset, top = 0.dp)
+                            .offset(x = nextHeadlineInset - columnStart)
                             .onFocusChanged {
                                 if (it.isFocused) onChangeState.invoke(nextState)
                             }.focusable(),
@@ -178,7 +185,7 @@ fun PlaybackController(
                     color = nextHeadlineColor,
                     modifier =
                         Modifier
-                            .padding(start = nextHeadlineInset, top = 0.dp)
+                            .offset(x = nextHeadlineInset - columnStart)
                             .onFocusChanged {
                                 if (it.isFocused) onChangeState.invoke(nextState)
                             }.focusable(),
@@ -219,8 +226,6 @@ fun Controller(
     onTitleHeightChange: (Dp) -> Unit = {},
     playFocusRequester: FocusRequester = remember { FocusRequester() },
     restartFocusRequester: FocusRequester? = null,
-    focusSettingsFirst: Boolean = false,
-    settingsFocusRequester: FocusRequester = remember { FocusRequester() },
 ) {
     // Tuning values for the title block above the seek bar, kept local so Live Edit picks up changes.
     // The trickplay preview measures this block, so it follows any size here.
@@ -375,8 +380,6 @@ fun Controller(
             onClickPlaybackDialogType = onClickPlaybackDialogType,
             initialFocusRequester = playFocusRequester,
             upFocusRequester = restartFocusRequester,
-            focusSettingsFirst = focusSettingsFirst,
-            settingsFocusRequester = settingsFocusRequester,
         )
     }
 }
