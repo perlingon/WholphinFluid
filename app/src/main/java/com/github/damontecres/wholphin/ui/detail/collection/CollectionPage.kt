@@ -12,7 +12,6 @@ import com.github.damontecres.wholphin.data.ServerRepository
 import com.github.damontecres.wholphin.preferences.UserPreferences
 import com.github.damontecres.wholphin.ui.components.CollectionCardGrid
 import com.github.damontecres.wholphin.ui.components.LoadingPage
-import com.github.damontecres.wholphin.ui.components.startsWithEmoji
 import com.github.damontecres.wholphin.ui.launchIO
 import com.github.damontecres.wholphin.util.GetItemsRequestHandler
 import dagger.assisted.Assisted
@@ -22,7 +21,6 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import org.jellyfin.sdk.api.client.ApiClient
-import org.jellyfin.sdk.api.client.extensions.userLibraryApi
 import org.jellyfin.sdk.model.api.BaseItemKind
 import org.jellyfin.sdk.model.api.request.GetItemsRequest
 import timber.log.Timber
@@ -35,8 +33,9 @@ enum class CollectionLayout {
     COLLECTION_CARDS,
 
     /**
-     * Emoji collection with "Show emoji collections first" and grouping both on: its own items in three columns,
-     * its child collections grouped below in four columns like the Collections page
+     * Collection whose child collections hold collections too, with "Show emoji collections first" and grouping
+     * both on: its own items in three columns, its child collections grouped below in four columns like the
+     * Collections page
      */
     EMOJI_CONTENTS,
 
@@ -76,9 +75,38 @@ class CollectionLayoutViewModel
             }
         }
 
+        /**
+         * Whether any of this collection's child collections holds collections of its own
+         */
+        private suspend fun hasGrandchildCollections(userId: UUID?): Boolean {
+            val children =
+                GetItemsRequestHandler
+                    .execute(
+                        api,
+                        GetItemsRequest(
+                            userId = userId,
+                            parentId = itemId,
+                            includeItemTypes = listOf(BaseItemKind.BOX_SET),
+                            enableTotalRecordCount = false,
+                        ),
+                    ).content.items
+            return children.any { child ->
+                GetItemsRequestHandler.countMatching(
+                    api,
+                    GetItemsRequest(
+                        userId = userId,
+                        parentId = child.id,
+                        includeItemTypes = listOf(BaseItemKind.BOX_SET),
+                        limit = 0,
+                        enableTotalRecordCount = true,
+                    ),
+                ) > 0
+            }
+        }
+
         private suspend fun computeLayout(): CollectionLayout {
             val userId = serverRepository.currentUser?.id
-            if (emojiLayout && api.userLibraryApi.getItem(itemId = itemId).content.name.startsWithEmoji()) {
+            if (emojiLayout && hasGrandchildCollections(userId)) {
                 return CollectionLayout.EMOJI_CONTENTS
             }
             val otherItems =
