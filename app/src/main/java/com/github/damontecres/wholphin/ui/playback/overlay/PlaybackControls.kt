@@ -228,18 +228,18 @@ fun PlaybackControls(
         Box(
             modifier =
                 Modifier
-                    .padding(horizontal = Spacing.sm)
-                    .fillMaxWidth(),
+                    // Same width as the seek bar, so the row starts under the play/pause button
+                    .fillMaxWidth(.95f),
         ) {
             // Tuning values, kept local so Live Edit picks up changes.
             // Gap between the settings, media and track groups, e.g. Spacing.md (16) / lg (24) / xl (32)
             val groupGap = Spacing.lg
 
-            // All controls sit in one centered row, with the media controls in the middle
+            // All controls sit in one row on the left, under the play/pause button
             Row(
                 horizontalArrangement = Arrangement.spacedBy(groupGap),
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.align(Alignment.Center),
+                modifier = Modifier.align(Alignment.CenterStart),
             ) {
                 LeftPlaybackButtons(
                     onControllerInteraction = onControllerInteraction,

@@ -240,10 +240,12 @@ fun Controller(
     val titleGap = Spacing.sm
     val blockGap = Spacing.sm
     // Indent of the title block, and the gap after "Ends at"
-    val startInset = Spacing.xl
+    val startInset = Spacing.xxl
     val endInset = Spacing.xl
     // How far the title block moves up while the seek bar is focused (makes room for trickplay)
     val bumpOffset = (0).dp
+    // How far the title block sits below its place, closer to the seek bar
+    val titleDrop = Spacing.xs
 
     val seekBarFocused by seekBarInteractionSource.collectIsFocusedAsState()
     val density = LocalDensity.current
@@ -266,7 +268,7 @@ fun Controller(
             modifier =
                 Modifier
                     .padding(start = startInset)
-                    .offset(y = verticalOffset)
+                    .offset(y = verticalOffset + titleDrop)
                     // The seek preview is placed from this measured height (see PlaybackOverlay)
                     .onSizeChanged { onTitleHeightChange(with(density) { it.height.toDp() }) },
         ) {

@@ -394,9 +394,8 @@ fun PlaybackOverlay(
         // Top
         val logoImageUrl = LocalImageUrlService.current.rememberImageUrl(item, ImageType.LOGO)
         val showLogo = !showDebugInfo && logoImageUrl.isNotNullOrBlank() && controllerViewState.controlsVisible
-        // The clock is hidden for now (the logo sits in its corner); set to false to bring it back
-        val hideClock = true
-        val showClockNow = !hideClock && !showDebugInfo && showClock && controllerViewState.controlsVisible
+        // The clock only shows while paused with the controls hidden (the logo has its corner otherwise)
+        val showClockNow = !showDebugInfo && showClock && showPlay && !controllerViewState.controlsVisible
         // Fades in the top corners behind the logo and the clock, each shown only with its element.
         // Tuning values, kept local so Live Edit picks up changes: each stop is
         // (distance from the corner 0..1, color), and the size is how far the fade reaches.
