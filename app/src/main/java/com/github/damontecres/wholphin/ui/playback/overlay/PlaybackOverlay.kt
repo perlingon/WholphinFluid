@@ -439,12 +439,14 @@ fun PlaybackOverlay(
         // Top
         val logoImageUrl = LocalImageUrlService.current.rememberImageUrl(item, ImageType.LOGO)
         val hasLogo = logoImageUrl.isNotNullOrBlank()
-        // Title (and logo, if there is one) in the top end corner while the controls show
+        // Title in the top end corner while the controls show
         val showTitle = !showDebugInfo && controllerViewState.controlsVisible
         val (titleLine, detailLine) = remember(item) { playerTitleLines(item) }
-        val isEpisode = item?.data?.seriesName != null
-        // The clock only shows while paused with the controls hidden (the logo has its corner otherwise)
-        val showClockNow = !showDebugInfo && showClock && showPlay && !controllerViewState.controlsVisible
+        // While paused with the controls hidden: the logo in the top start corner, the clock in the
+        // top end corner
+        val pausedHidden = !showDebugInfo && showPlay && !controllerViewState.controlsVisible
+        val showLogoNow = pausedHidden && hasLogo
+        val showClockNow = pausedHidden && showClock
         // Fades in the top corners behind the logo and the clock, each shown only with its element.
         // Tuning values, kept local so Live Edit picks up changes: each stop is
         // (distance from the corner 0..1, color), and the size is how far the fade reaches.
@@ -455,23 +457,27 @@ fun PlaybackOverlay(
                 0.5f to topFadeColor.copy(alpha = 0.3f),
                 1f to Color.Transparent,
             )
+        val titleFadeSize = DpSize(560.dp, 280.dp)
         val logoFadeSize = DpSize(560.dp, 280.dp)
         // Size of the dark fade in the top start corner, behind the back and restart buttons
         val topStartFadeSize = DpSize(560.dp, 280.dp)
-        // Logo placement (top end corner): the box the logo is fitted into (it keeps its own shape
-        // inside it), and its distance from the top and end edge of the picture area
+        // Logo placement (top start corner): the box the logo is fitted into (it keeps its own
+        // shape inside it), and its distance from the top and start edge of the picture area
         val logoMaxSize = DpSize(180.dp, 80.dp)
-        val logoInsetEnd = Spacing.lg
+        val logoInsetStart = Spacing.lg
         val logoInsetTop = Spacing.lg
-        // Title lines in the top end corner: styles, the gap between the lines and under the logo,
-        // how dim the second line is, and how wide the block may get before lines are cut off
-        val titleStyle = MaterialTheme.typography.titleMedium
+        // Title lines in the top end corner: distance from the edges, styles, the gap between the
+        // lines, how dim the second line is, and how wide the block may get before lines are cut off.
+        // Sizes to try: titleLarge (about 20 sp) + bodyLarge (about 15 sp), or headlineSmall (about
+        // 22 sp) + titleMedium (about 15 sp)
+        val titleInsetEnd = Spacing.lg
+        val titleInsetTop = Spacing.lg
+        val titleStyle = MaterialTheme.typography.titleLarge
         val titleWeight = FontWeight.SemiBold
-        val detailStyle = MaterialTheme.typography.bodyMedium
+        val detailStyle = MaterialTheme.typography.bodyLarge
         val detailOpacity = 0.7f
         val titleLineGap = Spacing.xs
-        val logoGap = Spacing.xs
-        val titleMaxWidth = 480.dp
+        val titleMaxWidth = 560.dp
         // Distance of the restart button from the top and start edge of the picture area
         val restartInsetStart = Spacing.lg
         val restartInsetTop = Spacing.lg
@@ -491,7 +497,7 @@ fun PlaybackOverlay(
                 exit = fadeOut(hideFade),
                 modifier = Modifier.align(Alignment.TopEnd),
             ) {
-                CornerFade(stops = topFadeStops, fromEnd = true, modifier = Modifier.size(logoFadeSize))
+                CornerFade(stops = topFadeStops, fromEnd = true, modifier = Modifier.size(titleFadeSize))
             }
             AnimatedVisibility(
                 visible = showClockNow,
@@ -560,9 +566,33 @@ fun PlaybackOverlay(
                     }
                 }
             }
+            // Logo in the top start corner while paused with the controls hidden, over its own fade
+            AnimatedVisibility(
+                visible = showLogoNow,
+                enter = fadeIn(showFade),
+                exit = fadeOut(hideFade),
+                modifier = Modifier.align(Alignment.TopStart),
+            ) {
+                CornerFade(stops = topFadeStops, fromEnd = false, modifier = Modifier.size(logoFadeSize))
+            }
+            AnimatedVisibility(
+                visible = showLogoNow,
+                enter = slideIn(showOffset) { IntOffset(x = -it.width / 2, y = -it.height / 2) } + fadeIn(showFade),
+                exit = slideOut(hideOffset) { IntOffset(x = -it.width / 2, y = -it.height / 2) } + fadeOut(hideFade),
+                modifier =
+                    Modifier
+                        .align(Alignment.TopStart)
+                        .padding(start = logoInsetStart, top = logoInsetTop),
+            ) {
+                AsyncImage(
+                    model = logoImageUrl,
+                    contentDescription = "Logo",
+                    alignment = Alignment.TopStart,
+                    modifier = Modifier.size(logoMaxSize),
+                )
+            }
             // Title in the top end corner, on two lines: the name, then the lighter line
-            // ("S1 E4 · Episode title", or the year for a movie). With a logo, an episode shows
-            // only the lighter line under it; a movie still shows its title.
+            // ("S1 E4 · Episode title", or the year for a movie)
             AnimatedVisibility(
                 visible = showTitle,
                 enter = slideIn(showOffset) { IntOffset(x = it.width / 2, y = -it.height / 2) } + fadeIn(showFade),
@@ -570,32 +600,22 @@ fun PlaybackOverlay(
                 modifier =
                     Modifier
                         .align(Alignment.TopEnd)
-                        .padding(end = logoInsetEnd, top = logoInsetTop),
+                        .padding(end = titleInsetEnd, top = titleInsetTop),
             ) {
                 Column(
                     horizontalAlignment = Alignment.End,
                     verticalArrangement = Arrangement.spacedBy(titleLineGap),
                     modifier = Modifier.widthIn(max = titleMaxWidth),
                 ) {
-                    if (hasLogo) {
-                        AsyncImage(
-                            model = logoImageUrl,
-                            contentDescription = "Logo",
-                            alignment = Alignment.TopEnd,
-                            modifier = Modifier.size(logoMaxSize).padding(bottom = logoGap),
+                    titleLine?.let {
+                        Text(
+                            text = it,
+                            style = titleStyle,
+                            fontWeight = titleWeight,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            textAlign = TextAlign.End,
                         )
-                    }
-                    if (!(hasLogo && isEpisode)) {
-                        titleLine?.let {
-                            Text(
-                                text = it,
-                                style = titleStyle,
-                                fontWeight = titleWeight,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                                textAlign = TextAlign.End,
-                            )
-                        }
                     }
                     detailLine?.let {
                         Text(
