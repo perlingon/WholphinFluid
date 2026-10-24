@@ -33,9 +33,8 @@ enum class CollectionLayout {
     COLLECTION_CARDS,
 
     /**
-     * Collection whose child collections hold collections too, with "Show emoji collections first" and grouping
-     * both on: its own items in three columns, its child collections grouped below in four columns like the
-     * Collections page
+     * Collection whose child collections hold collections too, with grouping on: its own items in three columns,
+     * its child collections grouped below in four columns like the Collections page
      */
     EMOJI_CONTENTS,
 
@@ -144,8 +143,7 @@ fun CollectionPage(
     preferences: UserPreferences,
     itemId: UUID,
     modifier: Modifier = Modifier,
-    emojiLayout: Boolean =
-        preferences.appPreferences.advancedPreferences.let { it.emojiCollectionsAsMain && it.groupCollections },
+    emojiLayout: Boolean = preferences.appPreferences.advancedPreferences.groupCollections,
     viewModel: CollectionLayoutViewModel =
         hiltViewModel<CollectionLayoutViewModel, CollectionLayoutViewModel.Factory>(
             key = "${itemId}_layout_$emojiLayout",
@@ -171,7 +169,8 @@ fun CollectionPage(
             CollectionCardGrid(
                 itemId = itemId,
                 recursive = false,
-                emojiFirst = true,
+                // Same as the Collections page: collections-only children are hidden only with the emoji setting on
+                emojiFirst = preferences.appPreferences.advancedPreferences.emojiCollectionsAsMain,
                 groupNested = true,
                 contentsMode = true,
                 showTitle = true,
