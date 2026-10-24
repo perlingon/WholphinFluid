@@ -953,5 +953,6 @@ private fun trackLabel(
         } else {
             stream.formatDetail ?: stream.displayTitle
         }
-    return if (streams.size > 1) "$name ${position + 1}/${streams.size}" else name
+    // An en space before the count gives it a little more room than the gaps inside the name
+    return if (streams.size > 1) "$name\u2002${position + 1}/${streams.size}" else name
 }
