@@ -24,7 +24,6 @@ import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -395,7 +394,9 @@ fun PlaybackOverlay(
         // Top
         val logoImageUrl = LocalImageUrlService.current.rememberImageUrl(item, ImageType.LOGO)
         val showLogo = !showDebugInfo && logoImageUrl.isNotNullOrBlank() && controllerViewState.controlsVisible
-        val showClockNow = !showDebugInfo && showClock && controllerViewState.controlsVisible
+        // The clock is hidden for now (the logo sits in its corner); set to false to bring it back
+        val hideClock = true
+        val showClockNow = !hideClock && !showDebugInfo && showClock && controllerViewState.controlsVisible
         // Fades in the top corners behind the logo and the clock, each shown only with its element.
         // Tuning values, kept local so Live Edit picks up changes: each stop is
         // (distance from the corner 0..1, color), and the size is how far the fade reaches.
@@ -407,11 +408,14 @@ fun PlaybackOverlay(
                 1f to Color.Transparent,
             )
         val logoFadeSize = DpSize(560.dp, 280.dp)
-        // Logo placement: the box the logo is fitted into (it keeps its own shape inside it), and
-        // its distance from the top and start edge of the picture area
+        // Logo placement (top end corner): the box the logo is fitted into (it keeps its own shape
+        // inside it), and its distance from the top and end edge of the picture area
         val logoMaxSize = DpSize(180.dp, 80.dp)
-        val logoInsetStart = Spacing.lg
+        val logoInsetEnd = Spacing.lg
         val logoInsetTop = Spacing.lg
+        // Distance of the restart button from the top and start edge of the picture area
+        val restartInsetStart = Spacing.lg
+        val restartInsetTop = Spacing.lg
         val clockFadeSize = DpSize(400.dp, 200.dp)
         Box(
             modifier =
@@ -424,9 +428,9 @@ fun PlaybackOverlay(
                 visible = showLogo,
                 enter = fadeIn(showFade),
                 exit = fadeOut(hideFade),
-                modifier = Modifier.align(Alignment.TopStart),
+                modifier = Modifier.align(Alignment.TopEnd),
             ) {
-                CornerFade(stops = topFadeStops, fromEnd = false, modifier = Modifier.size(logoFadeSize))
+                CornerFade(stops = topFadeStops, fromEnd = true, modifier = Modifier.size(logoFadeSize))
             }
             AnimatedVisibility(
                 visible = showClockNow,
@@ -436,47 +440,45 @@ fun PlaybackOverlay(
             ) {
                 CornerFade(stops = topFadeStops, fromEnd = true, modifier = Modifier.size(clockFadeSize))
             }
-            // "Restart" in the top start corner, the logo next to it
+            // "Restart" in the top start corner
             val showRestart = !showDebugInfo && controllerViewState.controlsVisible
-            // Gap between the restart button and the logo
-            val restartGap = Spacing.md
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(restartGap),
-                verticalAlignment = Alignment.CenterVertically,
+            AnimatedVisibility(
+                visible = showRestart,
+                enter = slideIn(showOffset) { IntOffset(x = -it.width / 2, y = -it.height / 2) } + fadeIn(showFade),
+                exit = slideOut(hideOffset) { IntOffset(x = -it.width / 2, y = -it.height / 2) } + fadeOut(hideFade),
                 modifier =
                     Modifier
                         .align(Alignment.TopStart)
-                        .padding(start = logoInsetStart, top = logoInsetTop),
+                        .padding(start = restartInsetStart, top = restartInsetTop),
             ) {
-                AnimatedVisibility(
-                    visible = showRestart,
-                    enter = slideIn(showOffset) { IntOffset(x = -it.width / 2, y = -it.height / 2) } + fadeIn(showFade),
-                    exit = slideOut(hideOffset) { IntOffset(x = -it.width / 2, y = -it.height / 2) } + fadeOut(hideFade),
-                ) {
-                    ExpandablePlayButton(
-                        title = R.string.restart,
-                        resume = Duration.ZERO,
-                        icon = Icons.Default.Refresh,
-                        mirrorIcon = true,
-                        onClick = {
-                            player.seekTo(0)
-                            controllerViewState.pulseControls()
-                        },
-                        modifier = Modifier.onFocusChanged { if (it.isFocused) controllerViewState.pulseControls() },
-                    )
-                }
-                AnimatedVisibility(
-                    visible = showLogo,
-                    enter = slideIn(showOffset) { IntOffset(x = -it.width / 2, y = -it.height / 2) } + fadeIn(showFade),
-                    exit = slideOut(hideOffset) { IntOffset(x = -it.width / 2, y = -it.height / 2) } + fadeOut(hideFade),
-                ) {
-                    AsyncImage(
-                        model = logoImageUrl,
-                        contentDescription = "Logo",
-                        alignment = Alignment.CenterStart,
-                        modifier = Modifier.size(logoMaxSize),
-                    )
-                }
+                ExpandablePlayButton(
+                    title = R.string.restart,
+                    resume = Duration.ZERO,
+                    icon = Icons.Default.Refresh,
+                    mirrorIcon = true,
+                    onClick = {
+                        player.seekTo(0)
+                        controllerViewState.pulseControls()
+                    },
+                    modifier = Modifier.onFocusChanged { if (it.isFocused) controllerViewState.pulseControls() },
+                )
+            }
+            // Logo in the top end corner
+            AnimatedVisibility(
+                visible = showLogo,
+                enter = slideIn(showOffset) { IntOffset(x = it.width / 2, y = -it.height / 2) } + fadeIn(showFade),
+                exit = slideOut(hideOffset) { IntOffset(x = it.width / 2, y = -it.height / 2) } + fadeOut(hideFade),
+                modifier =
+                    Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(end = logoInsetEnd, top = logoInsetTop),
+            ) {
+                AsyncImage(
+                    model = logoImageUrl,
+                    contentDescription = "Logo",
+                    alignment = Alignment.TopEnd,
+                    modifier = Modifier.size(logoMaxSize),
+                )
             }
             AnimatedVisibility(
                 visible = showClockNow,
