@@ -87,6 +87,7 @@ import com.github.damontecres.wholphin.ui.theme.FluidLayout
 import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.ui.tryRequestFocus
 import kotlinx.coroutines.delay
+import org.jellyfin.sdk.model.api.BaseItemKind
 import org.jellyfin.sdk.model.api.ImageType
 import org.jellyfin.sdk.model.api.MediaSegmentDto
 import org.jellyfin.sdk.model.api.TrickplayInfo
@@ -172,7 +173,9 @@ fun PlaybackOverlay(
     }
     // Chapters only when there's no episode queue: chapter navigation is rarely useful in an
     // episode, so the episode row takes its place
-    val showChapters = chapters.isNotEmpty() && !nextEnabled
+    // The episode row shows for every episode, also the last one, since it navigates the whole series
+    val showQueue = nextEnabled || (seriesEpisodes.isNotEmpty() && item?.type == BaseItemKind.EPISODE)
+    val showChapters = chapters.isNotEmpty() && !showQueue
     // Coming back up from the chapter or episode row
     var returningFromRow by remember(controllerViewState.controlsVisible) { mutableStateOf(false) }
     val onChangeState = { newState: OverlayViewState ->
@@ -315,10 +318,10 @@ fun PlaybackOverlay(
                             }
                         }
                         val nextState =
-                            remember(showChapters, nextEnabled) {
+                            remember(showChapters, showQueue) {
                                 if (showChapters) {
                                     OverlayViewState.CHAPTERS
-                                } else if (nextEnabled) {
+                                } else if (showQueue) {
                                     OverlayViewState.QUEUE
                                 } else {
                                     null
@@ -368,7 +371,7 @@ fun PlaybackOverlay(
                                 player = player,
                                 controllerViewState = controllerViewState,
                                 chapters = chapters,
-                                hasNext = nextEnabled,
+                                hasNext = showQueue,
                                 onChangeState = onChangeState,
                                 modifier =
                                     Modifier
@@ -380,7 +383,7 @@ fun PlaybackOverlay(
                     }
 
                     OverlayViewState.QUEUE -> {
-                        if (nextEnabled) {
+                        if (showQueue) {
                             QueueRowOverlay(
                                 player = player,
                                 queue = queue,
