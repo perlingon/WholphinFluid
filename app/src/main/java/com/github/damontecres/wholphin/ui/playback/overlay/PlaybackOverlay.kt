@@ -2,20 +2,21 @@ package com.github.damontecres.wholphin.ui.playback.overlay
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.EnterExitState
+import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.animation.core.Easing
 import androidx.compose.animation.core.FastOutLinearInEasing
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.VisibilityThreshold
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
-import androidx.compose.animation.slideIn
 import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOut
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
@@ -66,7 +67,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpSize
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
@@ -82,6 +82,7 @@ import com.github.damontecres.wholphin.ui.AppColors
 import com.github.damontecres.wholphin.ui.LocalImageUrlService
 import com.github.damontecres.wholphin.ui.components.CornerFade
 import com.github.damontecres.wholphin.ui.components.CornerLogo
+import com.github.damontecres.wholphin.ui.components.SlideFadeVisibility
 import com.github.damontecres.wholphin.ui.components.TimeDisplay
 import com.github.damontecres.wholphin.ui.isNotNullOrBlank
 import com.github.damontecres.wholphin.ui.playback.AnalyticsState
@@ -100,6 +101,7 @@ import kotlin.time.Duration
 /**
  * The overlay during playback showing controls, seek preview image, debug info, etc
  */
+@OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun PlaybackOverlay(
     item: BaseItem?,
@@ -202,8 +204,13 @@ fun PlaybackOverlay(
     val hideEasing: Easing = FastOutLinearInEasing
     // How far the controls slide, as a share of their own height (0f = fade only)
     val slideFraction = 0.5f
-    val showOffset = tween<IntOffset>(showMs, easing = showEasing)
-    val hideOffset = tween<IntOffset>(hideMs, easing = hideEasing)
+    // Which way the controls are moving between states (down = towards the rows below). Plain
+    // fields: they are only read while the state change recomposes anyway
+    val slideDirection = remember { SlideDirection(state) }
+    if (slideDirection.previous != state) {
+        slideDirection.down = state.ordinal > slideDirection.previous.ordinal
+        slideDirection.previous = state
+    }
     val showFade = tween<Float>(showMs, easing = showEasing)
     val hideFade = tween<Float>(hideMs, easing = hideEasing)
 
@@ -261,27 +268,38 @@ fun PlaybackOverlay(
             targetState = state,
             label = "controls transition",
             contentAlignment = Alignment.BottomCenter,
-            transitionSpec = {
-                if (targetState.ordinal > initialState.ordinal) {
-                    // Moving down (e.g. the controls showing up), so move content up
-                    (slideInVertically(showOffset) { (it * slideFraction).toInt() } + fadeIn(showFade))
-                        .togetherWith(slideOutVertically(hideOffset) { -(it * slideFraction).toInt() } + fadeOut(hideFade))
-                } else {
-                    // Moving up (e.g. the controls going away)
-                    (slideInVertically(showOffset) { -(it * slideFraction).toInt() } + fadeIn(showFade))
-                        .togetherWith(slideOutVertically(hideOffset) { (it * slideFraction).toInt() } + fadeOut(hideFade))
-                }
-            },
+            // Only the fades here; the slide is done below with a graphics layer translation, which
+            // can stop between pixels (slideInVertically moves in whole pixels and looks shaky)
+            transitionSpec = { fadeIn(showFade).togetherWith(fadeOut(hideFade)) },
         ) { targetState ->
+            // Moving down (e.g. the controls showing up) the new content comes up from below and the
+            // old one leaves upwards; moving up it is the other way round
+            val slide by transition.animateFloat(
+                transitionSpec = {
+                    if (targetState == EnterExitState.Visible) {
+                        tween(showMs, easing = showEasing)
+                    } else {
+                        tween(hideMs, easing = hideEasing)
+                    }
+                },
+                label = "controls slide",
+            ) { enterExit ->
+                when (enterExit) {
+                    EnterExitState.PreEnter -> if (slideDirection.down) slideFraction else -slideFraction
+                    EnterExitState.Visible -> 0f
+                    EnterExitState.PostExit -> if (slideDirection.down) -slideFraction else slideFraction
+                }
+            }
             // Measure the settled content, not the animating container, so the subtitle lift
             // doesn't get a new height (and a recomposition of the whole page) every frame
             Box(
                 modifier =
-                    Modifier.onSizeChanged {
-                        if (targetState == state) {
-                            overlayContentHeight = with(density) { it.height.toDp() }
-                        }
-                    },
+                    Modifier
+                        .onSizeChanged {
+                            if (targetState == state) {
+                                overlayContentHeight = with(density) { it.height.toDp() }
+                            }
+                        }.graphicsLayer { translationY = slide * size.height },
             ) {
                 when (targetState) {
                     OverlayViewState.HIDDEN -> {
@@ -436,18 +454,20 @@ fun PlaybackOverlay(
 
         // Logo in the bottom start corner of the picture while paused with the controls hidden
         val logoImageUrl = LocalImageUrlService.current.rememberImageUrl(item, ImageType.LOGO)
-        AnimatedVisibility(
-            visible = !showDebugInfo && showPlay && !controllerViewState.controlsVisible && logoImageUrl.isNotNullOrBlank(),
-            enter = fadeIn(showFade),
-            exit = fadeOut(hideFade),
-            modifier =
-                Modifier
-                    .align(Alignment.BottomCenter)
-                    .widthIn(max = pictureMaxWidth)
-                    .fillMaxWidth(),
-        ) {
-            Box(Modifier.fillMaxWidth()) {
-                CornerLogo(logoUrl = logoImageUrl, modifier = Modifier.align(Alignment.BottomStart))
+        if (logoImageUrl.isNotNullOrBlank()) {
+            Box(
+                modifier =
+                    Modifier
+                        .align(Alignment.BottomCenter)
+                        .widthIn(max = pictureMaxWidth)
+                        .fillMaxWidth(),
+            ) {
+                // Slides in from the corner like the top corners; the fade behind it only fades
+                CornerLogo(
+                    logoUrl = logoImageUrl,
+                    visible = !showDebugInfo && showPlay && !controllerViewState.controlsVisible,
+                    modifier = Modifier.align(Alignment.BottomStart),
+                )
             }
         }
 
@@ -526,10 +546,12 @@ fun PlaybackOverlay(
             ) {
                 CornerFade(stops = topFadeStops, fromEnd = false, modifier = Modifier.size(topStartFadeSize))
             }
-            AnimatedVisibility(
+            SlideFadeVisibility(
                 visible = showRestart,
-                enter = slideIn(showOffset) { IntOffset(x = -it.width / 2, y = -it.height / 2) } + fadeIn(showFade),
-                exit = slideOut(hideOffset) { IntOffset(x = -it.width / 2, y = -it.height / 2) } + fadeOut(hideFade),
+                slideX = -0.5f,
+                slideY = -0.5f,
+                showSpec = showFade,
+                hideSpec = hideFade,
                 modifier =
                     Modifier
                         .align(Alignment.TopStart)
@@ -578,10 +600,12 @@ fun PlaybackOverlay(
             }
             // Title in the top end corner, on two lines: the name, then the lighter line
             // ("S1 E4 · Episode title", or the year for a movie)
-            AnimatedVisibility(
+            SlideFadeVisibility(
                 visible = showTitle,
-                enter = slideIn(showOffset) { IntOffset(x = it.width / 2, y = -it.height / 2) } + fadeIn(showFade),
-                exit = slideOut(hideOffset) { IntOffset(x = it.width / 2, y = -it.height / 2) } + fadeOut(hideFade),
+                slideX = 0.5f,
+                slideY = -0.5f,
+                showSpec = showFade,
+                hideSpec = hideFade,
                 modifier =
                     Modifier
                         .align(Alignment.TopEnd)
@@ -614,10 +638,12 @@ fun PlaybackOverlay(
                     }
                 }
             }
-            AnimatedVisibility(
+            SlideFadeVisibility(
                 visible = showClockNow,
-                enter = slideIn(showOffset) { IntOffset(x = it.width / 2, y = -it.height / 2) } + fadeIn(showFade),
-                exit = slideOut(hideOffset) { IntOffset(x = it.width / 2, y = -it.height / 2) } + fadeOut(hideFade),
+                slideX = 0.5f,
+                slideY = -0.5f,
+                showSpec = showFade,
+                hideSpec = hideFade,
                 modifier =
                     Modifier
                         .align(Alignment.TopEnd),
@@ -672,4 +698,11 @@ enum class OverlayViewState {
     CONTROLLER,
     CHAPTERS,
     QUEUE,
+}
+
+/** Remembers the last overlay state, to tell which way the controls move on a change */
+private class SlideDirection(
+    var previous: OverlayViewState,
+) {
+    var down: Boolean = true
 }

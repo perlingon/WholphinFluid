@@ -1,9 +1,14 @@
 package com.github.damontecres.wholphin.ui.components
 
+import androidx.compose.animation.core.FastOutLinearInEasing
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -13,6 +18,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.graphics.drawscope.scale
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
@@ -41,6 +47,7 @@ import kotlin.time.Duration.Companion.milliseconds
 fun CornerLogo(
     logoUrl: String?,
     modifier: Modifier = Modifier,
+    visible: Boolean = true,
     onError: () -> Unit = {},
 ) {
     // Tuning values, kept local so Live Edit picks up changes.
@@ -60,6 +67,15 @@ fun CornerLogo(
             1f to Color.Transparent,
         )
 
+    // Show/hide animation: the logo slides in from the corner while the fade behind it fades
+    val showSpec = tween<Float>(350, easing = FastOutSlowInEasing)
+    val hideSpec = tween<Float>(250, easing = FastOutLinearInEasing)
+    val fadeAlpha by animateFloatAsState(
+        targetValue = if (visible) 1f else 0f,
+        animationSpec = if (visible) showSpec else hideSpec,
+        label = "logoFade",
+    )
+
     val density = LocalDensity.current
     val sizedUrl =
         remember(logoUrl, logoMaxSize, density) {
@@ -76,25 +92,37 @@ fun CornerLogo(
             stops = fadeStops,
             fromEnd = false,
             fromBottom = true,
-            modifier = Modifier.size(fadeSize).align(Alignment.BottomStart),
-        )
-        AsyncImage(
-            model =
-                ImageRequest
-                    .Builder(LocalContext.current)
-                    .data(sizedUrl)
-                    .transitionFactory(CrossFadeFactory(750.milliseconds))
-                    .build(),
-            contentDescription = "Logo",
-            alignment = Alignment.BottomStart,
-            filterQuality = FilterQuality.High,
-            onError = { onError() },
             modifier =
                 Modifier
+                    .size(fadeSize)
                     .align(Alignment.BottomStart)
-                    .padding(start = insetStart, end = insetEnd, bottom = insetBottom)
-                    .size(logoMaxSize),
+                    .graphicsLayer { alpha = fadeAlpha },
         )
+        SlideFadeVisibility(
+            visible = visible,
+            slideX = -0.5f,
+            slideY = 0.5f,
+            showSpec = showSpec,
+            hideSpec = hideSpec,
+            modifier = Modifier.align(Alignment.BottomStart),
+        ) {
+            AsyncImage(
+                model =
+                    ImageRequest
+                        .Builder(LocalContext.current)
+                        .data(sizedUrl)
+                        .transitionFactory(CrossFadeFactory(750.milliseconds))
+                        .build(),
+                contentDescription = "Logo",
+                alignment = Alignment.BottomStart,
+                filterQuality = FilterQuality.High,
+                onError = { onError() },
+                modifier =
+                    Modifier
+                        .padding(start = insetStart, end = insetEnd, bottom = insetBottom)
+                        .size(logoMaxSize),
+            )
+        }
     }
 }
 
