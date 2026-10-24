@@ -82,6 +82,7 @@ fun PlaybackController(
     playFocusRequester: FocusRequester = remember { FocusRequester() },
     restartFocusRequester: FocusRequester? = null,
     focusSettingsFirst: Boolean = false,
+    settingsFocusRequester: FocusRequester = remember { FocusRequester() },
 ) {
     // Tuning values for the "Chapters"/"Queue" hint under the controls, kept local for Live Edit
     val nextHeadlineStyle = MaterialTheme.typography.labelLarge
@@ -137,6 +138,7 @@ fun PlaybackController(
             playFocusRequester = playFocusRequester,
             restartFocusRequester = restartFocusRequester,
             focusSettingsFirst = focusSettingsFirst,
+            settingsFocusRequester = settingsFocusRequester,
             modifier = Modifier,
         )
         when (nextState) {
@@ -218,6 +220,7 @@ fun Controller(
     playFocusRequester: FocusRequester = remember { FocusRequester() },
     restartFocusRequester: FocusRequester? = null,
     focusSettingsFirst: Boolean = false,
+    settingsFocusRequester: FocusRequester = remember { FocusRequester() },
 ) {
     // Tuning values for the title block above the seek bar, kept local so Live Edit picks up changes.
     // The trickplay preview measures this block, so it follows any size here.
@@ -373,6 +376,7 @@ fun Controller(
             initialFocusRequester = playFocusRequester,
             upFocusRequester = restartFocusRequester,
             focusSettingsFirst = focusSettingsFirst,
+            settingsFocusRequester = settingsFocusRequester,
         )
     }
 }

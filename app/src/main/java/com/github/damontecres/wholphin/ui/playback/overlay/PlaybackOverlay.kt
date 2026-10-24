@@ -86,6 +86,7 @@ import com.github.damontecres.wholphin.ui.playback.PlaybackDialogType
 import com.github.damontecres.wholphin.ui.theme.FluidLayout
 import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.ui.tryRequestFocus
+import kotlinx.coroutines.delay
 import org.jellyfin.sdk.model.api.ImageType
 import org.jellyfin.sdk.model.api.MediaSegmentDto
 import org.jellyfin.sdk.model.api.TrickplayInfo
@@ -137,9 +138,10 @@ fun PlaybackOverlay(
     var seekProgressPercent = (seekProgressMs.toDouble() / player.duration).toFloat()
 
     val density = LocalDensity.current
-    // Focus targets for Up/Down between the restart button (top corner) and the play button
+    // Focus targets for Up/Down between the back button (top corner) and the play button
     val playFocusRequester = remember { FocusRequester() }
     val restartFocusRequester = remember { FocusRequester() }
+    val settingsFocusRequester = remember { FocusRequester() }
 
     // Seek preview (trickplay) placement, kept local so Live Edit picks up changes
     // true = the preview sits above the title row, false = between the title row and the seek bar
@@ -179,6 +181,16 @@ fun PlaybackOverlay(
     // FastOutLinearInEasing (quick exit), LinearEasing, or CubicBezierEasing(a, b, c, d)
     val showMs = 350
     val hideMs = 250
+    // When coming back up from the chapter or episode row, the row's focused card goes away with
+    // its exit animation and focus can land on the top corner buttons. Once the animation is
+    // done, put focus on settings.
+    LaunchedEffect(state, returningFromRow) {
+        if (state == OverlayViewState.CONTROLLER && returningFromRow) {
+            settingsFocusRequester.tryRequestFocus()
+            delay(maxOf(showMs, hideMs) + 50L)
+            settingsFocusRequester.tryRequestFocus()
+        }
+    }
     val showEasing: Easing = FastOutSlowInEasing
     val hideEasing: Easing = FastOutLinearInEasing
     // How far the controls slide, as a share of their own height (0f = fade only)
@@ -320,6 +332,7 @@ fun PlaybackOverlay(
                             queueHeadline = queueHeadline(remember(queue) { groupQueueBySeason(queue) }, item, seriesEnded, seriesEpisodes),
                             playFocusRequester = playFocusRequester,
                             focusSettingsFirst = returningFromRow,
+                            settingsFocusRequester = settingsFocusRequester,
                             restartFocusRequester = restartFocusRequester.takeIf { !showDebugInfo },
                         )
                     }
@@ -493,6 +506,7 @@ fun PlaybackOverlay(
                         onClick = { onBack() },
                         modifier =
                             Modifier
+                                .focusRequester(restartFocusRequester)
                                 .onFocusChanged { if (it.isFocused) controllerViewState.pulseControls() }
                                 .then(downToPlay),
                     )
@@ -507,7 +521,6 @@ fun PlaybackOverlay(
                         },
                         modifier =
                             Modifier
-                                .focusRequester(restartFocusRequester)
                                 .onFocusChanged { if (it.isFocused) controllerViewState.pulseControls() }
                                 .then(downToPlay),
                     )

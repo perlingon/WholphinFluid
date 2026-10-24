@@ -160,13 +160,13 @@ fun PlaybackControls(
     modifier: Modifier = Modifier,
     initialFocusRequester: FocusRequester = remember { FocusRequester() },
     seekBarInteractionSource: MutableInteractionSource = remember { MutableInteractionSource() },
-    // Where Up from the play button or seek bar goes (the restart button), null when it isn't shown
+    // Where Up from the play button or seek bar goes (the back button), null when it isn't shown
     upFocusRequester: FocusRequester? = null,
     // Start on settings instead of play/pause, e.g. when coming back up from the episode row
     focusSettingsFirst: Boolean = false,
-) {
     // Down from the play button or seek bar goes to settings, the first button in the row below
-    val settingsFocusRequester = remember { FocusRequester() }
+    settingsFocusRequester: FocusRequester = remember { FocusRequester() },
+) {
     val scope = rememberCoroutineScope()
 
     val bringIntoViewRequester = remember { BringIntoViewRequester() }
