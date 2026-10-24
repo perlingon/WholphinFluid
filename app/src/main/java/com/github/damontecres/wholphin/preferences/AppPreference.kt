@@ -1085,6 +1085,28 @@ sealed interface AppPreference<Pref, T> {
                 },
             )
 
+        val EmojiCollectionsAsMain =
+            AppSwitchPreference<AppPreferences>(
+                title = R.string.emoji_collections_as_main,
+                defaultValue = false,
+                getter = { it.advancedPreferences.emojiCollectionsAsMain },
+                setter = { prefs, value ->
+                    prefs.updateAdvancedPreferences { emojiCollectionsAsMain = value }
+                },
+                summary = R.string.emoji_collections_as_main_summary,
+            )
+
+        val GroupCollections =
+            AppSwitchPreference<AppPreferences>(
+                title = R.string.group_collections,
+                defaultValue = false,
+                getter = { it.advancedPreferences.groupCollections },
+                setter = { prefs, value ->
+                    prefs.updateAdvancedPreferences { groupCollections = value }
+                },
+                summary = R.string.group_collections_summary,
+            )
+
         val LiveTvShowHeader =
             AppSwitchPreference<AppPreferences>(
                 title = R.string.show_details,
@@ -1336,6 +1358,8 @@ val advancedPreferences =
                         AppPreference.ShowClock,
                         AppPreference.BackdropStylePref,
                         AppPreference.ShowLogos,
+                        AppPreference.EmojiCollectionsAsMain,
+                        AppPreference.GroupCollections,
                         AppPreference.ManageMedia,
                         AppPreference.DisplayTogglesPref,
                         // Temporarily disabled, see https://github.com/damontecres/Wholphin/pull/127#issuecomment-3478058418

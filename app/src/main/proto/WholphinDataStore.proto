@@ -236,6 +236,8 @@ message InterfacePreferences {
 
 message AdvancedPreferences {
   int64 image_disk_cache_size_bytes = 1;
+  bool emoji_collections_as_main = 2;
+  bool group_collections = 3;
 }
 
 message PhotoPreferences{
