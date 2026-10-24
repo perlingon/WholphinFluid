@@ -547,9 +547,7 @@ fun PlaybackPageContent(
                     state.currentPlayback?.subtitleIndex.let { index ->
                         when {
                             index != null && index >= 0 -> {
-                                state.currentMediaInfo.subtitleStreams
-                                    .firstOrNull { it.index == index }
-                                    ?.let { it.language ?: it.displayTitle }
+                                trackLabel(state.currentMediaInfo.subtitleStreams, index)
                             }
 
                             index == TrackIndex.ONLY_FORCED -> {
@@ -564,8 +562,7 @@ fun PlaybackPageContent(
                 audioLabel =
                     state.currentPlayback
                         ?.audioIndex
-                        ?.let { index -> state.currentMediaInfo.audioStreams.firstOrNull { it.index == index } }
-                        ?.let { it.language ?: it.displayTitle }
+                        ?.let { trackLabel(state.currentMediaInfo.audioStreams, it) }
                         ?: stringResource(R.string.audio),
                 onBack = {
                     player.stop()
@@ -936,4 +933,19 @@ fun PlaybackPageContent(
             )
         }
     }
+}
+
+/**
+ * Short label for the chosen track, e.g. "English 1/4": its language (or its full title when it
+ * has none), then which of the tracks it is and how many there are to choose from
+ */
+private fun trackLabel(
+    streams: List<SimpleMediaStream>,
+    index: Int,
+): String? {
+    val position = streams.indexOfFirst { it.index == index }
+    if (position < 0) return null
+    val stream = streams[position]
+    val name = stream.language ?: stream.displayTitle
+    return if (streams.size > 1) "$name ${position + 1}/${streams.size}" else name
 }
