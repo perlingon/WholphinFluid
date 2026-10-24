@@ -22,6 +22,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.isSpecified
@@ -78,6 +79,8 @@ fun PlaybackController(
     onTitleHeightChange: (Dp) -> Unit = {},
     queueHeadline: String? = null,
     chapters: List<Chapter> = emptyList(),
+    playFocusRequester: FocusRequester = remember { FocusRequester() },
+    restartFocusRequester: FocusRequester? = null,
 ) {
     // Tuning values for the "Chapters"/"Queue" hint under the controls, kept local for Live Edit
     val nextHeadlineStyle = MaterialTheme.typography.labelLarge
@@ -130,6 +133,8 @@ fun PlaybackController(
             seekBarInteractionSource = seekBarInteractionSource,
             currentSegment = currentSegment,
             onTitleHeightChange = onTitleHeightChange,
+            playFocusRequester = playFocusRequester,
+            restartFocusRequester = restartFocusRequester,
             modifier = Modifier,
         )
         when (nextState) {
@@ -208,6 +213,8 @@ fun Controller(
     subtitle: String? = null,
     seekBarInteractionSource: MutableInteractionSource = remember { MutableInteractionSource() },
     onTitleHeightChange: (Dp) -> Unit = {},
+    playFocusRequester: FocusRequester = remember { FocusRequester() },
+    restartFocusRequester: FocusRequester? = null,
 ) {
     // Tuning values for the title block above the seek bar, kept local so Live Edit picks up changes.
     // The trickplay preview measures this block, so it follows any size here.
@@ -360,6 +367,8 @@ fun Controller(
             skipBackOnResume = skipBackOnResume,
             currentSegment = currentSegment,
             onClickPlaybackDialogType = onClickPlaybackDialogType,
+            initialFocusRequester = playFocusRequester,
+            upFocusRequester = restartFocusRequester,
         )
     }
 }

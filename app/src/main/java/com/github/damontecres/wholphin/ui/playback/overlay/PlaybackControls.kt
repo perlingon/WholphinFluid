@@ -45,6 +45,11 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.isSpecified
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
@@ -155,7 +160,11 @@ fun PlaybackControls(
     modifier: Modifier = Modifier,
     initialFocusRequester: FocusRequester = remember { FocusRequester() },
     seekBarInteractionSource: MutableInteractionSource = remember { MutableInteractionSource() },
+    // Where Up from the play button or seek bar goes (the restart button), null when it isn't shown
+    upFocusRequester: FocusRequester? = null,
 ) {
+    // Down from the play button or seek bar goes to settings, the first button in the row below
+    val settingsFocusRequester = remember { FocusRequester() }
     val scope = rememberCoroutineScope()
 
     val bringIntoViewRequester = remember { BringIntoViewRequester() }
@@ -223,7 +232,27 @@ fun PlaybackControls(
             modifier =
                 Modifier
                     .padding(vertical = 0.dp)
-                    .fillMaxWidth(.95f),
+                    .fillMaxWidth(.95f)
+                    .onPreviewKeyEvent { event ->
+                        if (event.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
+                        when (event.key) {
+                            Key.DirectionUp -> {
+                                upFocusRequester?.let {
+                                    it.tryRequestFocus()
+                                    true
+                                } ?: false
+                            }
+
+                            Key.DirectionDown -> {
+                                settingsFocusRequester.tryRequestFocus()
+                                true
+                            }
+
+                            else -> {
+                                false
+                            }
+                        }
+                    },
         )
         Box(
             modifier =
@@ -244,6 +273,7 @@ fun PlaybackControls(
                 LeftPlaybackButtons(
                     onControllerInteraction = onControllerInteraction,
                     onClickPlaybackDialogType = onClickPlaybackDialogType,
+                    settingsModifier = Modifier.focusRequester(settingsFocusRequester),
                 )
 
                 PlaybackButtons(
@@ -417,6 +447,7 @@ fun LeftPlaybackButtons(
     onControllerInteraction: () -> Unit,
     onClickPlaybackDialogType: (PlaybackDialogType) -> Unit,
     modifier: Modifier = Modifier,
+    settingsModifier: Modifier = Modifier,
 ) {
     // Gap between buttons in this group, kept local so Live Edit picks up changes
     val buttonGap = Spacing.sm
@@ -432,7 +463,7 @@ fun LeftPlaybackButtons(
             },
             enabled = true,
             onControllerInteraction = onControllerInteraction,
-            modifier = Modifier,
+            modifier = settingsModifier,
         )
     }
 }

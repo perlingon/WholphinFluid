@@ -43,11 +43,18 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.scale
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalConfiguration
@@ -76,6 +83,7 @@ import com.github.damontecres.wholphin.ui.playback.CurrentPlayback
 import com.github.damontecres.wholphin.ui.playback.PlaybackDialogType
 import com.github.damontecres.wholphin.ui.theme.FluidLayout
 import com.github.damontecres.wholphin.ui.theme.Spacing
+import com.github.damontecres.wholphin.ui.tryRequestFocus
 import org.jellyfin.sdk.model.api.ImageType
 import org.jellyfin.sdk.model.api.MediaSegmentDto
 import org.jellyfin.sdk.model.api.TrickplayInfo
@@ -125,6 +133,9 @@ fun PlaybackOverlay(
     var seekProgressPercent = (seekProgressMs.toDouble() / player.duration).toFloat()
 
     val density = LocalDensity.current
+    // Focus targets for Up/Down between the restart button (top corner) and the play button
+    val playFocusRequester = remember { FocusRequester() }
+    val restartFocusRequester = remember { FocusRequester() }
 
     // Seek preview (trickplay) placement, kept local so Live Edit picks up changes
     // true = the preview sits above the title row, false = between the title row and the seek bar
@@ -298,6 +309,8 @@ fun PlaybackOverlay(
                             onTitleHeightChange = { titleHeight = it },
                             chapters = chapters,
                             queueHeadline = queueHeadline(remember(queue) { groupQueueBySeason(queue) }, item, seriesEnded, seriesEpisodes),
+                            playFocusRequester = playFocusRequester,
+                            restartFocusRequester = restartFocusRequester.takeIf { !showDebugInfo },
                         )
                     }
 
@@ -459,7 +472,19 @@ fun PlaybackOverlay(
                         player.seekTo(0)
                         controllerViewState.pulseControls()
                     },
-                    modifier = Modifier.onFocusChanged { if (it.isFocused) controllerViewState.pulseControls() },
+                    modifier =
+                        Modifier
+                            .focusRequester(restartFocusRequester)
+                            .onFocusChanged { if (it.isFocused) controllerViewState.pulseControls() }
+                            // Down goes back to the play button
+                            .onPreviewKeyEvent { event ->
+                                if (event.type == KeyEventType.KeyDown && event.key == Key.DirectionDown) {
+                                    playFocusRequester.tryRequestFocus()
+                                    true
+                                } else {
+                                    false
+                                }
+                            },
                 )
             }
             // Logo in the top end corner
