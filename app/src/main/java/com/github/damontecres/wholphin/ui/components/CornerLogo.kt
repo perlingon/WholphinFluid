@@ -4,14 +4,17 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.LayoutDirection
@@ -29,8 +32,9 @@ import kotlin.time.Duration.Companion.milliseconds
  * paused with the controls hidden and by the screensaver. Place it with
  * `Modifier.align(Alignment.BottomStart)` in a box that covers the picture.
  *
- * The logo is fetched at its original size (no resize parameters in the url), so it stays sharp at
- * this size.
+ * The logo is fetched already resized by the server to the box's size in pixels, so it is drawn
+ * about 1:1 instead of being shrunk on the device, which made thin edges look jagged. Any remaining
+ * scaling is drawn with high quality filtering.
  */
 @OptIn(ExperimentalCoilApi::class)
 @Composable
@@ -41,7 +45,7 @@ fun CornerLogo(
 ) {
     // Tuning values, kept local so Live Edit picks up changes.
     // The box the logo is fitted into (it keeps its own shape inside it)
-    val logoMaxSize = DpSize(320.dp, 140.dp)
+    val logoMaxSize = DpSize(200.dp, 90.dp)
     // Distance from the start, end and bottom edges
     val insetStart = Spacing.xxl
     val insetEnd = Spacing.xxl
@@ -56,6 +60,17 @@ fun CornerLogo(
             1f to Color.Transparent,
         )
 
+    val density = LocalDensity.current
+    val sizedUrl =
+        remember(logoUrl, logoMaxSize, density) {
+            logoUrl?.let {
+                val maxWidth = with(density) { logoMaxSize.width.roundToPx() }
+                val maxHeight = with(density) { logoMaxSize.height.roundToPx() }
+                val separator = if (it.contains('?')) '&' else '?'
+                "$it${separator}maxWidth=$maxWidth&maxHeight=$maxHeight"
+            }
+        }
+
     Box(modifier = modifier) {
         CornerFade(
             stops = fadeStops,
@@ -67,11 +82,12 @@ fun CornerLogo(
             model =
                 ImageRequest
                     .Builder(LocalContext.current)
-                    .data(logoUrl)
+                    .data(sizedUrl)
                     .transitionFactory(CrossFadeFactory(750.milliseconds))
                     .build(),
             contentDescription = "Logo",
             alignment = Alignment.BottomStart,
+            filterQuality = FilterQuality.High,
             onError = { onError() },
             modifier =
                 Modifier
