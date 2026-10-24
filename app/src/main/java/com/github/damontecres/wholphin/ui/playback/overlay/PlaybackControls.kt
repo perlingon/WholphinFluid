@@ -215,6 +215,11 @@ fun PlaybackControls(
     ) {
         // Gap between the play/pause button and the seek bar, kept local so Live Edit picks up changes
         val playButtonGap = Spacing.md
+        // Where the seek bar and the button row start on screen, so the first icon can line up
+        // with the bar
+        var barStartX by remember { mutableStateOf(0.dp) }
+        var rowStartX by remember { mutableStateOf(0.dp) }
+        val density = LocalDensity.current
         SeekBar(
             player = player,
             controllerViewState = controllerViewState,
@@ -228,7 +233,10 @@ fun PlaybackControls(
             seekBack = seekBack,
             seekForward = seekForward,
             leadingGap = playButtonGap,
-            onBarStartChange = onBarStartChange,
+            onBarStartChange = {
+                barStartX = it
+                onBarStartChange(it)
+            },
             leading = {
                 // Play/pause sits to the left of the seek bar, centered on it
                 // Same size as the other player buttons (see PlaybackButton)
@@ -274,15 +282,18 @@ fun PlaybackControls(
                         }
                     },
         )
-        // How far the button row and the hint sit in from the seek bar's ends. Tuning value, kept
-        // local so Live Edit picks up changes
+        // How far the hint sits in from the seek bar's end. Tuning value, kept local so Live Edit
+        // picks up changes
         val rowSideInset = Spacing.sm
+        // Nudge for the first icon against the start of the seek bar (0.dp = lined up)
+        val rowStartNudge = 0.dp
         Box(
             modifier =
                 Modifier
-                    // Same width as the seek bar, then moved in a little at both ends
+                    // Same width as the seek bar; the start is set on the left group below
                     .fillMaxWidth(.95f)
-                    .padding(horizontal = rowSideInset)
+                    .padding(end = rowSideInset)
+                    .onGloballyPositioned { rowStartX = with(density) { it.positionInRoot().x.toDp() } }
                     // Down from the row opens the chapter or episode row
                     .onPreviewKeyEvent { event ->
                         if (onDownFromRow != null && event.type == KeyEventType.KeyDown && event.key == Key.DirectionDown) {
@@ -301,12 +312,18 @@ fun PlaybackControls(
             val rowButtonSize = 32.dp
             val rowIconSize = 24.dp
             val rowButtonBackground = Color.Transparent
+            // The subtitle icon sits this far inside its button, so the row starts that much earlier
+            val iconInset = (rowButtonSize - rowIconSize) / 2
+            val rowStart = (barStartX - rowStartX - iconInset + rowStartNudge).coerceAtLeast(0.dp)
 
-            // All controls sit in one row on the left, under the play/pause button
+            // All controls sit in one row on the left, the first icon lined up with the seek bar
             Row(
                 horizontalArrangement = Arrangement.spacedBy(groupGap),
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.align(Alignment.CenterStart),
+                modifier =
+                    Modifier
+                        .align(Alignment.CenterStart)
+                        .padding(start = rowStart),
             ) {
                 // Subtitles and audio first, then settings
                 RightPlaybackButtons(
