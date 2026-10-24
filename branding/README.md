@@ -1,26 +1,26 @@
-# Nema brand files
+# Phin brand files
 
 | File | What it is |
 |---|---|
-| `nema-wordmark.svg` | The logo: gold gradient film n with "ema", transparent background |
-| `nema-wordmark-plain.svg` | The same in gold without the film squares |
-| `nema-wordmark-cream.svg` | The film version in a single light cream, for one-colour use |
-| `nema-icon-n.svg` | The app icon mark: the n with a short tail, on the 108-unit adaptive icon grid |
-| `nema-icon-1024.png` | The full app icon, 1024 px |
-| `nema-poster.png` | The logo with its glow on the gradient background, 1920 × 1080 |
-| `nema-readme-header.png` | Header image for the README |
+| `phin-wordmark.svg` | The wordmark: italic serif with a play triangle for the dot of the i, transparent background |
+| `phin-mark.svg` | The small mark: the P followed by the play triangle |
+| `phin-icon-512.png` | The app icon as designed, 512 px |
+| `phin-poster.png` | The wordmark on the end-card rings, 1920 × 1080 |
+| `phin-poster-glow.png` | The same with the soft glow, as used in the app's banner |
+| `phin-readme-header.png` | Header image for the README |
+| `plate-gradient-512.png` | Background plate for icons: `#333333` at the top to `#050505` |
+| `plate-rings-1920x1080.png` | Background plate for posters and banners: concentric end-card rings on near-black |
 
 ## Colours
 
-- Gold gradient, top left to bottom right: `#F6D98C` → `#DDA94A` → `#A86F22`, with a soft white sheen at the top of the arch
-- Lettering: `#F7F2E8`
-- Background: `#222222` at the top to `#000000` at the bottom, with fine film grain
-- Glow: a soft bloom in the gold's own colours, kept out of the film squares
+- Logo: `#F2F2F2`, a single neutral white, so it never clashes with the accent colour picked in the app
+- Icon background: `#333333` → `#050505`, top to bottom
+- Glow: a soft white bloom around the logo, at two blur radii
 
 ## In the app
 
-- Launcher icon: `mipmap-*/ic_launcher_foreground.webp` (gold n with glow) on `drawable/ic_launcher_background.xml` (the gradient), with `drawable/ic_launcher_monochrome.xml` for themed icons. Legacy and round icons are in `mipmap-*/ic_launcher*.webp`
-- TV banner: `mipmap-xhdpi/ic_banner.png` (320 × 180), with xxhdpi and xxxhdpi versions for 4K screens
+- Launcher icon: `mipmap-*/ic_launcher_foreground.webp` (the P mark with its glow) on `drawable/ic_launcher_background.xml` (the gradient), with `drawable/ic_launcher_monochrome.xml` for themed icons. Legacy and round icons are in `mipmap-*/ic_launcher*.webp`
+- TV banner: `mipmap-xhdpi/ic_banner.png` (320 × 180), with xxhdpi and xxxhdpi versions for 4K screens, on the rings plate
 - Play Store icon: `app/src/main/ic_launcher-playstore.png`
 
-Typeface: [ABeeZee](https://fonts.google.com/specimen/ABeeZee) (SIL Open Font License). In the SVGs the letters are outlined, so no font is needed to open them.
+The letters in the SVGs are outlined, so no font is needed to open them. The wordmark is based on [Bodoni Moda](https://fonts.google.com/specimen/Bodoni+Moda) (SIL Open Font License).

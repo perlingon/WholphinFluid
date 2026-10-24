@@ -967,7 +967,7 @@ sealed interface AppPreference<Pref, T> {
                 setter = { prefs, value ->
                     prefs.updatePlaybackPreferences { playerBackend = value }
                 },
-                // Nema: MPV choices are hidden, only ExoPlayer and External Player are offered
+                // Phin: MPV choices are hidden, only ExoPlayer and External Player are offered
                 displayValues = R.array.player_backend_options_fluid,
                 indexToValue = { if (it == 1) PlayerBackend.EXTERNAL_PLAYER else PlayerBackend.EXO_PLAYER },
                 valueToIndex = { if (it == PlayerBackend.EXTERNAL_PLAYER) 1 else 0 },
@@ -1083,6 +1083,28 @@ sealed interface AppPreference<Pref, T> {
                         null
                     }
                 },
+            )
+
+        val EmojiCollectionsAsMain =
+            AppSwitchPreference<AppPreferences>(
+                title = R.string.emoji_collections_as_main,
+                defaultValue = false,
+                getter = { it.advancedPreferences.emojiCollectionsAsMain },
+                setter = { prefs, value ->
+                    prefs.updateAdvancedPreferences { emojiCollectionsAsMain = value }
+                },
+                summary = R.string.emoji_collections_as_main_summary,
+            )
+
+        val GroupCollections =
+            AppSwitchPreference<AppPreferences>(
+                title = R.string.group_collections,
+                defaultValue = false,
+                getter = { it.advancedPreferences.groupCollections },
+                setter = { prefs, value ->
+                    prefs.updateAdvancedPreferences { groupCollections = value }
+                },
+                summary = R.string.group_collections_summary,
             )
 
         val LiveTvShowHeader =
@@ -1336,6 +1358,8 @@ val advancedPreferences =
                         AppPreference.ShowClock,
                         AppPreference.BackdropStylePref,
                         AppPreference.ShowLogos,
+                        AppPreference.EmojiCollectionsAsMain,
+                        AppPreference.GroupCollections,
                         AppPreference.ManageMedia,
                         AppPreference.DisplayTogglesPref,
                         // Temporarily disabled, see https://github.com/damontecres/Wholphin/pull/127#issuecomment-3478058418
@@ -1370,7 +1394,7 @@ val advancedPreferences =
                 preferences = listOf(AppPreference.PlayerBackendPref),
                 conditionalPreferences =
                     listOf(
-                        // Nema: MPV settings are hidden; a leftover MPV choice behaves as ExoPlayer
+                        // Phin: MPV settings are hidden; a leftover MPV choice behaves as ExoPlayer
                         ConditionalPreferences(
                             { it.playbackPreferences.playerBackend != PlayerBackend.EXTERNAL_PLAYER },
                             ExoPlayerSettings,

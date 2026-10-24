@@ -157,6 +157,8 @@ class AppPreferencesSerializer
                             .apply {
                                 imageDiskCacheSizeBytes =
                                     AppPreference.ImageDiskCacheSize.defaultValue * AppPreference.MEGA_BIT
+                                emojiCollectionsAsMain = AppPreference.EmojiCollectionsAsMain.defaultValue
+                                groupCollections = AppPreference.GroupCollections.defaultValue
                             }.build()
 
                     photoPreferences =
