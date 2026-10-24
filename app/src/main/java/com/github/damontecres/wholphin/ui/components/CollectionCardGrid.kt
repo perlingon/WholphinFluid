@@ -39,13 +39,12 @@ import androidx.lifecycle.viewModelScope
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.github.damontecres.wholphin.R
-import com.github.damontecres.wholphin.data.ServerRepository
 import com.github.damontecres.wholphin.data.model.BaseItem
+import com.github.damontecres.wholphin.services.CollectionTreeService
 import com.github.damontecres.wholphin.services.ImageUrlService
 import com.github.damontecres.wholphin.services.NavigationManager
 import com.github.damontecres.wholphin.ui.AspectRatios
 import com.github.damontecres.wholphin.ui.OneTimeLaunchedEffect
-import com.github.damontecres.wholphin.ui.SlimItemFields
 import com.github.damontecres.wholphin.ui.cards.GenreCard
 import com.github.damontecres.wholphin.ui.detail.CardGridItem
 import com.github.damontecres.wholphin.ui.ifElse
@@ -53,46 +52,22 @@ import com.github.damontecres.wholphin.ui.launchIO
 import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.ui.tryRequestFocus
 import com.github.damontecres.wholphin.util.DataLoadingState
-import com.github.damontecres.wholphin.util.GetItemsRequestHandler
-import com.github.damontecres.wholphin.util.WholphinDispatchers
-import com.mayakapps.kache.InMemoryKache
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.sync.Semaphore
-import kotlinx.coroutines.sync.withPermit
 import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.client.extensions.userLibraryApi
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
 import org.jellyfin.sdk.model.api.ImageType
-import org.jellyfin.sdk.model.api.ItemSortBy
-import org.jellyfin.sdk.model.api.SortOrder
-import org.jellyfin.sdk.model.api.request.GetItemsRequest
 import timber.log.Timber
 import java.util.UUID
-import kotlin.time.Duration.Companion.hours
-
-/**
- * How many levels of nested collections to look through when a collection has no movie with a backdrop
- */
-private const val MAX_NESTED_DEPTH = 3
-
-/**
- * How many child collections to try at each level before giving up
- */
-private const val MAX_CHILD_COLLECTIONS = 3
-
-/**
- * How many backdrop lookups run at the same time
- */
-private const val IMAGE_CONCURRENCY = 4
 
 @HiltViewModel(assistedFactory = CollectionGridViewModel.Factory::class)
 class CollectionGridViewModel
@@ -100,7 +75,7 @@ class CollectionGridViewModel
     constructor(
         private val api: ApiClient,
         private val imageUrlService: ImageUrlService,
-        private val serverRepository: ServerRepository,
+        private val collectionTreeService: CollectionTreeService,
         val navigationManager: NavigationManager,
         @Assisted private val itemId: UUID,
         @Assisted("recursive") private val recursive: Boolean,
@@ -122,80 +97,24 @@ class CollectionGridViewModel
         private val _state = MutableStateFlow(CollectionGridState())
         val state: StateFlow<CollectionGridState> = _state
 
-        private fun collectionsRequest() =
-            GetItemsRequest(
-                userId = serverRepository.currentUser?.id,
-                parentId = itemId,
-                recursive = recursive,
-                includeItemTypes = listOf(BaseItemKind.BOX_SET),
-                sortBy = listOf(ItemSortBy.SORT_NAME),
-                sortOrder = listOf(SortOrder.ASCENDING),
-                fields = SlimItemFields,
-            )
+        private var cardWidthPx = 0
 
         fun init(cardWidthPx: Int) {
+            this.cardWidthPx = cardWidthPx
             _state.update { it.copy(item = DataLoadingState.Loading) }
             viewModelScope.launchIO {
                 try {
+                    // A collection's own details are in the saved tree, a library's need one call
                     val item =
-                        api.userLibraryApi.getItem(itemId = itemId).content.let {
-                            BaseItem(it, false)
-                        }
-                    val all = if (contentsMode) contentsItems() else collectionsItems()
-                    // With both settings on, non-emoji collections that only hold other collections are represented
-                    // by their group heading, so their own card is hidden
-                    val hideContainers = emojiFirst && groupNested
-                    val (parents, containers) =
-                        if (groupNested) {
-                            parentCollections(all.filter { it.type == BaseItemKind.BOX_SET }, hideContainers)
-                        } else {
-                            Pair(emptyMap<UUID, UUID>(), emptySet<UUID>())
-                        }
-                    // Emoji collections first, then the rest. Both A-Z, ignoring the leading emoji
-                    val byName =
-                        compareByDescending<CollectionCardItem> { it.isEmoji }
-                            .thenBy(String.CASE_INSENSITIVE_ORDER) { it.sortName.withoutLeadingEmoji() }
-                    val allSorted =
-                        all
-                            .map {
-                                CollectionCardItem(
-                                    item = BaseItem(it, false),
-                                    imageUrl = null,
-                                    parentId = parents[it.id],
-                                    isEmoji =
-                                        if (contentsMode) {
-                                            // Inside an emoji collection its own movies etc. are the big cards
-                                            it.type != BaseItemKind.BOX_SET
-                                        } else {
-                                            emojiFirst && it.name.startsWithEmoji()
-                                        },
-                                )
-                            }
-                            .sortedWith(byName)
-                    val collections = layoutGroups(allSorted).filter { it.isEmoji || it.id !in containers }
-                    val key =
-                        CollectionCacheKey(
-                            userId = serverRepository.currentUser?.id,
-                            parentId = itemId,
-                            emojiFirst = emojiFirst,
-                            groupNested = groupNested,
-                            contentsMode = contentsMode,
-                        )
-                    val cached = collectionImageCache.getIfAvailable(key)
-                    _state.update {
-                        it.copy(
-                            item = DataLoadingState.Success(item),
-                            collections =
-                                if (cached != null) {
-                                    collections.map { c -> c.copy(imageUrl = cached[c.id]) }
-                                } else {
-                                    collections
-                                },
-                        )
-                    }
-                    if (cached == null) {
-                        loadImages(key, collections.map { it.item.data }, cardWidthPx)
-                    }
+                        collectionTreeService.get().entry(itemId)?.dto?.let { BaseItem(it, false) }
+                            ?: api.userLibraryApi.getItem(itemId = itemId).content.let { BaseItem(it, false) }
+                    show(item)
+                    collectionTreeService.refreshIfOlderThan(CollectionTreeService.PAGE_REFRESH_AGE)
+                    // Show changes when the tree is rebuilt in the background
+                    collectionTreeService.tree
+                        .drop(1)
+                        .filterNotNull()
+                        .collect { show(item) }
                 } catch (ex: Exception) {
                     Timber.e(ex, "Error fetching collections")
                     _state.update { it.copy(item = DataLoadingState.Error(ex)) }
@@ -203,56 +122,85 @@ class CollectionGridViewModel
             }
         }
 
-        private suspend fun collectionsItems(): List<BaseItemDto> =
-            GetItemsRequestHandler
-                .execute(api, collectionsRequest())
-                .content.items
+        /**
+         * Build the grid from the saved collection tree
+         */
+        private suspend fun show(item: BaseItem) {
+            val all =
+                if (contentsMode) {
+                    contentsItems()
+                } else {
+                    collectionTreeService.list(itemId, recursive).map { it.dto }
+                }
+            val boxSets = all.filter { it.type == BaseItemKind.BOX_SET }
+            val ids = boxSets.map { it.id }.toSet()
+            // With both settings on, non-emoji collections that only hold other collections are represented
+            // by their group heading, so their own card is hidden
+            val hideContainers = emojiFirst && groupNested
+            val parents = mutableMapOf<UUID, UUID>()
+            val containers = mutableSetOf<UUID>()
+            if (groupNested) {
+                boxSets.forEach { collection ->
+                    val entry = collectionTreeService.entry(collection.id) ?: return@forEach
+                    entry.childCollections
+                        .filter { it.id in ids && it.id != collection.id }
+                        .forEach { parents.putIfAbsent(it.id, collection.id) }
+                    if (hideContainers && entry.onlyCollections) containers.add(collection.id)
+                }
+            }
+            // Emoji collections first, then the rest. Both A-Z, ignoring the leading emoji
+            val byName =
+                compareByDescending<CollectionCardItem> { it.isEmoji }
+                    .thenBy(String.CASE_INSENSITIVE_ORDER) { it.sortName.withoutLeadingEmoji() }
+            val allSorted =
+                all
+                    .map {
+                        CollectionCardItem(
+                            item = BaseItem(it, false),
+                            imageUrl = imageFor(it),
+                            parentId = parents[it.id],
+                            isEmoji =
+                                if (contentsMode) {
+                                    // Inside a nested collection its own movies etc. are the big cards
+                                    it.type != BaseItemKind.BOX_SET
+                                } else {
+                                    emojiFirst && it.name.startsWithEmoji()
+                                },
+                        )
+                    }.sortedWith(byName)
+            val collections = layoutGroups(allSorted).filter { it.isEmoji || it.id !in containers }
+            _state.update {
+                it.copy(
+                    item = DataLoadingState.Success(item),
+                    collections = collections,
+                )
+            }
+        }
 
         /**
          * Everything directly in this collection, plus the collections inside its child collections so those
          * can be grouped under their parent like on the Collections page
          */
         private suspend fun contentsItems(): List<BaseItemDto> {
-            val userId = serverRepository.currentUser?.id
-            val direct =
-                GetItemsRequestHandler
-                    .execute(
-                        api,
-                        GetItemsRequest(
-                            userId = userId,
-                            parentId = itemId,
-                            sortBy = listOf(ItemSortBy.SORT_NAME),
-                            sortOrder = listOf(SortOrder.ASCENDING),
-                            fields = SlimItemFields,
-                        ),
-                    ).content.items
-            val semaphore = Semaphore(IMAGE_CONCURRENCY)
+            val direct = collectionTreeService.entry(itemId)?.children.orEmpty()
             val grandchildren =
                 direct
                     .filter { it.type == BaseItemKind.BOX_SET }
-                    .map { child ->
-                        viewModelScope.async(WholphinDispatchers.IO) {
-                            semaphore.withPermit {
-                                try {
-                                    GetItemsRequestHandler
-                                        .execute(
-                                            api,
-                                            GetItemsRequest(
-                                                userId = userId,
-                                                parentId = child.id,
-                                                includeItemTypes = listOf(BaseItemKind.BOX_SET),
-                                                fields = SlimItemFields,
-                                            ),
-                                        ).content.items
-                                } catch (ex: Exception) {
-                                    Timber.w(ex, "Error fetching child collections of %s", child.id)
-                                    emptyList()
-                                }
-                            }
-                        }
-                    }.awaitAll()
-                    .flatten()
+                    .flatMap { collectionTreeService.entry(it.id)?.childCollections.orEmpty() }
             return (direct + grandchildren).distinctBy { it.id }
+        }
+
+        /**
+         * A movie etc. uses its own backdrop, a collection the one picked for it in the tree
+         */
+        private suspend fun imageFor(dto: BaseItemDto): String? {
+            val source =
+                if (dto.type != BaseItemKind.BOX_SET) {
+                    dto.takeIf { !it.backdropImageTags.isNullOrEmpty() }
+                } else {
+                    collectionTreeService.entry(dto.id)?.backdropItem
+                }
+            return source?.let { backdropUrl(it, cardWidthPx) }
         }
 
         /**
@@ -306,162 +254,6 @@ class CollectionGridViewModel
             return result
         }
 
-        /**
-         * Map each of the given collections that is inside another of the given collections to that parent.
-         * If it is in several, the first parent in the list wins. With [findContainers], also return the
-         * collections that hold nothing but other collections.
-         */
-        private suspend fun parentCollections(
-            collections: List<BaseItemDto>,
-            findContainers: Boolean,
-        ): Pair<Map<UUID, UUID>, Set<UUID>> {
-            val userId = serverRepository.currentUser?.id
-            val ids = collections.map { it.id }.toSet()
-            val semaphore = Semaphore(IMAGE_CONCURRENCY)
-            val children =
-                collections
-                    .map { collection ->
-                        viewModelScope.async(WholphinDispatchers.IO) {
-                            semaphore.withPermit {
-                                try {
-                                    val childCollections =
-                                        GetItemsRequestHandler
-                                            .execute(
-                                                api,
-                                                GetItemsRequest(
-                                                    userId = userId,
-                                                    parentId = collection.id,
-                                                    includeItemTypes = listOf(BaseItemKind.BOX_SET),
-                                                    enableTotalRecordCount = false,
-                                                ),
-                                            ).content.items
-                                            .map { it.id }
-                                    val onlyCollections =
-                                        findContainers &&
-                                            childCollections.isNotEmpty() &&
-                                            GetItemsRequestHandler.countMatching(
-                                                api,
-                                                GetItemsRequest(
-                                                    userId = userId,
-                                                    parentId = collection.id,
-                                                    excludeItemTypes = listOf(BaseItemKind.BOX_SET),
-                                                    limit = 0,
-                                                    enableTotalRecordCount = true,
-                                                ),
-                                            ) == 0
-                                    childCollections.filter { it in ids && it != collection.id } to onlyCollections
-                                } catch (ex: Exception) {
-                                    Timber.w(ex, "Error fetching child collections of %s", collection.id)
-                                    emptyList<UUID>() to false
-                                }
-                            }
-                        }
-                    }.awaitAll()
-            val parents = mutableMapOf<UUID, UUID>()
-            val containers = mutableSetOf<UUID>()
-            collections.zip(children).forEach { (parent, result) ->
-                val (childIds, onlyCollections) = result
-                childIds.forEach { parents.putIfAbsent(it, parent.id) }
-                if (onlyCollections) containers.add(parent.id)
-            }
-            return parents to containers
-        }
-
-        /**
-         * Find a backdrop for every collection, updating the grid as each one arrives
-         */
-        private suspend fun loadImages(
-            key: CollectionCacheKey,
-            collections: List<BaseItemDto>,
-            cardWidthPx: Int,
-        ) {
-            val userId = serverRepository.currentUser?.id
-            val semaphore = Semaphore(IMAGE_CONCURRENCY)
-            val results =
-                collections
-                    .map { collection ->
-                        viewModelScope.async(WholphinDispatchers.IO) {
-                            val url =
-                                semaphore.withPermit {
-                                    try {
-                                        val source =
-                                            if (collection.type != BaseItemKind.BOX_SET) {
-                                                // A movie etc. uses its own backdrop
-                                                collection.takeIf { !it.backdropImageTags.isNullOrEmpty() }
-                                            } else {
-                                                findBackdropItem(userId, collection.id, 0)
-                                                    ?: collection.takeIf { !it.backdropImageTags.isNullOrEmpty() }
-                                            }
-                                        source?.let { backdropUrl(it, cardWidthPx) }
-                                    } catch (ex: Exception) {
-                                        Timber.w(ex, "Error finding backdrop for collection %s", collection.id)
-                                        null
-                                    }
-                                }
-                            if (url != null) {
-                                _state.update { st ->
-                                    st.copy(
-                                        collections =
-                                            st.collections.map {
-                                                if (it.id == collection.id) it.copy(imageUrl = url) else it
-                                            },
-                                    )
-                                }
-                            }
-                            collection.id to url
-                        }
-                    }.awaitAll()
-            collectionImageCache.put(key, results.toMap())
-        }
-
-        /**
-         * Pick a random movie (or other non-collection item) with a backdrop from the collection.
-         * If there is none, look inside the collection's child collections instead.
-         */
-        private suspend fun findBackdropItem(
-            userId: UUID?,
-            collectionId: UUID,
-            depth: Int,
-        ): BaseItemDto? {
-            val direct =
-                GetItemsRequestHandler
-                    .execute(
-                        api,
-                        GetItemsRequest(
-                            userId = userId,
-                            parentId = collectionId,
-                            limit = 1,
-                            sortBy = listOf(ItemSortBy.RANDOM),
-                            excludeItemTypes = listOf(BaseItemKind.BOX_SET),
-                            imageTypes = listOf(ImageType.BACKDROP),
-                            imageTypeLimit = 1,
-                            enableTotalRecordCount = false,
-                        ),
-                    ).content.items
-                    .firstOrNull()
-            if (direct != null || depth >= MAX_NESTED_DEPTH) return direct
-
-            val children =
-                GetItemsRequestHandler
-                    .execute(
-                        api,
-                        GetItemsRequest(
-                            userId = userId,
-                            parentId = collectionId,
-                            limit = MAX_CHILD_COLLECTIONS,
-                            sortBy = listOf(ItemSortBy.RANDOM),
-                            includeItemTypes = listOf(BaseItemKind.BOX_SET),
-                            imageTypeLimit = 1,
-                            enableTotalRecordCount = false,
-                        ),
-                    ).content.items
-            for (child in children) {
-                findBackdropItem(userId, child.id, depth + 1)?.let { return it }
-            }
-            // Nothing deeper down, so fall back to a child collection's own backdrop
-            return children.firstOrNull { !it.backdropImageTags.isNullOrEmpty() }
-        }
-
         private fun backdropUrl(
             item: BaseItemDto,
             cardWidthPx: Int,
@@ -505,20 +297,6 @@ data class CollectionGridState(
     val item: DataLoadingState<BaseItem> = DataLoadingState.Pending,
     val collections: List<CollectionCardItem> = emptyList(),
 )
-
-data class CollectionCacheKey(
-    val userId: UUID?,
-    val parentId: UUID,
-    val emojiFirst: Boolean,
-    val groupNested: Boolean,
-    val contentsMode: Boolean,
-)
-
-private val collectionImageCache by lazy {
-    InMemoryKache<CollectionCacheKey, Map<UUID, String?>>(8) {
-        expireAfterWriteDuration = 2.hours
-    }
-}
 
 @Stable
 data class CollectionCardItem(

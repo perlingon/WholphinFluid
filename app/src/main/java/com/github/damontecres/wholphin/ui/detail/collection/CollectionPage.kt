@@ -8,21 +8,17 @@ import androidx.compose.ui.Modifier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.github.damontecres.wholphin.data.ServerRepository
 import com.github.damontecres.wholphin.preferences.UserPreferences
+import com.github.damontecres.wholphin.services.CollectionTreeService
 import com.github.damontecres.wholphin.ui.components.CollectionCardGrid
 import com.github.damontecres.wholphin.ui.components.LoadingPage
 import com.github.damontecres.wholphin.ui.launchIO
-import com.github.damontecres.wholphin.util.GetItemsRequestHandler
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import org.jellyfin.sdk.api.client.ApiClient
-import org.jellyfin.sdk.model.api.BaseItemKind
-import org.jellyfin.sdk.model.api.request.GetItemsRequest
 import timber.log.Timber
 import java.util.UUID
 
@@ -46,8 +42,7 @@ enum class CollectionLayout {
 class CollectionLayoutViewModel
     @AssistedInject
     constructor(
-        private val api: ApiClient,
-        private val serverRepository: ServerRepository,
+        private val collectionTreeService: CollectionTreeService,
         @Assisted private val itemId: UUID,
         @Assisted private val emojiLayout: Boolean,
     ) : ViewModel() {
@@ -75,63 +70,18 @@ class CollectionLayoutViewModel
         }
 
         /**
-         * Whether any of this collection's child collections holds collections of its own
+         * Decide from the saved collection tree, so opening a collection needs no extra calls
          */
-        private suspend fun hasGrandchildCollections(userId: UUID?): Boolean {
-            val children =
-                GetItemsRequestHandler
-                    .execute(
-                        api,
-                        GetItemsRequest(
-                            userId = userId,
-                            parentId = itemId,
-                            includeItemTypes = listOf(BaseItemKind.BOX_SET),
-                            enableTotalRecordCount = false,
-                        ),
-                    ).content.items
-            return children.any { child ->
-                GetItemsRequestHandler.countMatching(
-                    api,
-                    GetItemsRequest(
-                        userId = userId,
-                        parentId = child.id,
-                        includeItemTypes = listOf(BaseItemKind.BOX_SET),
-                        limit = 0,
-                        enableTotalRecordCount = true,
-                    ),
-                ) > 0
-            }
-        }
-
         private suspend fun computeLayout(): CollectionLayout {
-            val userId = serverRepository.currentUser?.id
-            if (emojiLayout && hasGrandchildCollections(userId)) {
+            val entry = collectionTreeService.entry(itemId) ?: return CollectionLayout.DETAILS
+            val childCollections = entry.childCollections
+            // Any child collection that holds collections of its own
+            if (emojiLayout &&
+                childCollections.any { collectionTreeService.entry(it.id)?.childCollections?.isNotEmpty() == true }
+            ) {
                 return CollectionLayout.EMOJI_CONTENTS
             }
-            val otherItems =
-                GetItemsRequestHandler.countMatching(
-                    api,
-                    GetItemsRequest(
-                        userId = userId,
-                        parentId = itemId,
-                        excludeItemTypes = listOf(BaseItemKind.BOX_SET),
-                        limit = 0,
-                        enableTotalRecordCount = true,
-                    ),
-                )
-            if (otherItems > 0) return CollectionLayout.DETAILS
-            val childCollections =
-                GetItemsRequestHandler.countMatching(
-                    api,
-                    GetItemsRequest(
-                        userId = userId,
-                        parentId = itemId,
-                        includeItemTypes = listOf(BaseItemKind.BOX_SET),
-                        limit = 0,
-                        enableTotalRecordCount = true,
-                    ),
-                )
-            return if (childCollections > 0) CollectionLayout.COLLECTION_CARDS else CollectionLayout.DETAILS
+            return if (entry.onlyCollections) CollectionLayout.COLLECTION_CARDS else CollectionLayout.DETAILS
         }
     }
 
