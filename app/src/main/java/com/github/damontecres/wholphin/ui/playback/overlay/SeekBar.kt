@@ -155,6 +155,7 @@ fun IntervalSeekBarImpl(
     modifier: Modifier = Modifier,
     interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
     enabled: Boolean = true,
+    highlighted: Boolean = false,
 ) {
     val isFocused by interactionSource.collectIsFocusedAsState()
     var hasSeeked by remember { mutableStateOf(false) }
@@ -206,6 +207,7 @@ fun IntervalSeekBarImpl(
             }
         },
         interactionSource = interactionSource,
+        highlighted = highlighted,
         modifier = modifier,
     )
 }
@@ -228,6 +230,8 @@ private fun SeekBarDisplay(
     enabled: Boolean = true,
     originProgress: Float? = null,
     onBack: () -> Boolean = { false },
+    // Show the focused look without having focus, e.g. while the play button next to it is focused
+    highlighted: Boolean = false,
 ) {
     val color = MaterialTheme.colorScheme.border
     val onSurface = MaterialTheme.colorScheme.onSurface
@@ -244,8 +248,9 @@ private fun SeekBarDisplay(
     var rightHandledByRepeat by remember { mutableStateOf(false) }
     // Whether the current Back press was used to undo a seek, so its key-up is consumed too
     var backHandled by remember { mutableStateOf(false) }
+    val looksFocused = isFocused || highlighted
     val animatedIndicatorHeight by animateDpAsState(
-        targetValue = 4.dp.times((if (isFocused) 2f else 1f)),
+        targetValue = 4.dp.times((if (looksFocused) 2f else 1f)),
     )
 
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
@@ -379,7 +384,7 @@ private fun SeekBarDisplay(
                 val dotUnfocused = 12.dp
                 drawCircle(
                     color = Color.White,
-                    radius = (if (isFocused) dotFocused else dotUnfocused).toPx() / 2,
+                    radius = (if (looksFocused) dotFocused else dotUnfocused).toPx() / 2,
                     center =
                         Offset(
                             x = size.width.times(progress),

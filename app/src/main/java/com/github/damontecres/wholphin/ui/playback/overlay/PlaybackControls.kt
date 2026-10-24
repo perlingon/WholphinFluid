@@ -298,6 +298,8 @@ fun SeekBar(
 ) {
     // Width of the leading content, so the timecodes line up with the bar
     var leadingWidth by remember { mutableStateOf(0.dp) }
+    // While the leading content (the play button) has focus, the bar shows its focused look too
+    var leadingFocused by remember { mutableStateOf(false) }
     val density = LocalDensity.current
     var bufferedProgress by remember(player) { mutableFloatStateOf(player.bufferedPosition.toFloat() / player.duration) }
     var position by remember(player) { mutableLongStateOf(player.currentPosition) }
@@ -320,7 +322,12 @@ fun SeekBar(
             modifier = Modifier.fillMaxWidth(),
         ) {
             if (leading != null) {
-                Box(modifier = Modifier.onSizeChanged { leadingWidth = with(density) { it.width.toDp() } }) {
+                Box(
+                    modifier =
+                        Modifier
+                            .onSizeChanged { leadingWidth = with(density) { it.width.toDp() } }
+                            .onFocusChanged { leadingFocused = it.hasFocus },
+                ) {
                     leading()
                 }
             }
@@ -338,6 +345,7 @@ fun SeekBar(
                 durationMs = player.duration,
                 seekBack = seekBack,
                 seekForward = seekForward,
+                highlighted = leadingFocused,
             )
         }
         SeekTimecodes(
