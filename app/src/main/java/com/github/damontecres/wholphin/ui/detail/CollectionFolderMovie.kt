@@ -14,6 +14,7 @@ import com.github.damontecres.wholphin.R
 import com.github.damontecres.wholphin.data.model.CollectionFolderFilter
 import com.github.damontecres.wholphin.data.model.GetItemsFilter
 import com.github.damontecres.wholphin.preferences.UserPreferences
+import com.github.damontecres.wholphin.ui.components.CollectionCardGrid
 import com.github.damontecres.wholphin.ui.components.CollectionFolderView
 import com.github.damontecres.wholphin.ui.components.ErrorMessage
 import com.github.damontecres.wholphin.ui.components.GenreCardGrid
@@ -22,7 +23,6 @@ import com.github.damontecres.wholphin.ui.components.TabDetails
 import com.github.damontecres.wholphin.ui.components.TabbedPage
 import com.github.damontecres.wholphin.ui.components.ViewOptionsPoster
 import com.github.damontecres.wholphin.ui.data.MovieSortOptions
-import com.github.damontecres.wholphin.ui.data.VideoSortOptions
 import com.github.damontecres.wholphin.ui.nav.Destination
 import com.github.damontecres.wholphin.ui.preferences.PreferencesViewModel
 import org.jellyfin.sdk.model.api.BaseItemKind
@@ -103,33 +103,15 @@ fun CollectionFolderMovie(
 
             // Collections
             2 -> {
-                CollectionFolderView(
-                    preferences = preferences,
-                    onClickItem = { _, item ->
-                        preferencesViewModel.navigationManager.navigateTo(item.destination())
-                    },
+                CollectionCardGrid(
                     itemId = destination.itemId,
-                    viewModelKey = "${destination.itemId}_collection",
-                    initialFilter =
-                        CollectionFolderFilter(
-                            filter =
-                                GetItemsFilter(
-                                    includeItemTypes = listOf(BaseItemKind.BOX_SET),
-                                ),
-                        ),
-                    showTitle = false,
                     recursive = true,
-                    sortOptions = VideoSortOptions,
-                    defaultViewOptions = ViewOptionsPoster,
+                    emojiFirst = preferences.appPreferences.advancedPreferences.emojiCollectionsAsMain,
+                    groupNested = preferences.appPreferences.advancedPreferences.groupCollections,
                     modifier =
                         Modifier
                             .fillMaxSize()
                             .focusRequester(tabDetails.contentFocusRequester),
-                    positionCallback = { columns, position ->
-                        showHeader = position < columns
-                    },
-                    playEnabled = false,
-                    focusRequesterOnEmpty = tabDetails.tabFocusRequester,
                 )
             }
 
