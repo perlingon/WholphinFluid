@@ -1,5 +1,6 @@
 package com.github.damontecres.wholphin.ui.playback.overlay
 
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Easing
@@ -64,6 +65,8 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.IntOffset
@@ -72,6 +75,8 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.media3.common.Player
 import androidx.tv.material3.Icon
+import androidx.tv.material3.MaterialTheme
+import androidx.tv.material3.Text
 import coil3.compose.AsyncImage
 import com.github.damontecres.wholphin.R
 import com.github.damontecres.wholphin.data.model.BaseItem
@@ -433,7 +438,11 @@ fun PlaybackOverlay(
 
         // Top
         val logoImageUrl = LocalImageUrlService.current.rememberImageUrl(item, ImageType.LOGO)
-        val showLogo = !showDebugInfo && logoImageUrl.isNotNullOrBlank() && controllerViewState.controlsVisible
+        val hasLogo = logoImageUrl.isNotNullOrBlank()
+        // Title (and logo, if there is one) in the top end corner while the controls show
+        val showTitle = !showDebugInfo && controllerViewState.controlsVisible
+        val (titleLine, detailLine) = remember(item) { playerTitleLines(item) }
+        val isEpisode = item?.data?.seriesName != null
         // The clock only shows while paused with the controls hidden (the logo has its corner otherwise)
         val showClockNow = !showDebugInfo && showClock && showPlay && !controllerViewState.controlsVisible
         // Fades in the top corners behind the logo and the clock, each shown only with its element.
@@ -454,6 +463,15 @@ fun PlaybackOverlay(
         val logoMaxSize = DpSize(180.dp, 80.dp)
         val logoInsetEnd = Spacing.lg
         val logoInsetTop = Spacing.lg
+        // Title lines in the top end corner: styles, the gap between the lines and under the logo,
+        // how dim the second line is, and how wide the block may get before lines are cut off
+        val titleStyle = MaterialTheme.typography.titleMedium
+        val titleWeight = FontWeight.SemiBold
+        val detailStyle = MaterialTheme.typography.bodyMedium
+        val detailOpacity = 0.7f
+        val titleLineGap = Spacing.xs
+        val logoGap = Spacing.xs
+        val titleMaxWidth = 480.dp
         // Distance of the restart button from the top and start edge of the picture area
         val restartInsetStart = Spacing.lg
         val restartInsetTop = Spacing.lg
@@ -468,7 +486,7 @@ fun PlaybackOverlay(
                     .fillMaxWidth(),
         ) {
             AnimatedVisibility(
-                visible = showLogo,
+                visible = showTitle,
                 enter = fadeIn(showFade),
                 exit = fadeOut(hideFade),
                 modifier = Modifier.align(Alignment.TopEnd),
@@ -542,9 +560,11 @@ fun PlaybackOverlay(
                     }
                 }
             }
-            // Logo in the top end corner
+            // Title in the top end corner, on two lines: the name, then the lighter line
+            // ("S1 E4 · Episode title", or the year for a movie). With a logo, an episode shows
+            // only the lighter line under it; a movie still shows its title.
             AnimatedVisibility(
-                visible = showLogo,
+                visible = showTitle,
                 enter = slideIn(showOffset) { IntOffset(x = it.width / 2, y = -it.height / 2) } + fadeIn(showFade),
                 exit = slideOut(hideOffset) { IntOffset(x = it.width / 2, y = -it.height / 2) } + fadeOut(hideFade),
                 modifier =
@@ -552,12 +572,42 @@ fun PlaybackOverlay(
                         .align(Alignment.TopEnd)
                         .padding(end = logoInsetEnd, top = logoInsetTop),
             ) {
-                AsyncImage(
-                    model = logoImageUrl,
-                    contentDescription = "Logo",
-                    alignment = Alignment.TopEnd,
-                    modifier = Modifier.size(logoMaxSize),
-                )
+                Column(
+                    horizontalAlignment = Alignment.End,
+                    verticalArrangement = Arrangement.spacedBy(titleLineGap),
+                    modifier = Modifier.widthIn(max = titleMaxWidth),
+                ) {
+                    if (hasLogo) {
+                        AsyncImage(
+                            model = logoImageUrl,
+                            contentDescription = "Logo",
+                            alignment = Alignment.TopEnd,
+                            modifier = Modifier.size(logoMaxSize).padding(bottom = logoGap),
+                        )
+                    }
+                    if (!(hasLogo && isEpisode)) {
+                        titleLine?.let {
+                            Text(
+                                text = it,
+                                style = titleStyle,
+                                fontWeight = titleWeight,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                textAlign = TextAlign.End,
+                            )
+                        }
+                    }
+                    detailLine?.let {
+                        Text(
+                            text = it,
+                            style = detailStyle,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = detailOpacity),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            textAlign = TextAlign.End,
+                        )
+                    }
+                }
             }
             AnimatedVisibility(
                 visible = showClockNow,
