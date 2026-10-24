@@ -374,10 +374,8 @@ fun CollectionCardGrid(
     val columns = 4
     // Emoji collections get bigger cards, this many per row
     val emojiColumns = 3
-    // Groups under a heading get smaller cards, this many per row
-    val headingGroupColumns = 6
-    // The grid is split into the least common multiple of the column counts so every group fits
-    val gridSlots = lcm(lcm(columns, emojiColumns), headingGroupColumns)
+    // The grid is split into lcm(columns, emojiColumns) slots so both groups fit
+    val gridSlots = columns * emojiColumns
     val spacing = 16.dp
     // Extra space between the emoji collections and the rest (on top of the normal row spacing)
     val groupGap = Spacing.md
@@ -531,16 +529,7 @@ fun CollectionCardGrid(
                             items(
                                 subgroup.size,
                                 key = { subgroup[it].gridId },
-                                span = {
-                                    val card = subgroup[it]
-                                    val perRow =
-                                        when {
-                                            card.big -> emojiColumns
-                                            card.groupTitle != null -> headingGroupColumns
-                                            else -> columns
-                                        }
-                                    GridItemSpan(gridSlots / perRow)
-                                },
+                                span = { GridItemSpan(gridSlots / if (subgroup[it].big) emojiColumns else columns) },
                             ) { index ->
                                 collectionCard(subgroup[index], start + index)
                             }
@@ -552,13 +541,3 @@ fun CollectionCardGrid(
         }
     }
 }
-
-private tailrec fun gcd(
-    a: Int,
-    b: Int,
-): Int = if (b == 0) a else gcd(b, a % b)
-
-private fun lcm(
-    a: Int,
-    b: Int,
-): Int = a / gcd(a, b) * b
