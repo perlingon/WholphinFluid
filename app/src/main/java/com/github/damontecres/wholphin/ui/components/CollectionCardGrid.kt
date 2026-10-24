@@ -206,8 +206,8 @@ class CollectionGridViewModel
         /**
          * Order the collections and number their groups: emoji collections first (group -1), then the rest in
          * groups. Collections inside an emoji collection come first, in the order of those parents. Then the
-         * collections that aren't inside another one, where each group of child collections is listed right
-         * after its parent.
+         * collections that aren't inside another one. Each group is listed without breaks, followed by the
+         * groups of its members' child collections.
          */
         private fun layoutGroups(sorted: List<CollectionCardItem>): List<CollectionCardItem> {
             val emoji = sorted.filter { it.isEmoji }
@@ -220,31 +220,19 @@ class CollectionGridViewModel
             // Only groups of children of a first level collection get a heading (the parent's name)
             fun titleFor(parent: CollectionCardItem) = parent.item.name.takeIf { parent.parentId == null }
 
+            // A group is listed in full first, then the child groups of its members follow in the same order
             fun emit(
                 run: List<CollectionCardItem>,
                 title: String?,
             ) {
-                var current = mutableListOf<CollectionCardItem>()
-                var currentTitle = title
-
-                fun close() {
-                    if (current.isNotEmpty()) {
-                        result.addAll(current.map { it.copy(groupIndex = groupIndex, groupTitle = currentTitle) })
-                        groupIndex++
-                        current = mutableListOf()
-                        // The rest of a run after a child group continues without repeating the heading
-                        currentTitle = null
-                    }
-                }
-                run.filter { placed.add(it.id) }.forEach { c ->
-                    current.add(c)
+                val group = run.filter { placed.add(it.id) }
+                if (group.isEmpty()) return
+                result.addAll(group.map { it.copy(groupIndex = groupIndex, groupTitle = title) })
+                groupIndex++
+                group.forEach { c ->
                     val children = childrenOf[c.id].orEmpty().filter { it.id !in placed }
-                    if (children.isNotEmpty()) {
-                        close()
-                        emit(children, titleFor(c))
-                    }
+                    if (children.isNotEmpty()) emit(children, titleFor(c))
                 }
-                close()
             }
             emoji.forEach { parent -> childrenOf[parent.id]?.let { emit(it, titleFor(parent)) } }
             // Not inside another collection
