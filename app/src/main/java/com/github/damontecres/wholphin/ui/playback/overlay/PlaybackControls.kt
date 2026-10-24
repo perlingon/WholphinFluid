@@ -274,11 +274,15 @@ fun PlaybackControls(
                         }
                     },
         )
+        // How far the button row and the hint sit in from the seek bar's ends. Tuning value, kept
+        // local so Live Edit picks up changes
+        val rowSideInset = Spacing.sm
         Box(
             modifier =
                 Modifier
-                    // Same width as the seek bar, so the row starts under the play/pause button
+                    // Same width as the seek bar, then moved in a little at both ends
                     .fillMaxWidth(.95f)
+                    .padding(horizontal = rowSideInset)
                     // Down from the row opens the chapter or episode row
                     .onPreviewKeyEvent { event ->
                         if (onDownFromRow != null && event.type == KeyEventType.KeyDown && event.key == Key.DirectionDown) {
