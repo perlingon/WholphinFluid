@@ -52,6 +52,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.scale
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
@@ -62,6 +63,7 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.IntOffset
@@ -69,6 +71,7 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.media3.common.Player
+import androidx.tv.material3.Icon
 import coil3.compose.AsyncImage
 import com.github.damontecres.wholphin.R
 import com.github.damontecres.wholphin.data.model.BaseItem
@@ -76,7 +79,6 @@ import com.github.damontecres.wholphin.data.model.Chapter
 import com.github.damontecres.wholphin.data.model.PlaylistItem
 import com.github.damontecres.wholphin.ui.AppColors
 import com.github.damontecres.wholphin.ui.LocalImageUrlService
-import com.github.damontecres.wholphin.ui.components.ExpandablePlayButton
 import com.github.damontecres.wholphin.ui.components.TimeDisplay
 import com.github.damontecres.wholphin.ui.isNotNullOrBlank
 import com.github.damontecres.wholphin.ui.playback.AnalyticsState
@@ -129,6 +131,9 @@ fun PlaybackOverlay(
     onCoveredHeightChange: (Dp) -> Unit = {},
     // Leaves the player, from the back button in the top corner
     onBack: () -> Unit = {},
+    // Labels shown next to the subtitle and audio buttons when focused
+    subtitleLabel: String = "",
+    audioLabel: String = "",
 ) {
     val seekBarFocused by seekBarInteractionSource.collectIsFocusedAsState()
     // Will be used for preview/trick play images
@@ -330,6 +335,8 @@ fun PlaybackOverlay(
                             chapters = chapters,
                             queueHeadline = queueHeadline(remember(queue) { groupQueueBySeason(queue) }, item, seriesEnded, seriesEpisodes),
                             playFocusRequester = playFocusRequester,
+                            subtitleLabel = subtitleLabel,
+                            audioLabel = audioLabel,
                             restartFocusRequester = restartFocusRequester.takeIf { !showDebugInfo },
                         )
                     }
@@ -450,10 +457,8 @@ fun PlaybackOverlay(
         // Distance of the restart button from the top and start edge of the picture area
         val restartInsetStart = Spacing.lg
         val restartInsetTop = Spacing.lg
-        // Gap between the back and restart buttons, and their size (keep in step with the
-        // player buttons, PlaybackButton's 36 dp)
+        // Gap between the back and restart buttons
         val topButtonGap = Spacing.sm
-        val topButtonSize = 36.dp
         val clockFadeSize = DpSize(400.dp, 200.dp)
         Box(
             modifier =
@@ -509,33 +514,32 @@ fun PlaybackOverlay(
                         }
                     }
                 Row(horizontalArrangement = Arrangement.spacedBy(topButtonGap)) {
-                    ExpandablePlayButton(
-                        title = R.string.back,
-                        resume = Duration.ZERO,
-                        icon = Icons.AutoMirrored.Filled.ArrowBack,
-                        buttonSize = topButtonSize,
+                    PlayerLabelButton(
+                        label = stringResource(R.string.back),
                         onClick = { onBack() },
+                        onControllerInteraction = { controllerViewState.pulseControls() },
                         modifier =
                             Modifier
                                 .focusRequester(restartFocusRequester)
-                                .onFocusChanged { if (it.isFocused) controllerViewState.pulseControls() }
                                 .then(downToPlay),
-                    )
-                    ExpandablePlayButton(
-                        title = R.string.restart,
-                        resume = Duration.ZERO,
-                        icon = Icons.Default.Refresh,
-                        mirrorIcon = true,
-                        buttonSize = topButtonSize,
+                    ) {
+                        Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null, modifier = it)
+                    }
+                    PlayerLabelButton(
+                        label = stringResource(R.string.restart),
                         onClick = {
                             player.seekTo(0)
                             controllerViewState.pulseControls()
                         },
-                        modifier =
-                            Modifier
-                                .onFocusChanged { if (it.isFocused) controllerViewState.pulseControls() }
-                                .then(downToPlay),
-                    )
+                        onControllerInteraction = { controllerViewState.pulseControls() },
+                        modifier = downToPlay,
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Refresh,
+                            contentDescription = null,
+                            modifier = it.graphicsLayer { scaleX = -1f },
+                        )
+                    }
                 }
             }
             // Logo in the top end corner

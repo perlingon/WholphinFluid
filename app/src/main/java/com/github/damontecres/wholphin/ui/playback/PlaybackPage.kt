@@ -55,6 +55,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
@@ -72,6 +73,7 @@ import androidx.media3.ui.compose.state.rememberPlayPauseButtonState
 import androidx.media3.ui.compose.state.rememberPresentationState
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.surfaceColorAtElevation
+import com.github.damontecres.wholphin.data.model.TrackIndex
 import com.github.damontecres.wholphin.mpv.MpvPlayer
 import com.github.damontecres.wholphin.preferences.AssPlaybackMode
 import com.github.damontecres.wholphin.preferences.DpadSeekMode
@@ -540,6 +542,30 @@ fun PlaybackPageContent(
                 seriesEnded = state.seriesEnded,
                 seriesEpisodes = state.seriesEpisodes,
                 onClickEpisode = viewModel::playEpisode,
+                subtitleLabel =
+                    state.currentPlayback?.subtitleIndex.let { index ->
+                        when {
+                            index != null && index >= 0 -> {
+                                state.currentMediaInfo.subtitleStreams
+                                    .firstOrNull { it.index == index }
+                                    ?.let { it.language ?: it.displayTitle }
+                            }
+
+                            index == TrackIndex.ONLY_FORCED -> {
+                                stringResource(R.string.only_forced_subtitles)
+                            }
+
+                            else -> {
+                                null
+                            }
+                        } ?: stringResource(R.string.subtitles_off)
+                    },
+                audioLabel =
+                    state.currentPlayback
+                        ?.audioIndex
+                        ?.let { index -> state.currentMediaInfo.audioStreams.firstOrNull { it.index == index } }
+                        ?.let { it.language ?: it.displayTitle }
+                        ?: stringResource(R.string.audio),
                 onBack = {
                     player.stop()
                     viewModel.navigationManager.goBack()

@@ -1047,4 +1047,6 @@
         <item quantity="one">First of %1$d episode</item>
         <item quantity="other">First of %1$d episodes</item>
     </plurals>
+    <string name="adjust_video">Adjust video</string>
+    <string name="subtitles_off">Off</string>
 </resources>

@@ -6,6 +6,7 @@ import android.view.Gravity
 import androidx.annotation.DrawableRes
 import androidx.annotation.OptIn
 import androidx.annotation.StringRes
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -17,9 +18,11 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
@@ -62,6 +65,7 @@ import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
@@ -171,6 +175,8 @@ fun PlaybackControls(
     nextHint: (@Composable () -> Unit)? = null,
     // Down from the button row, to open the chapter or episode row; null when there is none
     onDownFromRow: (() -> Unit)? = null,
+    subtitleLabel: String = "",
+    audioLabel: String = "",
 ) {
     // Down from the play button or seek bar goes to subtitles, the first button in the row below
     val rowFocusRequester = remember { FocusRequester() }
@@ -295,6 +301,8 @@ fun PlaybackControls(
                     onControllerInteraction = onControllerInteraction,
                     onClickPlaybackDialogType = onClickPlaybackDialogType,
                     subtitlesModifier = Modifier.focusRequester(rowFocusRequester),
+                    subtitleLabel = subtitleLabel,
+                    audioLabel = audioLabel,
                 )
 
                 LeftPlaybackButtons(
@@ -487,16 +495,16 @@ fun LeftPlaybackButtons(
         modifier = modifier.focusGroup(),
         horizontalArrangement = Arrangement.spacedBy(buttonGap),
     ) {
-        PlaybackButton(
-            iconRes = R.drawable.ic_video_settings,
+        PlayerLabelButton(
+            label = stringResource(R.string.adjust_video),
             onClick = {
                 onControllerInteraction.invoke()
                 onClickPlaybackDialogType.invoke(PlaybackDialogType.SETTINGS)
             },
-            enabled = true,
             onControllerInteraction = onControllerInteraction,
-            modifier = Modifier,
-        )
+        ) {
+            Icon(painter = painterResource(R.drawable.ic_video_settings), contentDescription = null, modifier = it)
+        }
     }
 }
 
@@ -506,6 +514,8 @@ fun RightPlaybackButtons(
     onClickPlaybackDialogType: (PlaybackDialogType) -> Unit,
     modifier: Modifier = Modifier,
     subtitlesModifier: Modifier = Modifier,
+    subtitleLabel: String = "",
+    audioLabel: String = "",
 ) {
     // Gap between buttons in this group, kept local so Live Edit picks up changes
     val buttonGap = Spacing.sm
@@ -513,28 +523,37 @@ fun RightPlaybackButtons(
         modifier = modifier.focusGroup(),
         horizontalArrangement = Arrangement.spacedBy(buttonGap),
     ) {
-        // Captions
-        PlaybackButton(
-            enabled = true,
-            iconRes = R.drawable.ic_subtitles,
+        // Captions, labelled with the chosen subtitle language
+        PlayerLabelButton(
+            label = subtitleLabel.ifBlank { stringResource(R.string.subtitles) },
             onClick = {
                 onControllerInteraction.invoke()
                 onClickPlaybackDialogType.invoke(PlaybackDialogType.CAPTIONS)
             },
             onControllerInteraction = onControllerInteraction,
             modifier = subtitlesModifier,
-        )
-        // Audio
-        PlaybackFaButton(
-            enabled = true,
-            iconRes = R.string.fa_volume_high,
+        ) {
+            Icon(painter = painterResource(R.drawable.ic_subtitles), contentDescription = null, modifier = it)
+        }
+        // Audio, labelled with the chosen audio track
+        PlayerLabelButton(
+            label = audioLabel.ifBlank { stringResource(R.string.audio) },
             onClick = {
                 onControllerInteraction.invoke()
                 onClickPlaybackDialogType.invoke(PlaybackDialogType.AUDIO)
             },
             onControllerInteraction = onControllerInteraction,
-            modifier = Modifier,
-        )
+        ) { iconModifier ->
+            Box(modifier = iconModifier, contentAlignment = Alignment.Center) {
+                Text(
+                    text = stringResource(R.string.fa_volume_high),
+                    fontSize = 18.sp,
+                    fontFamily = FontAwesome,
+                    textAlign = TextAlign.Center,
+                    color = LocalContentColor.current,
+                )
+            }
+        }
     }
 }
 
@@ -570,6 +589,73 @@ fun PlaybackButtons(
                 },
                 enabled = nextEnabled,
                 onControllerInteraction = onControllerInteraction,
+            )
+        }
+    }
+}
+
+/**
+ * A round player button that grows a label to the right of its icon while it has focus, like the
+ * back and restart buttons. [icon] gets a modifier that gives it the icon's size.
+ */
+@Composable
+fun PlayerLabelButton(
+    label: String,
+    onClick: () -> Unit,
+    onControllerInteraction: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    icon: @Composable (Modifier) -> Unit,
+) {
+    // Tuning values, kept local so Live Edit picks up changes. Same sizes as PlaybackButton, so
+    // the button is a 36 dp circle while it has no focus.
+    val buttonSize = 36.dp
+    val iconSize = 28.dp
+    // Gap between the icon and the label, and after the label
+    val labelGap = Spacing.sm
+    // Longest label before it is cut off with "…"
+    val labelMaxWidth = 180.dp
+    val labelStyle = MaterialTheme.typography.titleSmall
+    val selectedColor = MaterialTheme.colorScheme.border
+    val contentColor =
+        if (LocalTheme.current == AppThemeColors.OLED_BLACK) {
+            LocalContentColor.current
+        } else {
+            MaterialTheme.colorScheme.onSurface
+        }
+
+    val interactionSource = remember { MutableInteractionSource() }
+    val isFocused by interactionSource.collectIsFocusedAsState()
+    Button(
+        enabled = enabled,
+        onClick = onClick,
+        colors =
+            ClickableSurfaceDefaults.colors(
+                containerColor = AppColors.TransparentBlack25,
+                contentColor = contentColor,
+                focusedContainerColor = selectedColor,
+                focusedContentColor = contentColor,
+            ),
+        contentPadding = PaddingValues((buttonSize - iconSize) / 2),
+        contentHeight = iconSize,
+        interactionSource = interactionSource,
+        modifier =
+            modifier
+                .height(buttonSize)
+                .widthIn(min = buttonSize)
+                .onFocusChanged { onControllerInteraction.invoke() },
+    ) {
+        icon(Modifier.size(iconSize))
+        AnimatedVisibility(isFocused) {
+            Text(
+                text = label,
+                style = labelStyle,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier =
+                    Modifier
+                        .padding(start = labelGap, end = labelGap)
+                        .widthIn(max = labelMaxWidth),
             )
         }
     }

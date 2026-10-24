@@ -719,4 +719,6 @@
         <item quantity="one">Första av %1$d avsnitt</item>
         <item quantity="other">Första av %1$d avsnitt</item>
     </plurals>
+    <string name="adjust_video">Justera video</string>
+    <string name="subtitles_off">Av</string>
 </resources>
