@@ -181,6 +181,9 @@ class CollectionGridViewModel
                             item = BaseItem(it, false),
                             imageUrl = imageFor(it),
                             parentId = parents[it.id],
+                            hasChildCollections =
+                                it.type == BaseItemKind.BOX_SET &&
+                                    collectionTreeService.entry(it.id)?.childCollections?.isNotEmpty() == true,
                             isEmoji =
                                 if (contentsMode) {
                                     it.id in bigIds
@@ -197,7 +200,9 @@ class CollectionGridViewModel
                         )
                     }.sortedWith(byName)
             val collections =
-                layoutGroups(allSorted, restFirst = contentsMode).filter { it.isEmoji || it.id !in containers }
+                layoutGroups(allSorted, restFirst = contentsMode)
+                    // Only first level containers are hidden, their children show under their heading
+                    .filter { it.isEmoji || it.parentId != null || it.id !in containers }
             _state.update {
                 it.copy(
                     item = DataLoadingState.Success(item),
@@ -253,16 +258,21 @@ class CollectionGridViewModel
             // Only groups of children of a first level collection get a heading (the parent's name)
             fun titleFor(parent: CollectionCardItem) = parent.item.name.takeIf { parent.parentId == null }
 
-            // A group is listed in full first, then the child groups of its members follow in the same order
+            // A group is listed in full first, then the child groups of its first level members follow in the same
+            // order. Deeper collections aren't shown, they're reached by opening their parent.
             fun emit(
                 run: List<CollectionCardItem>,
                 title: String?,
             ) {
-                val group = run.filter { placed.add(it.id) }
+                val group =
+                    run
+                        .filter { placed.add(it.id) }
+                        // Under a heading, collections with child collections come first
+                        .let { g -> if (title != null) g.sortedByDescending { it.hasChildCollections } else g }
                 if (group.isEmpty()) return
                 result.addAll(group.map { it.copy(groupIndex = groupIndex, groupTitle = title) })
                 groupIndex++
-                group.forEach { c ->
+                group.filter { it.parentId == null }.forEach { c ->
                     val children = childrenOf[c.id].orEmpty().filter { it.id !in placed }
                     if (children.isNotEmpty()) emit(children, titleFor(c))
                 }
@@ -273,8 +283,6 @@ class CollectionGridViewModel
             emoji.forEach { parent -> childrenOf[parent.id]?.let { emit(it, titleFor(parent)) } }
             // Not inside another collection
             emit(rest.filter { it.parentId == null }, null)
-            // Anything left over (e.g. collections inside each other)
-            emit(rest.filter { it.id !in placed }, null)
             return result
         }
 
@@ -330,6 +338,8 @@ data class CollectionCardItem(
     val parentId: UUID? = null,
     /** Shown first and as a bigger card (emoji collections, when that setting is on) */
     val isEmoji: Boolean = false,
+    /** Holds collections of its own */
+    val hasChildCollections: Boolean = false,
     /** Shown as a bigger card, three per row */
     val big: Boolean = isEmoji,
     /** Which group of cards this belongs to (-1 for the emoji collections), groups are separated by a gap */
