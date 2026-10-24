@@ -24,6 +24,7 @@ import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -31,6 +32,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -124,6 +126,8 @@ fun PlaybackOverlay(
     videoAspectRatio: Float? = null,
     seekBarInteractionSource: MutableInteractionSource = remember { MutableInteractionSource() },
     onCoveredHeightChange: (Dp) -> Unit = {},
+    // Leaves the player, from the back button in the top corner
+    onBack: () -> Unit = {},
 ) {
     val seekBarFocused by seekBarInteractionSource.collectIsFocusedAsState()
     // Will be used for preview/trick play images
@@ -428,6 +432,8 @@ fun PlaybackOverlay(
         // Distance of the restart button from the top and start edge of the picture area
         val restartInsetStart = Spacing.lg
         val restartInsetTop = Spacing.lg
+        // Gap between the back and restart buttons
+        val topButtonGap = Spacing.sm
         val clockFadeSize = DpSize(400.dp, 200.dp)
         Box(
             modifier =
@@ -452,7 +458,7 @@ fun PlaybackOverlay(
             ) {
                 CornerFade(stops = topFadeStops, fromEnd = true, modifier = Modifier.size(clockFadeSize))
             }
-            // "Restart" in the top start corner
+            // "Back" and "Restart" in the top start corner
             val showRestart = !showDebugInfo && controllerViewState.controlsVisible
             AnimatedVisibility(
                 visible = showRestart,
@@ -463,29 +469,43 @@ fun PlaybackOverlay(
                         .align(Alignment.TopStart)
                         .padding(start = restartInsetStart, top = restartInsetTop),
             ) {
-                ExpandablePlayButton(
-                    title = R.string.restart,
-                    resume = Duration.ZERO,
-                    icon = Icons.Default.Refresh,
-                    mirrorIcon = true,
-                    onClick = {
-                        player.seekTo(0)
-                        controllerViewState.pulseControls()
-                    },
-                    modifier =
-                        Modifier
-                            .focusRequester(restartFocusRequester)
-                            .onFocusChanged { if (it.isFocused) controllerViewState.pulseControls() }
-                            // Down goes back to the play button
-                            .onPreviewKeyEvent { event ->
-                                if (event.type == KeyEventType.KeyDown && event.key == Key.DirectionDown) {
-                                    playFocusRequester.tryRequestFocus()
-                                    true
-                                } else {
-                                    false
-                                }
-                            },
-                )
+                // Down from either button goes back to the play button
+                val downToPlay =
+                    Modifier.onPreviewKeyEvent { event ->
+                        if (event.type == KeyEventType.KeyDown && event.key == Key.DirectionDown) {
+                            playFocusRequester.tryRequestFocus()
+                            true
+                        } else {
+                            false
+                        }
+                    }
+                Row(horizontalArrangement = Arrangement.spacedBy(topButtonGap)) {
+                    ExpandablePlayButton(
+                        title = R.string.back,
+                        resume = Duration.ZERO,
+                        icon = Icons.AutoMirrored.Filled.ArrowBack,
+                        onClick = { onBack() },
+                        modifier =
+                            Modifier
+                                .onFocusChanged { if (it.isFocused) controllerViewState.pulseControls() }
+                                .then(downToPlay),
+                    )
+                    ExpandablePlayButton(
+                        title = R.string.restart,
+                        resume = Duration.ZERO,
+                        icon = Icons.Default.Refresh,
+                        mirrorIcon = true,
+                        onClick = {
+                            player.seekTo(0)
+                            controllerViewState.pulseControls()
+                        },
+                        modifier =
+                            Modifier
+                                .focusRequester(restartFocusRequester)
+                                .onFocusChanged { if (it.isFocused) controllerViewState.pulseControls() }
+                                .then(downToPlay),
+                    )
+                }
             }
             // Logo in the top end corner
             AnimatedVisibility(

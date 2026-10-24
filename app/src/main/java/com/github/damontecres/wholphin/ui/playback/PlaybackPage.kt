@@ -540,6 +540,10 @@ fun PlaybackPageContent(
                 seriesEnded = state.seriesEnded,
                 seriesEpisodes = state.seriesEpisodes,
                 onClickEpisode = viewModel::playEpisode,
+                onBack = {
+                    player.stop()
+                    viewModel.navigationManager.goBack()
+                },
                 onClickPlaylist = viewModel::playItemInPlaylist,
                 currentSegment = state.currentSegment?.segment,
                 showClock = preferences.appPreferences.interfacePreferences.showClock,
