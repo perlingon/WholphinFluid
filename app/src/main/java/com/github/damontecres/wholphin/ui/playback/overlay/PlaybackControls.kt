@@ -163,8 +163,8 @@ fun PlaybackControls(
     // Where Up from the play button or seek bar goes (the back button), null when it isn't shown
     upFocusRequester: FocusRequester? = null,
 ) {
-    // Down from the play button or seek bar goes to settings, the first button in the row below
-    val settingsFocusRequester = remember { FocusRequester() }
+    // Down from the play button or seek bar goes to subtitles, the first button in the row below
+    val rowFocusRequester = remember { FocusRequester() }
     val scope = rememberCoroutineScope()
 
     val bringIntoViewRequester = remember { BringIntoViewRequester() }
@@ -244,7 +244,7 @@ fun PlaybackControls(
                             }
 
                             Key.DirectionDown -> {
-                                settingsFocusRequester.tryRequestFocus()
+                                rowFocusRequester.tryRequestFocus()
                                 true
                             }
 
@@ -270,26 +270,14 @@ fun PlaybackControls(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.align(Alignment.CenterStart),
             ) {
-                LeftPlaybackButtons(
+                // Subtitles and audio first, then settings
+                RightPlaybackButtons(
                     onControllerInteraction = onControllerInteraction,
                     onClickPlaybackDialogType = onClickPlaybackDialogType,
-                    settingsModifier = Modifier.focusRequester(settingsFocusRequester),
+                    subtitlesModifier = Modifier.focusRequester(rowFocusRequester),
                 )
 
-                PlaybackButtons(
-                    player = player,
-                    initialFocusRequester = initialFocusRequester,
-                    onControllerInteraction = onControllerInteraction,
-                    onPlaybackActionClick = onPlaybackActionClick,
-                    showPlay = showPlay,
-                    previousEnabled = previousEnabled,
-                    nextEnabled = nextEnabled,
-                    seekBack = seekBack,
-                    seekForward = seekForward,
-                    skipBackOnResume = skipBackOnResume,
-                )
-
-                RightPlaybackButtons(
+                LeftPlaybackButtons(
                     onControllerInteraction = onControllerInteraction,
                     onClickPlaybackDialogType = onClickPlaybackDialogType,
                 )
@@ -447,7 +435,6 @@ fun LeftPlaybackButtons(
     onControllerInteraction: () -> Unit,
     onClickPlaybackDialogType: (PlaybackDialogType) -> Unit,
     modifier: Modifier = Modifier,
-    settingsModifier: Modifier = Modifier,
 ) {
     // Gap between buttons in this group, kept local so Live Edit picks up changes
     val buttonGap = Spacing.sm
@@ -463,7 +450,7 @@ fun LeftPlaybackButtons(
             },
             enabled = true,
             onControllerInteraction = onControllerInteraction,
-            modifier = settingsModifier,
+            modifier = Modifier,
         )
     }
 }
@@ -473,6 +460,7 @@ fun RightPlaybackButtons(
     onControllerInteraction: () -> Unit,
     onClickPlaybackDialogType: (PlaybackDialogType) -> Unit,
     modifier: Modifier = Modifier,
+    subtitlesModifier: Modifier = Modifier,
 ) {
     // Gap between buttons in this group, kept local so Live Edit picks up changes
     val buttonGap = Spacing.sm
@@ -489,7 +477,7 @@ fun RightPlaybackButtons(
                 onClickPlaybackDialogType.invoke(PlaybackDialogType.CAPTIONS)
             },
             onControllerInteraction = onControllerInteraction,
-            modifier = Modifier,
+            modifier = subtitlesModifier,
         )
         // Audio
         PlaybackFaButton(
