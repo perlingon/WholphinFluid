@@ -249,8 +249,11 @@ private fun SeekBarDisplay(
     // Whether the current Back press was used to undo a seek, so its key-up is consumed too
     var backHandled by remember { mutableStateOf(false) }
     val looksFocused = isFocused || highlighted
+    // Bar height when focused / unfocused, kept local so Live Edit picks up changes
+    val barHeightFocused = 7.dp
+    val barHeightUnfocused = 4.dp
     val animatedIndicatorHeight by animateDpAsState(
-        targetValue = 4.dp.times((if (looksFocused) 2f else 1f)),
+        targetValue = if (looksFocused) barHeightFocused else barHeightUnfocused,
     )
 
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
@@ -380,7 +383,7 @@ private fun SeekBarDisplay(
                     )
                 }
                 // Playhead dot: diameter when focused / unfocused
-                val dotFocused = 22.dp
+                val dotFocused = 19.dp
                 val dotUnfocused = 12.dp
                 drawCircle(
                     color = Color.White,
