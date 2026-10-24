@@ -165,7 +165,12 @@ fun PlaybackOverlay(
     var state by remember(controllerViewState.controlsVisible) {
         mutableStateOf(if (controllerViewState.controlsVisible) OverlayViewState.CONTROLLER else OverlayViewState.HIDDEN)
     }
+    // Coming back up from the chapter or episode row puts focus on settings instead of play/pause
+    var returningFromRow by remember(controllerViewState.controlsVisible) { mutableStateOf(false) }
     val onChangeState = { newState: OverlayViewState ->
+        returningFromRow =
+            newState == OverlayViewState.CONTROLLER &&
+            (state == OverlayViewState.CHAPTERS || state == OverlayViewState.QUEUE)
         state = newState
     }
 
@@ -314,6 +319,7 @@ fun PlaybackOverlay(
                             chapters = chapters,
                             queueHeadline = queueHeadline(remember(queue) { groupQueueBySeason(queue) }, item, seriesEnded, seriesEpisodes),
                             playFocusRequester = playFocusRequester,
+                            focusSettingsFirst = returningFromRow,
                             restartFocusRequester = restartFocusRequester.takeIf { !showDebugInfo },
                         )
                     }
