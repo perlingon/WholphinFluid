@@ -94,7 +94,6 @@ import com.github.damontecres.wholphin.ui.playback.insetFromSide
 import com.github.damontecres.wholphin.ui.playback.rememberPictureSideInsetPx
 import com.github.damontecres.wholphin.ui.seekBack
 import com.github.damontecres.wholphin.ui.skipStringRes
-import com.github.damontecres.wholphin.ui.theme.FluidLayout
 import com.github.damontecres.wholphin.ui.theme.LocalTheme
 import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.ui.theme.WholphinTheme
@@ -168,6 +167,10 @@ fun PlaybackControls(
     upFocusRequester: FocusRequester? = null,
     // Where the seek bar starts on screen, so the title above can line up with it
     onBarStartChange: (Dp) -> Unit = {},
+    // The "Season 1 · 4 episodes left" / "Chapter 5 of 23" hint, at the right end of the button row
+    nextHint: (@Composable () -> Unit)? = null,
+    // Down from the button row, to open the chapter or episode row; null when there is none
+    onDownFromRow: (() -> Unit)? = null,
 ) {
     // Down from the play button or seek bar goes to subtitles, the first button in the row below
     val rowFocusRequester = remember { FocusRequester() }
@@ -262,29 +265,30 @@ fun PlaybackControls(
                         }
                     },
         )
-        // The row starts at the same distance from the screen's left edge as the episode row's
-        // headline, so on a wide screen it sits outside the 16:9 controls
-        val rowInset = maxOf(FluidLayout.leftMargin(), Spacing.xl)
-        val density = LocalDensity.current
-        var rowBoxStart by remember { mutableStateOf(0.dp) }
         Box(
             modifier =
                 Modifier
+                    // Same width as the seek bar, so the row starts under the play/pause button
                     .fillMaxWidth(.95f)
-                    .onGloballyPositioned { rowBoxStart = with(density) { it.positionInRoot().x.toDp() } },
+                    // Down from the row opens the chapter or episode row
+                    .onPreviewKeyEvent { event ->
+                        if (onDownFromRow != null && event.type == KeyEventType.KeyDown && event.key == Key.DirectionDown) {
+                            onDownFromRow()
+                            true
+                        } else {
+                            false
+                        }
+                    },
         ) {
             // Tuning values, kept local so Live Edit picks up changes.
             // Gap between the settings, media and track groups, e.g. Spacing.md (16) / lg (24) / xl (32)
             val groupGap = Spacing.lg
 
-            // All controls sit in one row on the left
+            // All controls sit in one row on the left, under the play/pause button
             Row(
                 horizontalArrangement = Arrangement.spacedBy(groupGap),
                 verticalAlignment = Alignment.CenterVertically,
-                modifier =
-                    Modifier
-                        .align(Alignment.CenterStart)
-                        .offset(x = rowInset - rowBoxStart),
+                modifier = Modifier.align(Alignment.CenterStart),
             ) {
                 // Subtitles and audio first, then settings
                 RightPlaybackButtons(
@@ -299,17 +303,21 @@ fun PlaybackControls(
                 )
             }
 
-            currentSegment?.let { segment ->
-                TextButton(
-                    stringRes = segment.type.skipStringRes,
-                    onClick = {
-                        player.seekTo(segment.endTicks.ticks.inWholeMilliseconds)
-                    },
-                    modifier =
-                        Modifier
-                            .align(Alignment.CenterEnd)
-                            .padding(end = Spacing.xl),
-                )
+            // On the right: the skip button when there is a segment, then the chapter/episode hint
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(groupGap),
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.align(Alignment.CenterEnd),
+            ) {
+                currentSegment?.let { segment ->
+                    TextButton(
+                        stringRes = segment.type.skipStringRes,
+                        onClick = {
+                            player.seekTo(segment.endTicks.ticks.inWholeMilliseconds)
+                        },
+                    )
+                }
+                nextHint?.invoke()
             }
         }
     }

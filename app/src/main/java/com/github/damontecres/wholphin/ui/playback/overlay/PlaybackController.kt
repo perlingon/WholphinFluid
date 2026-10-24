@@ -4,7 +4,6 @@ import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.VisibilityThreshold
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.spring
-import androidx.compose.foundation.focusable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Arrangement
@@ -23,7 +22,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.isSpecified
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -49,7 +47,6 @@ import com.github.damontecres.wholphin.data.model.Chapter
 import com.github.damontecres.wholphin.ui.formatTime
 import com.github.damontecres.wholphin.ui.playback.ControllerViewState
 import com.github.damontecres.wholphin.ui.playback.PlaybackDialogType
-import com.github.damontecres.wholphin.ui.theme.FluidLayout
 import com.github.damontecres.wholphin.ui.theme.Spacing
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -85,15 +82,9 @@ fun PlaybackController(
     playFocusRequester: FocusRequester = remember { FocusRequester() },
     restartFocusRequester: FocusRequester? = null,
 ) {
-    // Tuning values for the "Chapters"/"Queue" hint under the controls, kept local for Live Edit
+    // Tuning values for the "Chapters"/"Queue" hint next to the controls, kept local for Live Edit
     val nextHeadlineStyle = MaterialTheme.typography.labelLarge
     val nextHeadlineColor = Color.Unspecified
-    // Distance from the screen's left edge, the same as the episode row's headline, so on a wide
-    // screen it sits outside the 16:9 controls
-    val nextHeadlineInset = maxOf(FluidLayout.leftMargin(), Spacing.xl)
-    // Where this column starts on screen, so the hint can be placed from the screen's edge
-    val density = LocalDensity.current
-    var columnStart by remember { mutableStateOf(0.dp) }
 
     // Text of the row above the timeline: the series or movie name, then this lighter part (styled in Controller)
     val seriesName = item?.data?.seriesName
@@ -119,84 +110,73 @@ fun PlaybackController(
             item?.data?.productionYear?.let { "$it" }
         }
 
-    Column(
-        verticalArrangement = Arrangement.spacedBy(Spacing.sm),
-        modifier =
-            modifier.onGloballyPositioned {
-                columnStart = with(density) { it.positionInRoot().x.toDp() }
-            },
-    ) {
-        Controller(
-            title = rowTitle,
-            subtitle = rowSubtitle,
-            player = player,
-            controllerViewState = controllerViewState,
-            showPlay = showPlay,
-            previousEnabled = previousEnabled,
-            nextEnabled = nextEnabled,
-            seekEnabled = seekEnabled,
-            seekBack = seekBack,
-            skipBackOnResume = skipBackOnResume,
-            seekForward = seekForward,
-            onPlaybackActionClick = onPlaybackActionClick,
-            onClickPlaybackDialogType = onClickPlaybackDialogType,
-            onSeekProgress = onSeekBarChange,
-            seekBarInteractionSource = seekBarInteractionSource,
-            currentSegment = currentSegment,
-            onTitleHeightChange = onTitleHeightChange,
-            playFocusRequester = playFocusRequester,
-            restartFocusRequester = restartFocusRequester,
-            modifier = Modifier,
-        )
+    // The hint sits at the right end of the button row under the seek bar (see PlaybackControls)
+    val nextHint: (@Composable () -> Unit)? =
         when (nextState) {
             OverlayViewState.CHAPTERS -> {
-                // "Chapter 5 of 23", following playback
-                val chapterNumber by produceState(
-                    currentChapterNumber(chapters, player.currentPosition),
-                    chapters,
-                ) {
-                    while (true) {
-                        value = currentChapterNumber(chapters, player.currentPosition)
-                        delay(500)
+                {
+                    // "Chapter 5 of 23", following playback
+                    val chapterNumber by produceState(
+                        currentChapterNumber(chapters, player.currentPosition),
+                        chapters,
+                    ) {
+                        while (true) {
+                            value = currentChapterNumber(chapters, player.currentPosition)
+                            delay(500)
+                        }
                     }
+                    Text(
+                        text =
+                            if (chapters.isNotEmpty()) {
+                                stringResource(R.string.chapter_of, chapterNumber, chapters.size)
+                            } else {
+                                stringResource(R.string.chapters)
+                            },
+                        style = nextHeadlineStyle,
+                        color = nextHeadlineColor,
+                    )
                 }
-                Text(
-                    text =
-                        if (chapters.isNotEmpty()) {
-                            stringResource(R.string.chapter_of, chapterNumber, chapters.size)
-                        } else {
-                            stringResource(R.string.chapters)
-                        },
-                    style = nextHeadlineStyle,
-                    color = nextHeadlineColor,
-                    modifier =
-                        Modifier
-                            .offset(x = nextHeadlineInset - columnStart)
-                            .onFocusChanged {
-                                if (it.isFocused) onChangeState.invoke(nextState)
-                            }.focusable(),
-                )
             }
 
             OverlayViewState.QUEUE -> {
-                Text(
-                    text = queueHeadline ?: stringResource(R.string.queue),
-                    style = nextHeadlineStyle,
-                    color = nextHeadlineColor,
-                    modifier =
-                        Modifier
-                            .offset(x = nextHeadlineInset - columnStart)
-                            .onFocusChanged {
-                                if (it.isFocused) onChangeState.invoke(nextState)
-                            }.focusable(),
-                )
+                {
+                    Text(
+                        text = queueHeadline ?: stringResource(R.string.queue),
+                        style = nextHeadlineStyle,
+                        color = nextHeadlineColor,
+                    )
+                }
             }
 
             else -> {
-                Unit
+                null
             }
         }
-    }
+
+    Controller(
+        title = rowTitle,
+        subtitle = rowSubtitle,
+        player = player,
+        controllerViewState = controllerViewState,
+        showPlay = showPlay,
+        previousEnabled = previousEnabled,
+        nextEnabled = nextEnabled,
+        seekEnabled = seekEnabled,
+        seekBack = seekBack,
+        skipBackOnResume = skipBackOnResume,
+        seekForward = seekForward,
+        onPlaybackActionClick = onPlaybackActionClick,
+        onClickPlaybackDialogType = onClickPlaybackDialogType,
+        onSeekProgress = onSeekBarChange,
+        seekBarInteractionSource = seekBarInteractionSource,
+        currentSegment = currentSegment,
+        onTitleHeightChange = onTitleHeightChange,
+        playFocusRequester = playFocusRequester,
+        restartFocusRequester = restartFocusRequester,
+        nextHint = nextHint,
+        onDownFromRow = nextState?.let { { onChangeState.invoke(it) } },
+        modifier = modifier,
+    )
 }
 
 /**
@@ -226,6 +206,8 @@ fun Controller(
     onTitleHeightChange: (Dp) -> Unit = {},
     playFocusRequester: FocusRequester = remember { FocusRequester() },
     restartFocusRequester: FocusRequester? = null,
+    nextHint: (@Composable () -> Unit)? = null,
+    onDownFromRow: (() -> Unit)? = null,
 ) {
     // Tuning values for the title block above the seek bar, kept local so Live Edit picks up changes.
     // The trickplay preview measures this block, so it follows any size here.
@@ -373,6 +355,8 @@ fun Controller(
         PlaybackControls(
             modifier = Modifier.fillMaxWidth(),
             onBarStartChange = { barStart = it },
+            nextHint = nextHint,
+            onDownFromRow = onDownFromRow,
             player = player,
             onPlaybackActionClick = onPlaybackActionClick,
             controllerViewState = controllerViewState,
