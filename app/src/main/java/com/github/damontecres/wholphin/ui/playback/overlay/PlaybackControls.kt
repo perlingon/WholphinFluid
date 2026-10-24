@@ -95,6 +95,7 @@ import com.github.damontecres.wholphin.ui.playback.insetFromSide
 import com.github.damontecres.wholphin.ui.playback.rememberPictureSideInsetPx
 import com.github.damontecres.wholphin.ui.seekBack
 import com.github.damontecres.wholphin.ui.skipStringRes
+import com.github.damontecres.wholphin.ui.theme.FluidLayout
 import com.github.damontecres.wholphin.ui.theme.LocalTheme
 import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.ui.theme.WholphinTheme
@@ -266,21 +267,29 @@ fun PlaybackControls(
                         }
                     },
         )
+        // The row starts at the same distance from the screen's left edge as the episode row's
+        // headline, so on a wide screen it sits outside the 16:9 controls
+        val rowInset = maxOf(FluidLayout.leftMargin(), Spacing.xl)
+        val density = LocalDensity.current
+        var rowBoxStart by remember { mutableStateOf(0.dp) }
         Box(
             modifier =
                 Modifier
-                    // Same width as the seek bar, so the row starts under the play/pause button
-                    .fillMaxWidth(.95f),
+                    .fillMaxWidth(.95f)
+                    .onGloballyPositioned { rowBoxStart = with(density) { it.positionInRoot().x.toDp() } },
         ) {
             // Tuning values, kept local so Live Edit picks up changes.
             // Gap between the settings, media and track groups, e.g. Spacing.md (16) / lg (24) / xl (32)
             val groupGap = Spacing.lg
 
-            // All controls sit in one row on the left, under the play/pause button
+            // All controls sit in one row on the left
             Row(
                 horizontalArrangement = Arrangement.spacedBy(groupGap),
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.align(Alignment.CenterStart),
+                modifier =
+                    Modifier
+                        .align(Alignment.CenterStart)
+                        .offset(x = rowInset - rowBoxStart),
             ) {
                 // Subtitles and audio first, then settings
                 RightPlaybackButtons(
