@@ -333,11 +333,11 @@ fun PlaybackOverlay(
                                 onClickPlaylist = onClickPlaylist,
                                 seriesEpisodes = seriesEpisodes,
                                 onClickEpisode = onClickEpisode,
+                                rowMaxWidth = pictureMaxWidth,
                                 modifier =
                                     Modifier
-                                        .widthIn(max = pictureMaxWidth)
-                                        .padding(Spacing.sm)
-                                        .fillMaxWidth(),
+                                        .fillMaxWidth()
+                                        .padding(vertical = Spacing.sm),
                             )
                         }
                     }
