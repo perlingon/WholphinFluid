@@ -443,6 +443,8 @@ fun PlaybackOverlay(
                 1f to Color.Transparent,
             )
         val logoFadeSize = DpSize(560.dp, 280.dp)
+        // Size of the dark fade in the top start corner, behind the back and restart buttons
+        val topStartFadeSize = DpSize(560.dp, 280.dp)
         // Logo placement (top end corner): the box the logo is fitted into (it keeps its own shape
         // inside it), and its distance from the top and end edge of the picture area
         val logoMaxSize = DpSize(180.dp, 80.dp)
@@ -479,6 +481,15 @@ fun PlaybackOverlay(
             }
             // "Back" and "Restart" in the top start corner
             val showRestart = !showDebugInfo && controllerViewState.controlsVisible
+            // Dark fade behind the back and restart buttons
+            AnimatedVisibility(
+                visible = showRestart,
+                enter = fadeIn(showFade),
+                exit = fadeOut(hideFade),
+                modifier = Modifier.align(Alignment.TopStart),
+            ) {
+                CornerFade(stops = topFadeStops, fromEnd = false, modifier = Modifier.size(topStartFadeSize))
+            }
             AnimatedVisibility(
                 visible = showRestart,
                 enter = slideIn(showOffset) { IntOffset(x = -it.width / 2, y = -it.height / 2) } + fadeIn(showFade),
