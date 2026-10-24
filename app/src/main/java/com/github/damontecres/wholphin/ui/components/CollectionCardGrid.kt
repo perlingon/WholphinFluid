@@ -148,6 +148,22 @@ class CollectionGridViewModel
                     if (hideContainers && entry.onlyCollections) containers.add(collection.id)
                 }
             }
+            // Inside a nested collection: its own movies etc. and its child collections that hold collections
+            // themselves are the big cards
+            val bigIds =
+                if (contentsMode) {
+                    collectionTreeService
+                        .entry(itemId)
+                        ?.children
+                        .orEmpty()
+                        .filter {
+                            it.type != BaseItemKind.BOX_SET ||
+                                collectionTreeService.entry(it.id)?.childCollections?.isNotEmpty() == true
+                        }.map { it.id }
+                        .toSet()
+                } else {
+                    emptySet()
+                }
             // Emoji collections first, then the rest. Both A-Z, ignoring the leading emoji
             val byName =
                 compareByDescending<CollectionCardItem> { it.isEmoji }
@@ -161,14 +177,14 @@ class CollectionGridViewModel
                             parentId = parents[it.id],
                             isEmoji =
                                 if (contentsMode) {
-                                    // Inside a nested collection its own movies etc. are the big cards
-                                    it.type != BaseItemKind.BOX_SET
+                                    it.id in bigIds
                                 } else {
                                     emojiFirst && it.name.startsWithEmoji()
                                 },
                         )
                     }.sortedWith(byName)
-            val collections = layoutGroups(allSorted).filter { it.isEmoji || it.id !in containers }
+            val collections =
+                layoutGroups(allSorted, restFirst = contentsMode).filter { it.isEmoji || it.id !in containers }
             _state.update {
                 it.copy(
                     item = DataLoadingState.Success(item),
@@ -206,10 +222,14 @@ class CollectionGridViewModel
         /**
          * Order the collections and number their groups: emoji collections first (group -1), then the rest in
          * groups. Collections inside an emoji collection come first, in the order of those parents. Then the
-         * collections that aren't inside another one. Each group is listed without breaks, followed by the
+         * collections that aren't inside another one ([restFirst] puts those before the emoji collections'
+         * children instead). Each group is listed without breaks, followed by the
          * groups of its members' child collections.
          */
-        private fun layoutGroups(sorted: List<CollectionCardItem>): List<CollectionCardItem> {
+        private fun layoutGroups(
+            sorted: List<CollectionCardItem>,
+            restFirst: Boolean,
+        ): List<CollectionCardItem> {
             val emoji = sorted.filter { it.isEmoji }
             val rest = sorted.filterNot { it.isEmoji }
             val childrenOf = rest.groupBy { it.parentId }
@@ -234,6 +254,9 @@ class CollectionGridViewModel
                     if (children.isNotEmpty()) emit(children, titleFor(c))
                 }
             }
+            // Inside a nested collection the other child collections come right after the big cards,
+            // before the groups under the big cards' headings
+            if (restFirst) emit(rest.filter { it.parentId == null }, null)
             emoji.forEach { parent -> childrenOf[parent.id]?.let { emit(it, titleFor(parent)) } }
             // Not inside another collection
             emit(rest.filter { it.parentId == null }, null)
