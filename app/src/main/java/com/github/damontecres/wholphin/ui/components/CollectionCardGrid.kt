@@ -106,6 +106,7 @@ class CollectionGridViewModel
         @Assisted("recursive") private val recursive: Boolean,
         @Assisted("emojiFirst") private val emojiFirst: Boolean,
         @Assisted("groupNested") private val groupNested: Boolean,
+        @Assisted("contentsMode") private val contentsMode: Boolean,
     ) : ViewModel() {
         @AssistedFactory
         interface Factory {
@@ -114,6 +115,7 @@ class CollectionGridViewModel
                 @Assisted("recursive") recursive: Boolean,
                 @Assisted("emojiFirst") emojiFirst: Boolean,
                 @Assisted("groupNested") groupNested: Boolean,
+                @Assisted("contentsMode") contentsMode: Boolean,
             ): CollectionGridViewModel
         }
 
@@ -139,16 +141,13 @@ class CollectionGridViewModel
                         api.userLibraryApi.getItem(itemId = itemId).content.let {
                             BaseItem(it, false)
                         }
-                    val all =
-                        GetItemsRequestHandler
-                            .execute(api, collectionsRequest())
-                            .content.items
+                    val all = if (contentsMode) contentsItems() else collectionsItems()
                     // With both settings on, non-emoji collections that only hold other collections are represented
                     // by their group heading, so their own card is hidden
                     val hideContainers = emojiFirst && groupNested
                     val (parents, containers) =
                         if (groupNested) {
-                            parentCollections(all, hideContainers)
+                            parentCollections(all.filter { it.type == BaseItemKind.BOX_SET }, hideContainers)
                         } else {
                             Pair(emptyMap<UUID, UUID>(), emptySet<UUID>())
                         }
@@ -163,12 +162,25 @@ class CollectionGridViewModel
                                     item = BaseItem(it, false),
                                     imageUrl = null,
                                     parentId = parents[it.id],
-                                    isEmoji = emojiFirst && it.name.startsWithEmoji(),
+                                    isEmoji =
+                                        if (contentsMode) {
+                                            // Inside an emoji collection its own movies etc. are the big cards
+                                            it.type != BaseItemKind.BOX_SET
+                                        } else {
+                                            emojiFirst && it.name.startsWithEmoji()
+                                        },
                                 )
                             }
                             .sortedWith(byName)
                     val collections = layoutGroups(allSorted).filter { it.isEmoji || it.id !in containers }
-                    val key = CollectionCacheKey(serverRepository.currentUser?.id, itemId, emojiFirst, groupNested)
+                    val key =
+                        CollectionCacheKey(
+                            userId = serverRepository.currentUser?.id,
+                            parentId = itemId,
+                            emojiFirst = emojiFirst,
+                            groupNested = groupNested,
+                            contentsMode = contentsMode,
+                        )
                     val cached = collectionImageCache.getIfAvailable(key)
                     _state.update {
                         it.copy(
@@ -189,6 +201,58 @@ class CollectionGridViewModel
                     _state.update { it.copy(item = DataLoadingState.Error(ex)) }
                 }
             }
+        }
+
+        private suspend fun collectionsItems(): List<BaseItemDto> =
+            GetItemsRequestHandler
+                .execute(api, collectionsRequest())
+                .content.items
+
+        /**
+         * Everything directly in this collection, plus the collections inside its child collections so those
+         * can be grouped under their parent like on the Collections page
+         */
+        private suspend fun contentsItems(): List<BaseItemDto> {
+            val userId = serverRepository.currentUser?.id
+            val direct =
+                GetItemsRequestHandler
+                    .execute(
+                        api,
+                        GetItemsRequest(
+                            userId = userId,
+                            parentId = itemId,
+                            sortBy = listOf(ItemSortBy.SORT_NAME),
+                            sortOrder = listOf(SortOrder.ASCENDING),
+                            fields = SlimItemFields,
+                        ),
+                    ).content.items
+            val semaphore = Semaphore(IMAGE_CONCURRENCY)
+            val grandchildren =
+                direct
+                    .filter { it.type == BaseItemKind.BOX_SET }
+                    .map { child ->
+                        viewModelScope.async(WholphinDispatchers.IO) {
+                            semaphore.withPermit {
+                                try {
+                                    GetItemsRequestHandler
+                                        .execute(
+                                            api,
+                                            GetItemsRequest(
+                                                userId = userId,
+                                                parentId = child.id,
+                                                includeItemTypes = listOf(BaseItemKind.BOX_SET),
+                                                fields = SlimItemFields,
+                                            ),
+                                        ).content.items
+                                } catch (ex: Exception) {
+                                    Timber.w(ex, "Error fetching child collections of %s", child.id)
+                                    emptyList()
+                                }
+                            }
+                        }
+                    }.awaitAll()
+                    .flatten()
+            return (direct + grandchildren).distinctBy { it.id }
         }
 
         /**
@@ -321,8 +385,13 @@ class CollectionGridViewModel
                                 semaphore.withPermit {
                                     try {
                                         val source =
-                                            findBackdropItem(userId, collection.id, 0)
-                                                ?: collection.takeIf { !it.backdropImageTags.isNullOrEmpty() }
+                                            if (collection.type != BaseItemKind.BOX_SET) {
+                                                // A movie etc. uses its own backdrop
+                                                collection.takeIf { !it.backdropImageTags.isNullOrEmpty() }
+                                            } else {
+                                                findBackdropItem(userId, collection.id, 0)
+                                                    ?: collection.takeIf { !it.backdropImageTags.isNullOrEmpty() }
+                                            }
                                         source?.let { backdropUrl(it, cardWidthPx) }
                                     } catch (ex: Exception) {
                                         Timber.w(ex, "Error finding backdrop for collection %s", collection.id)
@@ -442,6 +511,7 @@ data class CollectionCacheKey(
     val parentId: UUID,
     val emojiFirst: Boolean,
     val groupNested: Boolean,
+    val contentsMode: Boolean,
 )
 
 private val collectionImageCache by lazy {
@@ -479,11 +549,12 @@ fun CollectionCardGrid(
     modifier: Modifier = Modifier,
     emojiFirst: Boolean = false,
     groupNested: Boolean = false,
+    contentsMode: Boolean = false,
     showTitle: Boolean = false,
     viewModel: CollectionGridViewModel =
         hiltViewModel<CollectionGridViewModel, CollectionGridViewModel.Factory>(
-            key = "${itemId}_collection_cards_${emojiFirst}_$groupNested",
-            creationCallback = { it.create(itemId, recursive, emojiFirst, groupNested) },
+            key = "${itemId}_collection_cards_${emojiFirst}_${groupNested}_$contentsMode",
+            creationCallback = { it.create(itemId, recursive, emojiFirst, groupNested, contentsMode) },
         ),
 ) {
     val columns = 4
