@@ -105,7 +105,6 @@ fun PlaybackDialog(
 ) {
     val isLtr = LocalLayoutDirection.current == LayoutDirection.Ltr
     // TODO, shouldn't this work out of the box?
-    val leftGravity = remember(isLtr) { if (isLtr) Gravity.START else Gravity.END }
     val rightGravity = remember(isLtr) { if (isLtr) Gravity.END else Gravity.START }
     when (type) {
         PlaybackDialogType.DEBUG -> {
@@ -218,7 +217,7 @@ fun PlaybackDialog(
                         onClickPlaybackDialogType(choice.data)
                     }
                 },
-                gravity = leftGravity,
+                gravity = rightGravity,
             )
         }
 
@@ -256,7 +255,7 @@ fun PlaybackDialog(
                 onSelectChoice = { _, value ->
                     onPlaybackActionClick.invoke(PlaybackAction.PlaybackSpeed(value.data))
                 },
-                gravity = leftGravity,
+                gravity = rightGravity,
             )
         }
 
@@ -279,7 +278,7 @@ fun PlaybackDialog(
                 onSelectChoice = { _, choice ->
                     onPlaybackActionClick.invoke(PlaybackAction.Scale(choice.data))
                 },
-                gravity = leftGravity,
+                gravity = rightGravity,
             )
         }
 
