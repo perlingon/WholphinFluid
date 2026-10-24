@@ -7,15 +7,10 @@ import androidx.compose.animation.ExperimentalAnimationApi
 import androidx.compose.animation.core.Easing
 import androidx.compose.animation.core.FastOutLinearInEasing
 import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.VisibilityThreshold
 import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
@@ -67,7 +62,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpSize
-import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.media3.common.Player
@@ -204,6 +198,8 @@ fun PlaybackOverlay(
     val hideEasing: Easing = FastOutLinearInEasing
     // How far the controls slide, as a share of their own height (0f = fade only)
     val slideFraction = 0.5f
+    // How far the seek preview rises as it fades in, as a share of its block's height
+    val previewRise = 0.05f
     // Which way the controls are moving between states (down = towards the rows below). Plain
     // fields: they are only read while the state change recomposes anyway
     val slideDirection = remember { SlideDirection(state) }
@@ -412,17 +408,14 @@ fun PlaybackOverlay(
         }
 
         CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
-            // Trickplay
-            AnimatedVisibility(
+            // Trickplay: fades in while rising a little. (It used to expand vertically, which
+            // re-measured it, and the subtitles placed above it, every frame.)
+            SlideFadeVisibility(
                 visible = controllerViewState.controlsVisible && seekProgressPercent >= 0 && seekBarFocused,
-                enter =
-                    expandVertically(
-                        spring(
-                            stiffness = Spring.StiffnessMedium,
-                            visibilityThreshold = IntSize.VisibilityThreshold,
-                        ),
-                    ) + fadeIn(),
-                exit = shrinkVertically() + fadeOut(),
+                slideX = 0f,
+                slideY = previewRise,
+                showSpec = showFade,
+                hideSpec = hideFade,
             ) {
                 Box(
                     modifier =

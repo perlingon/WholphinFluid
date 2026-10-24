@@ -12,8 +12,6 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Box
@@ -430,8 +428,8 @@ fun PlaybackPageContent(
                     !controllerViewState.controlsVisible &&
                         skipIndicatorDuration != 0L &&
                         prefs.dpadSeekMode == DpadSeekMode.SEEKBAR_TRICKPLAY,
-                enter = fadeIn() + slideInVertically { it / 2 },
-                exit = fadeOut() + slideOutVertically { it },
+                enter = fadeIn(),
+                exit = fadeOut(),
                 modifier =
                     Modifier
                         .align(Alignment.BottomCenter),

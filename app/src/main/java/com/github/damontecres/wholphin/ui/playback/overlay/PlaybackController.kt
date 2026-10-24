@@ -23,6 +23,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.layout.positionInRoot
@@ -227,7 +228,9 @@ fun Controller(
             modifier =
                 Modifier
                     .padding(start = titleStart)
-                    .offset(y = verticalOffset + titleDrop)
+                    .offset(y = titleDrop)
+                    // The bump moves in the draw phase only, so it doesn't re-measure every frame
+                    .graphicsLayer { translationY = verticalOffset.toPx() }
                     // The seek preview is placed from this measured height (see PlaybackOverlay)
                     .onSizeChanged { onTitleHeightChange(with(density) { it.height.toDp() }) },
         ) {
