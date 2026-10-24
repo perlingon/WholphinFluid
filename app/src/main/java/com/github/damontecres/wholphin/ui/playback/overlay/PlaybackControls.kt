@@ -616,13 +616,11 @@ fun PlayerLabelButton(
     // Longest label before it is cut off with "…"
     val labelMaxWidth = 180.dp
     val labelStyle = MaterialTheme.typography.titleSmall
-    val selectedColor = MaterialTheme.colorScheme.border
-    val contentColor =
-        if (LocalTheme.current == AppThemeColors.OLED_BLACK) {
-            LocalContentColor.current
-        } else {
-            MaterialTheme.colorScheme.onSurface
-        }
+    // Dark and see-through without focus; white with dark icon and label with focus
+    val containerColor = AppColors.TransparentBlack25
+    val contentColor = MaterialTheme.colorScheme.onSurface
+    val focusedContainerColor = MaterialTheme.colorScheme.onSurface
+    val focusedContentColor = MaterialTheme.colorScheme.inverseOnSurface
 
     val interactionSource = remember { MutableInteractionSource() }
     val isFocused by interactionSource.collectIsFocusedAsState()
@@ -631,10 +629,12 @@ fun PlayerLabelButton(
         onClick = onClick,
         colors =
             ClickableSurfaceDefaults.colors(
-                containerColor = AppColors.TransparentBlack25,
+                containerColor = containerColor,
                 contentColor = contentColor,
-                focusedContainerColor = selectedColor,
-                focusedContentColor = contentColor,
+                focusedContainerColor = focusedContainerColor,
+                focusedContentColor = focusedContentColor,
+                pressedContainerColor = focusedContainerColor,
+                pressedContentColor = focusedContentColor,
             ),
         contentPadding = PaddingValues((buttonSize - iconSize) / 2),
         contentHeight = iconSize,
