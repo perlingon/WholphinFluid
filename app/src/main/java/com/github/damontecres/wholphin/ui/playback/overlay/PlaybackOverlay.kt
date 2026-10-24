@@ -40,9 +40,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -254,15 +257,25 @@ fun PlaybackOverlay(
             val scrimStops =
                 arrayOf(
                     0f to Color.Transparent,
-                    0.5f to scrimColor.copy(alpha = 0.5f),
+                    0.4f to scrimColor.copy(alpha = 0.5f),
                     1f to scrimColor.copy(alpha = 0.80f),
                 )
             val scrimBrush = Brush.verticalGradient(*scrimStops)
+            // The overlay sits inside the system bar insets, which can leave a bright line at the
+            // very bottom of the screen; the darkest color continues this far past the bottom edge
+            val scrimBleed = Spacing.xxl
+            val bleedColor = scrimStops.last().second
             Box(
                 modifier =
                     Modifier
                         .fillMaxSize()
-                        .background(scrimBrush),
+                        .drawBehind {
+                            drawRect(
+                                color = bleedColor,
+                                topLeft = Offset(0f, size.height),
+                                size = Size(size.width, scrimBleed.toPx()),
+                            )
+                        }.background(scrimBrush),
             )
         }
 
