@@ -143,7 +143,7 @@ configure<ApplicationExtension> {
                         ?: if (localProperties.getProperty("release.storeFile") != null) "local" else "debug"
                 signingConfig = signingConfigs.getByName(signingConfigName)
             }
-            // Own app id so Nema installs next to regular Wholphin (com.github.damontecres.wholphin).
+            // Own app id so Phin installs next to regular Wholphin (com.github.damontecres.wholphin).
             // Kept as .fluid from the WholphinFluid days so existing installs update in place
             applicationIdSuffix = ".fluid"
         }

@@ -246,7 +246,7 @@ class PlaybackViewModel
                     ?: preferences.appPreferences.playbackPreferences.playerBackend
             val playerBackend =
                 when (requestBackend) {
-                    // Nema: MPV is hidden, so MPV choices fall back to ExoPlayer
+                    // Phin: MPV is hidden, so MPV choices fall back to ExoPlayer
                     PlayerBackend.UNRECOGNIZED,
                     PlayerBackend.EXO_PLAYER,
                     PlayerBackend.MPV,
