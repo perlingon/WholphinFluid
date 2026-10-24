@@ -34,6 +34,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -45,12 +46,15 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.isSpecified
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -81,7 +85,6 @@ import com.github.damontecres.wholphin.ui.playback.PlaybackDialogType
 import com.github.damontecres.wholphin.ui.playback.insetFromSide
 import com.github.damontecres.wholphin.ui.playback.rememberPictureSideInsetPx
 import com.github.damontecres.wholphin.ui.seekBack
-import com.github.damontecres.wholphin.ui.seekForward
 import com.github.damontecres.wholphin.ui.skipStringRes
 import com.github.damontecres.wholphin.ui.theme.LocalTheme
 import com.github.damontecres.wholphin.ui.theme.Spacing
@@ -183,6 +186,8 @@ fun PlaybackControls(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(0.dp),
     ) {
+        // Gap between the play/pause button and the seek bar, kept local so Live Edit picks up changes
+        val playButtonGap = Spacing.md
         SeekBar(
             player = player,
             controllerViewState = controllerViewState,
@@ -195,6 +200,26 @@ fun PlaybackControls(
             intervals = seekBarIntervals,
             seekBack = seekBack,
             seekForward = seekForward,
+            leadingGap = playButtonGap,
+            leading = {
+                // Play/pause sits to the left of the seek bar, centered on it
+                PlaybackButton(
+                    modifier = Modifier.focusRequester(initialFocusRequester),
+                    iconRes = if (showPlay) R.drawable.baseline_play_arrow_24 else R.drawable.baseline_pause_24,
+                    onClick = {
+                        onControllerInteraction.invoke()
+                        if (showPlay) {
+                            player.play()
+                            skipBackOnResume?.let {
+                                player.seekBack(it)
+                            }
+                        } else {
+                            player.pause()
+                        }
+                    },
+                    onControllerInteraction = onControllerInteraction,
+                )
+            },
             modifier =
                 Modifier
                     .padding(vertical = 0.dp)
@@ -268,7 +293,12 @@ fun SeekBar(
     seekForward: Duration,
     modifier: Modifier = Modifier,
     interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
+    leadingGap: Dp = 0.dp,
+    leading: (@Composable () -> Unit)? = null,
 ) {
+    // Width of the leading content, so the timecodes line up with the bar
+    var leadingWidth by remember { mutableStateOf(0.dp) }
+    val density = LocalDensity.current
     var bufferedProgress by remember(player) { mutableFloatStateOf(player.bufferedPosition.toFloat() / player.duration) }
     var position by remember(player) { mutableLongStateOf(player.currentPosition) }
     var progress by remember(player) { mutableFloatStateOf(player.currentPosition.toFloat() / player.duration) }
@@ -284,25 +314,39 @@ fun SeekBar(
         modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        IntervalSeekBarImpl(
-            progress = progress,
-            bufferedProgress = bufferedProgress,
-            onSeek = {
-                onSeekProgress(it)
-            },
-            controllerViewState = controllerViewState,
-//            intervals = intervals,
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(leadingGap),
             modifier = Modifier.fillMaxWidth(),
-            interactionSource = interactionSource,
-            enabled = isEnabled,
-            durationMs = player.duration,
-            seekBack = seekBack,
-            seekForward = seekForward,
-        )
+        ) {
+            if (leading != null) {
+                Box(modifier = Modifier.onSizeChanged { leadingWidth = with(density) { it.width.toDp() } }) {
+                    leading()
+                }
+            }
+            IntervalSeekBarImpl(
+                progress = progress,
+                bufferedProgress = bufferedProgress,
+                onSeek = {
+                    onSeekProgress(it)
+                },
+                controllerViewState = controllerViewState,
+//                intervals = intervals,
+                modifier = Modifier.weight(1f),
+                interactionSource = interactionSource,
+                enabled = isEnabled,
+                durationMs = player.duration,
+                seekBack = seekBack,
+                seekForward = seekForward,
+            )
+        }
         SeekTimecodes(
             positionMs = position,
             durationMs = player.duration,
-            modifier = Modifier.fillMaxWidth(),
+            modifier =
+                Modifier
+                    .padding(start = if (leading != null) leadingWidth + leadingGap else 0.dp)
+                    .fillMaxWidth(),
         )
     }
 }
@@ -444,47 +488,8 @@ fun PlaybackButtons(
             modifier = modifier.focusGroup(),
             horizontalArrangement = Arrangement.spacedBy(buttonGap),
         ) {
-            PlaybackButton(
-                iconRes = R.drawable.baseline_skip_previous_24,
-                onClick = {
-                    onControllerInteraction.invoke()
-                    onPlaybackActionClick.invoke(PlaybackAction.Previous)
-                },
-                enabled = previousEnabled,
-                onControllerInteraction = onControllerInteraction,
-            )
-            PlaybackButton(
-                iconRes = R.drawable.baseline_fast_rewind_24,
-                onClick = {
-                    onControllerInteraction.invoke()
-                    player.seekBack(seekBack)
-                },
-                onControllerInteraction = onControllerInteraction,
-            )
-            PlaybackButton(
-                modifier = Modifier.focusRequester(initialFocusRequester),
-                iconRes = if (showPlay) R.drawable.baseline_play_arrow_24 else R.drawable.baseline_pause_24,
-                onClick = {
-                    onControllerInteraction.invoke()
-                    if (showPlay) {
-                        player.play()
-                        skipBackOnResume?.let {
-                            player.seekBack(it)
-                        }
-                    } else {
-                        player.pause()
-                    }
-                },
-                onControllerInteraction = onControllerInteraction,
-            )
-            PlaybackButton(
-                iconRes = R.drawable.baseline_fast_forward_24,
-                onClick = {
-                    onControllerInteraction.invoke()
-                    player.seekForward(seekForward)
-                },
-                onControllerInteraction = onControllerInteraction,
-            )
+            // Play/pause sits next to the seek bar and restart in the top corner (PlaybackOverlay);
+            // there are no rewind/fast forward buttons, the seek bar does that
             PlaybackButton(
                 iconRes = R.drawable.baseline_skip_next_24,
                 onClick = {

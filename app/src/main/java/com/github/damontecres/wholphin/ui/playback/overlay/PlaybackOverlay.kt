@@ -24,12 +24,15 @@ import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -59,11 +62,13 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.media3.common.Player
 import coil3.compose.AsyncImage
+import com.github.damontecres.wholphin.R
 import com.github.damontecres.wholphin.data.model.BaseItem
 import com.github.damontecres.wholphin.data.model.Chapter
 import com.github.damontecres.wholphin.data.model.PlaylistItem
 import com.github.damontecres.wholphin.ui.AppColors
 import com.github.damontecres.wholphin.ui.LocalImageUrlService
+import com.github.damontecres.wholphin.ui.components.ExpandablePlayButton
 import com.github.damontecres.wholphin.ui.components.TimeDisplay
 import com.github.damontecres.wholphin.ui.isNotNullOrBlank
 import com.github.damontecres.wholphin.ui.playback.AnalyticsState
@@ -431,23 +436,47 @@ fun PlaybackOverlay(
             ) {
                 CornerFade(stops = topFadeStops, fromEnd = true, modifier = Modifier.size(clockFadeSize))
             }
-            AnimatedVisibility(
-                visible = showLogo,
-                enter = slideIn(showOffset) { IntOffset(x = -it.width / 2, y = -it.height / 2) } + fadeIn(showFade),
-                exit = slideOut(hideOffset) { IntOffset(x = -it.width / 2, y = -it.height / 2) } + fadeOut(hideFade),
+            // "Restart" in the top start corner, the logo next to it
+            val showRestart = !showDebugInfo && controllerViewState.controlsVisible
+            // Gap between the restart button and the logo
+            val restartGap = Spacing.md
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(restartGap),
+                verticalAlignment = Alignment.CenterVertically,
                 modifier =
                     Modifier
-                        .align(Alignment.TopStart),
+                        .align(Alignment.TopStart)
+                        .padding(start = logoInsetStart, top = logoInsetTop),
             ) {
-                AsyncImage(
-                    model = logoImageUrl,
-                    contentDescription = "Logo",
-                    alignment = Alignment.TopStart,
-                    modifier =
-                        Modifier
-                            .padding(start = logoInsetStart, top = logoInsetTop)
-                            .size(logoMaxSize),
-                )
+                AnimatedVisibility(
+                    visible = showRestart,
+                    enter = slideIn(showOffset) { IntOffset(x = -it.width / 2, y = -it.height / 2) } + fadeIn(showFade),
+                    exit = slideOut(hideOffset) { IntOffset(x = -it.width / 2, y = -it.height / 2) } + fadeOut(hideFade),
+                ) {
+                    ExpandablePlayButton(
+                        title = R.string.restart,
+                        resume = Duration.ZERO,
+                        icon = Icons.Default.Refresh,
+                        mirrorIcon = true,
+                        onClick = {
+                            player.seekTo(0)
+                            controllerViewState.pulseControls()
+                        },
+                        modifier = Modifier.onFocusChanged { if (it.isFocused) controllerViewState.pulseControls() },
+                    )
+                }
+                AnimatedVisibility(
+                    visible = showLogo,
+                    enter = slideIn(showOffset) { IntOffset(x = -it.width / 2, y = -it.height / 2) } + fadeIn(showFade),
+                    exit = slideOut(hideOffset) { IntOffset(x = -it.width / 2, y = -it.height / 2) } + fadeOut(hideFade),
+                ) {
+                    AsyncImage(
+                        model = logoImageUrl,
+                        contentDescription = "Logo",
+                        alignment = Alignment.CenterStart,
+                        modifier = Modifier.size(logoMaxSize),
+                    )
+                }
             }
             AnimatedVisibility(
                 visible = showClockNow,
