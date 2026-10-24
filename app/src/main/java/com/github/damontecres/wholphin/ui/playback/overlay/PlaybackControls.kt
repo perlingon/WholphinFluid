@@ -488,7 +488,7 @@ fun LeftPlaybackButtons(
         horizontalArrangement = Arrangement.spacedBy(buttonGap),
     ) {
         PlaybackButton(
-            iconRes = R.drawable.vector_settings,
+            iconRes = R.drawable.ic_video_settings,
             onClick = {
                 onControllerInteraction.invoke()
                 onClickPlaybackDialogType.invoke(PlaybackDialogType.SETTINGS)
