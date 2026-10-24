@@ -290,10 +290,10 @@ fun QueueRowOverlay(
                             }
                             if (it.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
                             when (it.key) {
-                                // Past the last season there is nowhere to go, so stay put
+                                // Down from the last season starts over at the first one
                                 Key.DirectionDown -> {
-                                    if (groupIndex < groups.lastIndex) {
-                                        groupIndex++
+                                    if (groups.size > 1) {
+                                        groupIndex = if (groupIndex < groups.lastIndex) groupIndex + 1 else 0
                                         focusFirst = true
                                     }
                                     true
