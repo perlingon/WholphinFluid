@@ -44,14 +44,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
@@ -77,13 +74,14 @@ import androidx.media3.common.Player
 import androidx.tv.material3.Icon
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
-import coil3.compose.AsyncImage
 import com.github.damontecres.wholphin.R
 import com.github.damontecres.wholphin.data.model.BaseItem
 import com.github.damontecres.wholphin.data.model.Chapter
 import com.github.damontecres.wholphin.data.model.PlaylistItem
 import com.github.damontecres.wholphin.ui.AppColors
 import com.github.damontecres.wholphin.ui.LocalImageUrlService
+import com.github.damontecres.wholphin.ui.components.CornerFade
+import com.github.damontecres.wholphin.ui.components.CornerLogo
 import com.github.damontecres.wholphin.ui.components.TimeDisplay
 import com.github.damontecres.wholphin.ui.isNotNullOrBlank
 import com.github.damontecres.wholphin.ui.playback.AnalyticsState
@@ -436,16 +434,30 @@ fun PlaybackOverlay(
             }
         }
 
-        // Top
+        // Logo in the bottom start corner of the picture while paused with the controls hidden
         val logoImageUrl = LocalImageUrlService.current.rememberImageUrl(item, ImageType.LOGO)
-        val hasLogo = logoImageUrl.isNotNullOrBlank()
+        AnimatedVisibility(
+            visible = !showDebugInfo && showPlay && !controllerViewState.controlsVisible && logoImageUrl.isNotNullOrBlank(),
+            enter = fadeIn(showFade),
+            exit = fadeOut(hideFade),
+            modifier =
+                Modifier
+                    .align(Alignment.BottomCenter)
+                    .widthIn(max = pictureMaxWidth)
+                    .fillMaxWidth(),
+        ) {
+            Box(Modifier.fillMaxWidth()) {
+                CornerLogo(logoUrl = logoImageUrl, modifier = Modifier.align(Alignment.BottomStart))
+            }
+        }
+
+        // Top
         // Title in the top end corner while the controls show
         val showTitle = !showDebugInfo && controllerViewState.controlsVisible
         val (titleLine, detailLine) = remember(item) { playerTitleLines(item) }
-        // While paused with the controls hidden: the logo in the top start corner, the clock in the
-        // top end corner
+        // While paused with the controls hidden: the logo in the bottom start corner (CornerLogo,
+        // shared with the screensaver), the clock in the top end corner
         val pausedHidden = !showDebugInfo && showPlay && !controllerViewState.controlsVisible
-        val showLogoNow = pausedHidden && hasLogo
         val showClockNow = pausedHidden && showClock
         // Fades in the top corners behind the logo and the clock, each shown only with its element.
         // Tuning values, kept local so Live Edit picks up changes: each stop is
@@ -458,14 +470,8 @@ fun PlaybackOverlay(
                 1f to Color.Transparent,
             )
         val titleFadeSize = DpSize(560.dp, 280.dp)
-        val logoFadeSize = DpSize(560.dp, 280.dp)
         // Size of the dark fade in the top start corner, behind the back and restart buttons
         val topStartFadeSize = DpSize(560.dp, 280.dp)
-        // Logo placement (top start corner): the box the logo is fitted into (it keeps its own
-        // shape inside it), and its distance from the top and start edge of the picture area
-        val logoMaxSize = DpSize(180.dp, 80.dp)
-        val logoInsetStart = Spacing.lg
-        val logoInsetTop = Spacing.lg
         // Title lines in the top end corner: distance from the edges, styles, the gap between the
         // lines, how dim the second line is, and how wide the block may get before lines are cut off.
         // Sizes to try: titleLarge (about 20 sp) + bodyLarge (about 15 sp), or headlineSmall (about
@@ -566,31 +572,6 @@ fun PlaybackOverlay(
                     }
                 }
             }
-            // Logo in the top start corner while paused with the controls hidden, over its own fade
-            AnimatedVisibility(
-                visible = showLogoNow,
-                enter = fadeIn(showFade),
-                exit = fadeOut(hideFade),
-                modifier = Modifier.align(Alignment.TopStart),
-            ) {
-                CornerFade(stops = topFadeStops, fromEnd = false, modifier = Modifier.size(logoFadeSize))
-            }
-            AnimatedVisibility(
-                visible = showLogoNow,
-                enter = slideIn(showOffset) { IntOffset(x = -it.width / 2, y = -it.height / 2) } + fadeIn(showFade),
-                exit = slideOut(hideOffset) { IntOffset(x = -it.width / 2, y = -it.height / 2) } + fadeOut(hideFade),
-                modifier =
-                    Modifier
-                        .align(Alignment.TopStart)
-                        .padding(start = logoInsetStart, top = logoInsetTop),
-            ) {
-                AsyncImage(
-                    model = logoImageUrl,
-                    contentDescription = "Logo",
-                    alignment = Alignment.TopStart,
-                    modifier = Modifier.size(logoMaxSize),
-                )
-            }
             // Title in the top end corner, on two lines: the name, then the lighter line
             // ("S1 E4 · Episode title", or the year for a movie)
             AnimatedVisibility(
@@ -687,34 +668,4 @@ enum class OverlayViewState {
     CONTROLLER,
     CHAPTERS,
     QUEUE,
-}
-
-/**
- * A soft elliptical fade from a top corner, filling its size
- *
- * @param fromEnd true for the top end corner (the clock), false for the top start corner (the logo)
- */
-@Composable
-private fun CornerFade(
-    stops: Array<Pair<Float, Color>>,
-    fromEnd: Boolean,
-    modifier: Modifier = Modifier,
-) {
-    val rtl = LocalLayoutDirection.current == LayoutDirection.Rtl
-    val atRight = fromEnd != rtl
-    Box(
-        modifier =
-            modifier.drawBehind {
-                val corner = Offset(if (atRight) size.width else 0f, 0f)
-                val radius = size.width
-                // Draw a circle around the corner, squashed to the box's height
-                scale(scaleX = 1f, scaleY = size.height / size.width, pivot = corner) {
-                    drawCircle(
-                        brush = Brush.radialGradient(*stops, center = corner, radius = radius),
-                        radius = radius,
-                        center = corner,
-                    )
-                }
-            },
-    )
 }
