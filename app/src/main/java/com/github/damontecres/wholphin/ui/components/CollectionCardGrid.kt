@@ -148,8 +148,14 @@ class CollectionGridViewModel
                     if (hideContainers && entry.onlyCollections) containers.add(collection.id)
                 }
             }
+            val directIds =
+                if (contentsMode) {
+                    collectionTreeService.entry(itemId)?.children.orEmpty().map { it.id }.toSet()
+                } else {
+                    emptySet()
+                }
             // Inside a nested collection: its own movies etc. and its child collections that hold collections
-            // themselves are the big cards
+            // themselves come first
             val bigIds =
                 if (contentsMode) {
                     collectionTreeService
@@ -178,6 +184,13 @@ class CollectionGridViewModel
                             isEmoji =
                                 if (contentsMode) {
                                     it.id in bigIds
+                                } else {
+                                    emojiFirst && it.name.startsWithEmoji()
+                                },
+                            // Inside a nested collection everything directly in it is a big card
+                            big =
+                                if (contentsMode) {
+                                    it.id in directIds
                                 } else {
                                     emojiFirst && it.name.startsWithEmoji()
                                 },
@@ -317,6 +330,8 @@ data class CollectionCardItem(
     val parentId: UUID? = null,
     /** Shown first and as a bigger card (emoji collections, when that setting is on) */
     val isEmoji: Boolean = false,
+    /** Shown as a bigger card, three per row */
+    val big: Boolean = isEmoji,
     /** Which group of cards this belongs to (-1 for the emoji collections), groups are separated by a gap */
     val groupIndex: Int = 0,
     /** Heading shown above this card's group, if any */
@@ -441,7 +456,7 @@ fun CollectionCardGrid(
                             viewModel.navigationManager.navigateTo(collection.item.destination(index))
                         },
                         onLongClick = {},
-                        aspectRatio = if (collection.isEmoji) emojiAspectRatio else AspectRatios.WIDE,
+                        aspectRatio = if (collection.big) emojiAspectRatio else AspectRatios.WIDE,
                         modifier =
                             Modifier
                                 .ifElse(index == focusedIndex, Modifier.focusRequester(gridFocusRequester))
@@ -504,7 +519,7 @@ fun CollectionCardGrid(
                             items(
                                 subgroup.size,
                                 key = { subgroup[it].gridId },
-                                span = { GridItemSpan(gridSlots / columns) },
+                                span = { GridItemSpan(gridSlots / if (subgroup[it].big) emojiColumns else columns) },
                             ) { index ->
                                 collectionCard(subgroup[index], start + index)
                             }
