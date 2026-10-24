@@ -687,7 +687,7 @@ fun PlayerLabelButton(
         icon(Modifier.size(iconSize))
         AnimatedVisibility(isFocused) {
             // A trailing "1/4" (which track of how many) is drawn dimmer
-            val countStart = Regex("\\s\\d+/\\d+$").find(label)?.range?.first
+            val countStart = Regex("[ \\u2002]\\d+/\\d+$").find(label)?.range?.first
             val labelText =
                 buildAnnotatedString {
                     if (countStart == null) {
