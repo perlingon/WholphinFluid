@@ -467,6 +467,7 @@ fun CollectionCardGrid(
                         },
                         onLongClick = {},
                         aspectRatio = if (collection.big) emojiAspectRatio else AspectRatios.WIDE,
+                        showChevron = collection.hasChildCollections && !collection.item.name.startsWithEmoji(),
                         modifier =
                             Modifier
                                 .ifElse(index == focusedIndex, Modifier.focusRequester(gridFocusRequester))
