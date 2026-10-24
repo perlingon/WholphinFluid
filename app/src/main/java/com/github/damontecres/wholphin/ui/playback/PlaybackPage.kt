@@ -936,8 +936,9 @@ fun PlaybackPageContent(
 }
 
 /**
- * Short label for the chosen track, e.g. "English 1/4": its language (or its full title when it
- * has none), then which of the tracks it is and how many there are to choose from
+ * Short label for the chosen track, e.g. "ENG · Dolby Digital+ 5.1 1/4": the language code (or
+ * the full title when the track has no language), the format, then which of the tracks it is and
+ * how many there are to choose from
  */
 private fun trackLabel(
     streams: List<SimpleMediaStream>,
@@ -946,6 +947,11 @@ private fun trackLabel(
     val position = streams.indexOfFirst { it.index == index }
     if (position < 0) return null
     val stream = streams[position]
-    val name = stream.language ?: stream.displayTitle
+    val name =
+        if (stream.languageCode != null) {
+            listOfNotNull(stream.languageCode, stream.formatDetail).joinToString(" · ")
+        } else {
+            stream.formatDetail ?: stream.displayTitle
+        }
     return if (streams.size > 1) "$name ${position + 1}/${streams.size}" else name
 }

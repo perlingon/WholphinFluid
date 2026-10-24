@@ -64,8 +64,11 @@ import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
@@ -649,7 +652,9 @@ fun PlayerLabelButton(
     // Gap between the icon and the label, and after the label
     val labelGap = Spacing.sm
     // Longest label before it is cut off with "…"
-    val labelMaxWidth = 180.dp
+    val labelMaxWidth = 260.dp
+    // How dim the "1/4" track count at the end of a label is
+    val countOpacity = 0.6f
     val labelStyle = MaterialTheme.typography.titleSmall
     // Dark and see-through without focus; white with dark icon and label with focus
     val contentColor = MaterialTheme.colorScheme.onSurface
@@ -681,8 +686,21 @@ fun PlayerLabelButton(
     ) {
         icon(Modifier.size(iconSize))
         AnimatedVisibility(isFocused) {
+            // A trailing "1/4" (which track of how many) is drawn dimmer
+            val countStart = Regex(" \\d+/\\d+$").find(label)?.range?.first
+            val labelText =
+                buildAnnotatedString {
+                    if (countStart == null) {
+                        append(label)
+                    } else {
+                        append(label.substring(0, countStart))
+                        withStyle(SpanStyle(color = LocalContentColor.current.copy(alpha = countOpacity))) {
+                            append(label.substring(countStart))
+                        }
+                    }
+                }
             Text(
-                text = label,
+                text = labelText,
                 style = labelStyle,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
