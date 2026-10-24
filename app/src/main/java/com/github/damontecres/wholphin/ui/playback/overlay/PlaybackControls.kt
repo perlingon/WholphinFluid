@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentSize
@@ -322,6 +323,10 @@ fun SeekBar(
 ) {
     // Width of the leading content, so the timecodes line up with the bar
     var leadingWidth by remember { mutableStateOf(0.dp) }
+    // Heights of the leading content and of the bar, so the times can sit close under the bar
+    // even though the play button makes the row taller
+    var leadingHeight by remember { mutableStateOf(0.dp) }
+    var barBoxHeight by remember { mutableStateOf(0.dp) }
     // While the leading content (the play button) has focus, the bar shows its focused look too
     var leadingFocused by remember { mutableStateOf(false) }
     val density = LocalDensity.current
@@ -336,6 +341,10 @@ fun SeekBar(
             delay(250L)
         }
     }
+    // How far the times move up from below the row: the empty space under the bar, plus a nudge
+    // (positive = closer to the bar), kept local so Live Edit picks up changes
+    val timecodeNudge = 0.dp
+    val timecodeLift = ((leadingHeight - barBoxHeight) / 2).coerceAtLeast(0.dp) + timecodeNudge
     Column(
         modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -349,8 +358,10 @@ fun SeekBar(
                 Box(
                     modifier =
                         Modifier
-                            .onSizeChanged { leadingWidth = with(density) { it.width.toDp() } }
-                            .onFocusChanged { leadingFocused = it.hasFocus },
+                            .onSizeChanged {
+                                leadingWidth = with(density) { it.width.toDp() }
+                                leadingHeight = with(density) { it.height.toDp() }
+                            }.onFocusChanged { leadingFocused = it.hasFocus },
                 ) {
                     leading()
                 }
@@ -366,6 +377,7 @@ fun SeekBar(
                 modifier =
                     Modifier
                         .weight(1f)
+                        .onSizeChanged { barBoxHeight = with(density) { it.height.toDp() } }
                         .onGloballyPositioned {
                             // The bar itself is drawn inset by Spacing.xs inside this box
                             onBarStartChange(with(density) { it.positionInRoot().x.toDp() } + Spacing.xs)
@@ -384,7 +396,10 @@ fun SeekBar(
             modifier =
                 Modifier
                     .padding(start = if (leading != null) leadingWidth + leadingGap else 0.dp)
-                    .fillMaxWidth(),
+                    .fillMaxWidth()
+                    // Drawn up next to the bar, but the space it leaves stays, so the buttons
+                    // below keep their distance
+                    .offset(y = -timecodeLift),
         )
     }
 }
