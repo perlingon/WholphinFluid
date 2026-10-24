@@ -51,7 +51,9 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalResources
@@ -162,6 +164,8 @@ fun PlaybackControls(
     seekBarInteractionSource: MutableInteractionSource = remember { MutableInteractionSource() },
     // Where Up from the play button or seek bar goes (the back button), null when it isn't shown
     upFocusRequester: FocusRequester? = null,
+    // Where the seek bar starts on screen, so the title above can line up with it
+    onBarStartChange: (Dp) -> Unit = {},
 ) {
     // Down from the play button or seek bar goes to subtitles, the first button in the row below
     val rowFocusRequester = remember { FocusRequester() }
@@ -210,6 +214,7 @@ fun PlaybackControls(
             seekBack = seekBack,
             seekForward = seekForward,
             leadingGap = playButtonGap,
+            onBarStartChange = onBarStartChange,
             leading = {
                 // Play/pause sits to the left of the seek bar, centered on it
                 PlaybackButton(
@@ -313,6 +318,7 @@ fun SeekBar(
     interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
     leadingGap: Dp = 0.dp,
     leading: (@Composable () -> Unit)? = null,
+    onBarStartChange: (Dp) -> Unit = {},
 ) {
     // Width of the leading content, so the timecodes line up with the bar
     var leadingWidth by remember { mutableStateOf(0.dp) }
@@ -357,7 +363,13 @@ fun SeekBar(
                 },
                 controllerViewState = controllerViewState,
 //                intervals = intervals,
-                modifier = Modifier.weight(1f),
+                modifier =
+                    Modifier
+                        .weight(1f)
+                        .onGloballyPositioned {
+                            // The bar itself is drawn inset by Spacing.xs inside this box
+                            onBarStartChange(with(density) { it.positionInRoot().x.toDp() } + Spacing.xs)
+                        },
                 interactionSource = interactionSource,
                 enabled = isEnabled,
                 durationMs = player.duration,

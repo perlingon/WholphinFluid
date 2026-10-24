@@ -257,8 +257,11 @@ fun Controller(
     // Gap between the title and the subtitle row, and between the title block and the seek bar
     val titleGap = Spacing.sm
     val blockGap = Spacing.sm
-    // Indent of the title block, and the gap after "Ends at"
+    // Indent of the title block (used until the seek bar has been measured; after that the title
+    // starts where the seek bar starts), and the gap after "Ends at"
     val startInset = Spacing.xxl
+    // Extra nudge on top of lining up with the seek bar, e.g. 0.dp or Spacing.xs
+    val titleNudge = 0.dp
     val endInset = Spacing.xl
     // How far the title block moves up while the seek bar is focused (makes room for trickplay)
     val bumpOffset = (0).dp
@@ -277,15 +280,23 @@ fun Controller(
             ),
     )
 
+    // Where this block and the seek bar start on screen, so the title lines up with the bar
+    var blockStart by remember { mutableStateOf(0.dp) }
+    var barStart by remember { mutableStateOf<Dp?>(null) }
+    val titleStart = barStart?.let { (it - blockStart + titleNudge).coerceAtLeast(0.dp) } ?: startInset
+
     Column(
         verticalArrangement = Arrangement.spacedBy(blockGap),
-        modifier = modifier,
+        modifier =
+            modifier.onGloballyPositioned {
+                blockStart = with(density) { it.positionInRoot().x.toDp() }
+            },
     ) {
         Column(
             verticalArrangement = Arrangement.spacedBy(titleGap),
             modifier =
                 Modifier
-                    .padding(start = startInset)
+                    .padding(start = titleStart)
                     .offset(y = verticalOffset + titleDrop)
                     // The seek preview is placed from this measured height (see PlaybackOverlay)
                     .onSizeChanged { onTitleHeightChange(with(density) { it.height.toDp() }) },
@@ -361,6 +372,7 @@ fun Controller(
         }
         PlaybackControls(
             modifier = Modifier.fillMaxWidth(),
+            onBarStartChange = { barStart = it },
             player = player,
             onPlaybackActionClick = onPlaybackActionClick,
             controllerViewState = controllerViewState,
