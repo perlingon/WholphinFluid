@@ -676,6 +676,56 @@ fun Backdrop(
                 // mode to opacity, and the opacity of the group as a whole
                 val groupLayers = listOf(BlendMode.Overlay to 1f, BlendMode.Softlight to 0.9f, BlendMode.SrcOver to 1f)
                 val groupOpacity = 1f
+                // Rounded fade on the group's inner side, facing the rows and text, like the
+                // sharp image's innerFade: an ellipse whose centre sits on the screen and whose far
+                // side reaches the screen's inner edge. Applied to the blurred group before it is
+                // blended. Stops are "position to opacity", from the centre (0f) out to the rim (1f)
+                val showGroupFade = true
+                val groupFade =
+                    listOf(
+                        0f to 1f,
+                        0.6f to 1f,
+                        0.85f to 0.3f,
+                        1f to 0f,
+                    )
+                // Centre of the curve, as shares of the screen's width and height, measured from
+                // the inner edge. Further from the edge = a wider, gentler curve
+                val groupFadeCenterX = 0.5f
+                val groupFadeCenterY = 0.4f
+                // Height of the curve relative to the screen's height: lower = rounder, higher =
+                // flatter (closer to a straight edge)
+                val groupFadeHeight = 0.8f
+                val groupMask: DrawScope.() -> Unit = {
+                    if (showGroupFade) {
+                        val center =
+                            Offset(
+                                if (isRtl) size.width * (1f - groupFadeCenterX) else size.width * groupFadeCenterX,
+                                size.height * groupFadeCenterY,
+                            )
+                        // Horizontal reach: from the centre to the screen's inner edge
+                        val reach = (if (isRtl) size.width - center.x else center.x).coerceAtLeast(1f)
+                        val stretch = (size.height * groupFadeHeight / reach).coerceAtLeast(0.01f)
+                        scale(scaleX = 1f, scaleY = stretch, pivot = center) {
+                            // Only the part between the inner edge and the curve's centre is touched
+                            val top = center.y - center.y / stretch
+                            val bottom = center.y + (size.height - center.y) / stretch
+                            drawRect(
+                                brush =
+                                    Brush.radialGradient(
+                                        colorStops =
+                                            groupFade
+                                                .map { (position, opacity) -> position to Color.Black.copy(alpha = opacity) }
+                                                .toTypedArray(),
+                                        center = center,
+                                        radius = reach,
+                                    ),
+                                topLeft = Offset(if (isRtl) center.x else 0f, top),
+                                size = Size(reach, bottom - top),
+                                blendMode = BlendMode.DstIn,
+                            )
+                        }
+                    }
+                }
                 val bakeHeight = (bakeWidth * (maxHeight / maxWidth)).toInt().coerceAtLeast(1)
                 // The baked version uses the colours the glows are heading for, not the animated
                 // ones, so it is composed once per backdrop instead of on every animation frame
@@ -710,6 +760,7 @@ fun Backdrop(
                         groupSmooth,
                         groupLayers,
                         groupOpacity,
+                        listOf(showGroupFade, groupFade, groupFadeCenterX, groupFadeCenterY, groupFadeHeight),
                         BackdropDebug.outlineCopies,
                         debugNoSmoothing,
                     )
@@ -744,6 +795,7 @@ fun Backdrop(
                         groupSmoothRadius = (bakeWidth * groupSmooth).roundToInt(),
                         groupLayers = groupLayers,
                         groupOpacity = groupOpacity,
+                        groupMask = groupMask,
                         smoothRadius = (bakeWidth * bakeSmooth).roundToInt(),
                         outlineCopies = BackdropDebug.outlineCopies,
                         noSmoothing = debugNoSmoothing,
