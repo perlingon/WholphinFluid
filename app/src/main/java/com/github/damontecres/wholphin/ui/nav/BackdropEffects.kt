@@ -13,6 +13,7 @@ import androidx.compose.ui.graphics.Canvas
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.Matrix
 import androidx.compose.ui.graphics.Paint
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.asAndroidBitmap
@@ -47,6 +48,7 @@ import java.security.MessageDigest
 import kotlin.math.max
 import kotlin.math.roundToInt
 import kotlin.math.sqrt
+import kotlin.math.tan
 
 // The heavy lifting behind the backdrop: composing the baked background and generating film grain.
 // Kept apart from Backdrop.kt on purpose. While tuning values there with Live Edit, the code in
@@ -253,6 +255,12 @@ internal data class Tile(
     val flip: Boolean = false,
     // Upside down, in place
     val flipVertical: Boolean = false,
+    // Turned about its own middle, in degrees: positive = clockwise
+    val rotation: Float = 0f,
+    // Slanted about its own middle, in degrees. skewX leans the vertical edges (positive = the
+    // bottom moves right), skewY the horizontal edges (positive = the right side moves down)
+    val skewX: Float = 0f,
+    val skewY: Float = 0f,
     // Width in pixels of the version of the image that is stretched over the tile: lower = blurrier
     val resolution: Int = 64,
     // Extra blur on this tile alone, as a share of the screen's width: 0 = none
@@ -459,6 +467,9 @@ internal suspend fun bakeBackdropBackground(
                             val drawn: ImageBitmap?
                             val drawOffset: IntOffset
                             val drawSize: IntSize
+                            // A turned or slanted tile can bring parts from off screen into view,
+                            // so it is prepared whole
+                            val transformed = copy.rotation != 0f || copy.skewX != 0f || copy.skewY != 0f
                             if (smoothRadius < 1 && feather == null) {
                                 // A plain stretch of the tiny version: nothing to prepare
                                 drawn = blurred
@@ -473,7 +484,21 @@ internal suspend fun bakeBackdropBackground(
                                 val visibleTop = maxOf(offset.y, -margin)
                                 val visibleRight = minOf(offset.x + area.width, size.width.roundToInt() + margin)
                                 val visibleBottom = minOf(offset.y + area.height, size.height.roundToInt() + margin)
-                                if (visibleRight <= visibleLeft || visibleBottom <= visibleTop) {
+                                if (transformed) {
+                                    drawn =
+                                        tileCrop(
+                                            blurred,
+                                            area,
+                                            IntOffset.Zero,
+                                            area,
+                                            smoothRadius,
+                                            feather,
+                                            density,
+                                            layoutDirection,
+                                        )
+                                    drawOffset = offset
+                                    drawSize = area
+                                } else if (visibleRight <= visibleLeft || visibleBottom <= visibleTop) {
                                     // Entirely off screen
                                     drawn = null
                                     drawOffset = offset
@@ -505,6 +530,19 @@ internal suspend fun bakeBackdropBackground(
                             val middle = Offset(offset.x + area.width / 2f, offset.y + area.height / 2f)
                             if (drawn != null) {
                                 withTransform({
+                                    // Turned, then slanted, then flipped, all about the middle
+                                    // (the last one listed is applied to the picture first)
+                                    if (copy.rotation != 0f) rotate(copy.rotation, pivot = middle)
+                                    if (copy.skewX != 0f || copy.skewY != 0f) {
+                                        translate(middle.x, middle.y)
+                                        transform(
+                                            Matrix().apply {
+                                                this[1, 0] = tan(Math.toRadians(copy.skewX.toDouble())).toFloat()
+                                                this[0, 1] = tan(Math.toRadians(copy.skewY.toDouble())).toFloat()
+                                            },
+                                        )
+                                        translate(-middle.x, -middle.y)
+                                    }
                                     if (copy.flip || copy.flipVertical) {
                                         scale(
                                             scaleX = if (copy.flip) -1f else 1f,
@@ -613,12 +651,14 @@ internal fun DrawScope.drawFlatEdgeArrows(edges: Set<ImageEdge>) {
                 path.lineTo(inset + arrow, y - arrow * 0.6f)
                 path.lineTo(inset + arrow, y + arrow * 0.6f)
             }
+
             ImageEdge.RIGHT -> {
                 val y = size.height / 2f
                 path.moveTo(size.width - inset, y)
                 path.lineTo(size.width - inset - arrow, y - arrow * 0.6f)
                 path.lineTo(size.width - inset - arrow, y + arrow * 0.6f)
             }
+
             ImageEdge.BOTTOM -> {
                 val x = size.width / 2f
                 path.moveTo(x, size.height - inset)
