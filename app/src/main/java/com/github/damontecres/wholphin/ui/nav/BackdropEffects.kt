@@ -415,6 +415,8 @@ internal suspend fun bakeBackdropBackground(
     groupLayers: List<Pair<BlendMode, Float>>,
     groupOpacity: Float,
     smoothRadius: Int,
+    // Fades parts of the blurred group out before it is blended, drawn with BlendMode.DstIn
+    groupMask: DrawScope.() -> Unit = {},
     outlineCopies: Boolean,
     // Development aid: leaves out all smoothing, see debugNoSmoothing in Backdrop
     noSmoothing: Boolean = false,
@@ -668,6 +670,9 @@ internal suspend fun bakeBackdropBackground(
                     }
                 }
                 boxBlur(target.asAndroidBitmap(), passRadius)
+                if (isGroup && passTiles.isNotEmpty()) {
+                    CanvasDrawScope().draw(density, layoutDirection, Canvas(target), outputSize) { groupMask() }
+                }
                 val sheetOpacity = groupOpacity.coerceIn(0f, 1f)
                 if (isGroup && passTiles.isNotEmpty() && sheetOpacity > 0f) {
                     // The group's sheet onto the glows, with the group's own blend modes
