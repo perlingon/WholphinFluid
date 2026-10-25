@@ -156,10 +156,10 @@ fun Backdrop(
     // Brightest a glow colour may be, 0 to 1 (1 = no cap). Brighter colours are darkened down
     // to this, keeping their hue and saturation, so a white or yellow poster cannot wash the
     // background out
-    val glowMaxBrightness = 0.8f
+    val glowMaxBrightness = 0.7f
     // Darkest a glow colour may be, 0 to 1 (0 = no cap). Darker colours are lifted up to this,
     // keeping their hue and saturation, so a near-black poster still gives a hint of colour
-    val glowMinBrightness = 0.1f
+    val glowMinBrightness = 0.05f
 
     fun Color.capped(): Color {
         if (!isSpecified) return this
@@ -391,7 +391,7 @@ fun Backdrop(
                                 resolution = 90,
                                 smooth = 0.01f,
                                 feather = Feather(0.3f, 0.1f,0f,0.6f,),
-                                layers = listOf(BlendMode.Softlight to 0.9f),
+                                layers = listOf(BlendMode.SrcOver to 1f),
                             ),
                         )
                     )
@@ -585,13 +585,13 @@ fun Backdrop(
                 val density = LocalDensity.current
                 val layoutDirection = LocalLayoutDirection.current
                 // Size of the baked image; it is soft everywhere, so it can be small
-                val bakeWidth = 640
+                val bakeWidth = 480
                 // Extra smoothing of the baked glows and blur, as a share of the screen width:
                 // 0 = none, 0.01 = a soft blur about 1% of the screen wide. Only applies when baked
-                val bakeSmooth = 0.004f // the final blur, over everything: glows and all tiles
+                val bakeSmooth = 0.006f // the final blur, over everything: glows and all tiles
                 // Blur of the mirror tiles as one group, before they are blended over the main
                 // tile. Same scale as bakeSmooth
-                val groupSmooth = 0.0002f
+                val groupSmooth = 0.0001f
                 // How the blurred mirror tiles are blended onto the glows, bottom to top, as blend
                 // mode to opacity, and the opacity of the group as a whole
                 val groupLayers = listOf(BlendMode.Overlay to 1f, BlendMode.SrcOver to 0.8f)
@@ -983,7 +983,7 @@ fun Backdrop(
                             val innerFadeCenterY = 0.4f
                             // Height of the curve relative to the image's height: lower = rounder
                             // (corners cut away more), higher = flatter (closer to a straight edge)
-                            val innerFadeHeight = 0.9f
+                            val innerFadeHeight = 0.8f
 
                             val innerCenter =
                                 Offset(
@@ -1018,7 +1018,7 @@ fun Backdrop(
                             val bottomFade =
                                 listOf(
                                     0f to 1f,
-                                    0.9f to 1f,
+                                    0.93f to 1f,
                                     1f to 0f,
                                 )
                             // Centre of the curve, as shares of the image's width and height.

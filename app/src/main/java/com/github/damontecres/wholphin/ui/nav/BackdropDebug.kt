@@ -9,10 +9,10 @@ package com.github.damontecres.wholphin.ui.nav
  */
 object BackdropDebug {
     // Hides the card rows
-    val hideRows = false
+    val hideRows = true
 
     // Hides the logo, title and details of the focused item at the top of the page
-    val hideInfo = false
+    val hideInfo = true
 
     // Hides the sharp backdrop image, leaving only the baked background
     val hideImage = false
