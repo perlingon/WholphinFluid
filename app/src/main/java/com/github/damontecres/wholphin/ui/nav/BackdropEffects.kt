@@ -414,6 +414,8 @@ internal suspend fun bakeBackdropBackground(
     groupOpacity: Float,
     smoothRadius: Int,
     outlineCopies: Boolean,
+    // Development aid: leaves out all smoothing, see BackdropDebug.noSmoothing
+    noSmoothing: Boolean = false,
 ): ImageBitmap? =
     withContext(Dispatchers.Default) {
         val started = System.nanoTime()
@@ -509,7 +511,7 @@ internal suspend fun bakeBackdropBackground(
             // result. Last, everything is smoothed together
             listOf(
                 Triple(shownTiles.filter { it.behind && !it.onTop }, 0, false),
-                Triple(shownTiles.filter { !it.behind && !it.onTop }, groupSmoothRadius, true),
+                Triple(shownTiles.filter { !it.behind && !it.onTop }, if (noSmoothing) 0 else groupSmoothRadius, true),
                 Triple(shownTiles.filter { it.onTop }, 0, false),
             ).forEach { (passTiles, passRadius, isGroup) ->
                 val target = if (isGroup) ImageBitmap(width, height) else output
@@ -529,7 +531,7 @@ internal suspend fun bakeBackdropBackground(
                                     (size.width * copy.width).roundToInt().coerceAtLeast(1),
                                     (size.height * tileHeight).roundToInt().coerceAtLeast(1),
                                 )
-                            val smoothRadius = (size.width * copy.smooth).roundToInt()
+                            val smoothRadius = if (noSmoothing) 0 else (size.width * copy.smooth).roundToInt()
                             // The fades are made before the flip, so a flipped tile swaps its sides
                             val feather =
                                 copy.feather
@@ -686,7 +688,7 @@ internal suspend fun bakeBackdropBackground(
                 }
             }
             // The final smoothing, before the vignettes so they keep their shape
-            boxBlur(output.asAndroidBitmap(), smoothRadius)
+            if (!noSmoothing) boxBlur(output.asAndroidBitmap(), smoothRadius)
             CanvasDrawScope().draw(density, layoutDirection, Canvas(output), outputSize) {
                 drawOverlay()
                 if (outlineCopies) {

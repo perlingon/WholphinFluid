@@ -638,6 +638,7 @@ fun Backdrop(
                         groupLayers,
                         groupOpacity,
                         BackdropDebug.outlineCopies,
+                        BackdropDebug.noSmoothing,
                     )
 
                 suspend fun bakeFor(
@@ -672,6 +673,7 @@ fun Backdrop(
                         groupOpacity = groupOpacity,
                         smoothRadius = (bakeWidth * bakeSmooth).roundToInt(),
                         outlineCopies = BackdropDebug.outlineCopies,
+                        noSmoothing = BackdropDebug.noSmoothing,
                     )
 
                 val targetPrimary = targetGlow(backdrop.primaryColor)

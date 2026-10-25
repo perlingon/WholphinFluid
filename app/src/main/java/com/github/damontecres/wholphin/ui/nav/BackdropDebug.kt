@@ -25,4 +25,9 @@ object BackdropDebug {
     // Draws a red arrow on each edge of the sharp image that was found to be one flat colour, so
     // its reflection tiles were left out of the background. Points out of the image
     val showFlatEdges = false
+
+    // Bakes the background without any of its smoothing: the final smoothing (bakeSmooth), the
+    // mirror group's (groupSmooth) and each tile's own (smooth). The tiles stay as blurry as their
+    // resolution makes them
+    val noSmoothing = false
 }
