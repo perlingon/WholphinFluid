@@ -165,6 +165,8 @@ fun Backdrop(
         if (!isSpecified) return this
         val hsv = FloatArray(3)
         android.graphics.Color.colorToHSV(toArgb(), hsv)
+        // Pure black (from a black and white image) stays black
+        if (hsv[1] == 0f && hsv[2] == 0f) return this
         val low = glowMinBrightness.coerceIn(0f, 1f)
         val high = glowMaxBrightness.coerceIn(low, 1f)
         val capped = hsv[2].coerceIn(low, high)

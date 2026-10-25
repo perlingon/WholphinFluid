@@ -209,6 +209,30 @@ class BackdropService
         // an accent for the top-left glow, so the gradient gets some real colour
         private val WHITE_HEAVY_SHARE = 0.35f
 
+        // A pixel counts as grey when its red, green and blue differ by at most this much (0-255),
+        // which leaves room for film grain, compression noise and a faint tint
+        private val GREY_MAX_CHROMA = 28
+
+        // An image counts as black and white when at least this share of its pixels is grey.
+        // Its glows are then black instead of a colour picked from the few coloured pixels
+        private val GREY_MIN_SHARE = 0.97f
+
+        private fun isBlackAndWhite(bitmap: Bitmap): Boolean {
+            val width = bitmap.width
+            val height = bitmap.height
+            if (width == 0 || height == 0) return false
+            val pixels = IntArray(width * height)
+            bitmap.getPixels(pixels, 0, width, 0, 0, width, height)
+            val grey =
+                pixels.count { pixel ->
+                    val r = (pixel shr 16) and 0xFF
+                    val g = (pixel shr 8) and 0xFF
+                    val b = pixel and 0xFF
+                    maxOf(r, g, b) - minOf(r, g, b) <= GREY_MAX_CHROMA
+                }
+            return grey >= pixels.size * GREY_MIN_SHARE
+        }
+
         private val Palette.Swatch.isWhitish: Boolean
             get() = hsl[2] >= WHITE_MIN_LIGHTNESS && hsl[1] <= WHITE_MAX_SATURATION
 
@@ -238,8 +262,16 @@ class BackdropService
          * @param bitmap The bitmap to extract colors from
          * @return ExtractedColors containing primary, secondary, and tertiary colors
          */
-        private suspend fun extractColorsFromBitmap(bitmap: Bitmap): ExtractedColors =
-            try {
+        private suspend fun extractColorsFromBitmap(bitmap: Bitmap): ExtractedColors {
+            if (isBlackAndWhite(bitmap)) {
+                Timber.v("Black and white image, using black glows")
+                return ExtractedColors(
+                    Color.Black.copy(alpha = .4f),
+                    Color.Black.copy(alpha = .4f),
+                    Color.Black.copy(alpha = .35f),
+                )
+            }
+            return try {
                 val palette = Palette.from(bitmap).generate()
 
                 val vibrant = palette.vibrantSwatch
@@ -283,7 +315,10 @@ class BackdropService
                     if (totalPopulation == 0) {
                         0f
                     } else {
-                        palette.swatches.filter { it.isWhitish }.sumOf { it.population }.toFloat() / totalPopulation
+                        palette.swatches
+                            .filter { it.isWhitish }
+                            .sumOf { it.population }
+                            .toFloat() / totalPopulation
                     }
                 // An image that is nearly one hue: no colour is clearly different from the most
                 // common one (brick walls, sepia, single-tone grades)
@@ -293,13 +328,20 @@ class BackdropService
                 // vivid colour. On single-hue images the most saturated colour that is not white
                 val accent =
                     when {
-                        whiteShare > WHITE_HEAVY_SHARE -> (mostVivid ?: muted)?.takeIf { !it.isWhitish }
-                        singleHue ->
+                        whiteShare > WHITE_HEAVY_SHARE -> {
+                            (mostVivid ?: muted)?.takeIf { !it.isWhitish }
+                        }
+
+                        singleHue -> {
                             palette.swatches
                                 .filterNot { it.isWhitish || it == mostCommon }
                                 .maxByOrNull { it.hsl[1] }
                                 ?.takeIf { it.hsl[1] >= VIVID_MIN_SATURATION }
-                        else -> null
+                        }
+
+                        else -> {
+                            null
+                        }
                     }
 
                 // Primary (Bottom-Right)
@@ -353,6 +395,7 @@ class BackdropService
                 Timber.e(e, "Error extracting palette colors")
                 ExtractedColors.DEFAULT
             }
+        }
 
         fun clearColorCache() {
             extractedColorCache.evictAll()
