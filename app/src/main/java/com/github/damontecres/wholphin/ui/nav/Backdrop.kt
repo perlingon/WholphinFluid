@@ -652,10 +652,10 @@ fun Backdrop(
                 // mode to opacity, and the opacity of the group as a whole
                 val groupLayers = listOf(BlendMode.Overlay to 1f, BlendMode.Softlight to 0.9f, BlendMode.SrcOver to 1f)
                 val groupOpacity = 1f
-                // Rounded fade on the group's inner side, facing the rows and text, like the
-                // sharp image's innerFade: an ellipse whose centre sits on the screen and whose far
-                // side reaches the screen's inner edge. Applied to the blurred group before it is
-                // blended. Stops are "position to opacity", from the centre (0f) out to the rim (1f)
+                // Rounded fade around the group: an ellipse on the screen, solid in the middle and
+                // fading out towards its rim on every side; outside it the group is left out.
+                // Applied to the blurred group before it is blended. Stops are "position to
+                // opacity", from the centre (0f) out to the rim (1f)
                 val showGroupFade = true
                 val groupFade =
                     listOf(
@@ -664,12 +664,13 @@ fun Backdrop(
                         0.85f to 0.3f,
                         1f to 0f,
                     )
-                // Centre of the curve, as shares of the screen's width and height, measured from
-                // the inner edge. Further from the edge = a wider, gentler curve
+                // Centre of the ellipse, as shares of the screen's width and height, measured from
+                // the inner edge (the side with the rows and text)
                 val groupFadeCenterX = 0.5f
                 val groupFadeCenterY = 0.4f
-                // Height of the curve relative to the screen's height: lower = rounder, higher =
-                // flatter (closer to a straight edge)
+                // Size of the ellipse from its centre to its rim, as shares of the screen's width
+                // and height. 0.5f, 0.5f with the centre in the middle just touches the screen's edges
+                val groupFadeWidth = 0.6f
                 val groupFadeHeight = 0.8f
                 val groupMask: DrawScope.() -> Unit = {
                     if (showGroupFade) {
@@ -678,11 +679,12 @@ fun Backdrop(
                                 if (isRtl) size.width * (1f - groupFadeCenterX) else size.width * groupFadeCenterX,
                                 size.height * groupFadeCenterY,
                             )
-                        // Horizontal reach: from the centre to the screen's inner edge
-                        val reach = (if (isRtl) size.width - center.x else center.x).coerceAtLeast(1f)
-                        val stretch = (size.height * groupFadeHeight / reach).coerceAtLeast(0.01f)
+                        val radiusX = (size.width * groupFadeWidth).coerceAtLeast(1f)
+                        val radiusY = (size.height * groupFadeHeight).coerceAtLeast(1f)
+                        // A circle squashed to the ellipse's height. The rectangle covers the whole
+                        // screen, so everything outside the ellipse is cleared too
+                        val stretch = radiusY / radiusX
                         scale(scaleX = 1f, scaleY = stretch, pivot = center) {
-                            // Only the part between the inner edge and the curve's centre is touched
                             val top = center.y - center.y / stretch
                             val bottom = center.y + (size.height - center.y) / stretch
                             drawRect(
@@ -693,10 +695,10 @@ fun Backdrop(
                                                 .map { (position, opacity) -> position to Color.Black.copy(alpha = opacity) }
                                                 .toTypedArray(),
                                         center = center,
-                                        radius = reach,
+                                        radius = radiusX,
                                     ),
-                                topLeft = Offset(if (isRtl) center.x else 0f, top),
-                                size = Size(reach, bottom - top),
+                                topLeft = Offset(0f, top),
+                                size = Size(size.width, bottom - top),
                                 blendMode = BlendMode.DstIn,
                             )
                         }
@@ -736,7 +738,7 @@ fun Backdrop(
                         groupSmooth,
                         groupLayers,
                         groupOpacity,
-                        listOf(showGroupFade, groupFade, groupFadeCenterX, groupFadeCenterY, groupFadeHeight),
+                        listOf(showGroupFade, groupFade, groupFadeCenterX, groupFadeCenterY, groupFadeWidth, groupFadeHeight),
                         BackdropDebug.outlineCopies,
                         debugNoSmoothing,
                     )
