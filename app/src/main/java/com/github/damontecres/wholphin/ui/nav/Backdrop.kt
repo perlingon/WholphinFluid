@@ -315,19 +315,6 @@ fun Backdrop(
                                 feather = Feather(0.14f, 0.01f, 0.5f, 0.1f),
                                 layers = listOf(BlendMode.SrcOver to 0.5f),
                             ),
-                            // lower left reflection
-                            Tile(
-                                reflects = ImageEdge.LEFT,
-                                left = -2.2f,
-                                top = 0.45f,
-                                width = 2.75f,
-                                height = 2.75f,
-                                flip = true,
-                                flipVertical = true,
-                                resolution = 80,
-                                smooth = 0.03f,
-                                layers = listOf(BlendMode.SrcOver to 0f),
-                            ),
                             // left reflection
                             Tile(
                                 reflects = ImageEdge.LEFT,
@@ -356,17 +343,6 @@ fun Backdrop(
                                 resolution = 230,
                                 smooth = 0.0000003f,
                                 layers = listOf(BlendMode.SrcOver to 1f),
-                            ),
-                            Tile(
-                                reflects = ImageEdge.LEFT,
-                                left = -0.82f,
-                                top = -0.05f,
-                                width = 3.81f,
-                                height = 4.4f,
-                                flip = true,
-                                resolution = 330,
-                                smooth = 0.009f,
-                                layers = listOf(BlendMode.ColorDodge to 0f),
                             ),
                             // lower left reflection mirror
                             Tile(
