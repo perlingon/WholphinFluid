@@ -267,6 +267,10 @@ fun Backdrop(
             // - height: as a share of the screen's height (1f = as tall as the screen). The
             //   picture is squeezed or pulled to fit, so width and height together set its shape
             // - flip, flipVertical: mirrored left to right, or upside down, in place
+            // - rotation: turned about its own middle, in degrees (positive = clockwise)
+            // - skewX, skewY: slanted about its own middle, in degrees. skewX leans the sides
+            //   (positive = the bottom moves right), skewY the top and bottom (positive = the
+            //   right side moves down)
             // - resolution: width in pixels of the image stretched over the tile (lower = blurrier)
             // - smooth: extra blur on this tile alone, as a share of the screen's width
             // - feather: soft edges, see mirrorFeather below
