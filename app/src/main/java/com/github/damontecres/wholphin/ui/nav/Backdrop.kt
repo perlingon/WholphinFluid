@@ -271,6 +271,9 @@ fun Backdrop(
             // - skewX, skewY: slanted about its own middle, in degrees. skewX leans the sides
             //   (positive = the bottom moves right), skewY the top and bottom (positive = the
             //   right side moves down)
+            // - stretch: the picture pulled out towards one edge, the nearest part the most, e.g.
+            //   stretch = Stretch(StretchEdge.RIGHT, 1.5f). Strength 0f = none, 1f = clear,
+            //   2f = strong, 4f = very strong. The edge is as the tile appears on screen
             // - resolution: width in pixels of the image stretched over the tile (lower = blurrier)
             // - smooth: extra blur on this tile alone, as a share of the screen's width
             // - feather: soft edges, see mirrorFeather below

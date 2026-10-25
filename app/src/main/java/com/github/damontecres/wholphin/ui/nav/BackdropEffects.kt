@@ -46,6 +46,7 @@ import timber.log.Timber
 import java.io.File
 import java.security.MessageDigest
 import kotlin.math.max
+import kotlin.math.pow
 import kotlin.math.roundToInt
 import kotlin.math.sqrt
 import kotlin.math.tan
@@ -261,6 +262,8 @@ internal data class Tile(
     // bottom moves right), skewY the horizontal edges (positive = the right side moves down)
     val skewX: Float = 0f,
     val skewY: Float = 0f,
+    // The picture pulled out towards one edge, see Stretch. Null = none
+    val stretch: Stretch? = null,
     // Width in pixels of the version of the image that is stretched over the tile: lower = blurrier
     val resolution: Int = 64,
     // Extra blur on this tile alone, as a share of the screen's width: 0 = none
@@ -279,6 +282,81 @@ internal data class Tile(
     // layers' opacity: 1f = unchanged, 0.5f = half, 0f = left out
     val flatEdgeOpacity: Float = 1f,
 )
+
+/**
+ * Pulls a tile's picture out towards one of its edges, as the tile appears on screen (after any
+ * flip): the part nearest that edge is stretched the most, the far edge is left as it is. Like a
+ * reflection smeared outwards.
+ *
+ * @param edge the edge the picture is pulled towards
+ * @param strength 0f = none, 1f = clearly stretched, 2f = strongly, 4f = very strongly
+ */
+internal data class Stretch(
+    val edge: StretchEdge,
+    val strength: Float,
+)
+
+internal enum class StretchEdge { LEFT, TOP, RIGHT, BOTTOM }
+
+/**
+ * [image] drawn at [size] with its picture pulled towards [edge] (in the image's own
+ * coordinates), through a grid of points that the picture is stretched over
+ */
+private fun stretched(
+    image: ImageBitmap,
+    size: IntSize,
+    edge: StretchEdge,
+    strength: Float,
+): ImageBitmap {
+    val output = Bitmap.createBitmap(size.width, size.height, Bitmap.Config.ARGB_8888)
+    // Points across and down: plenty for a smooth curve on these small, blurry pictures
+    val columns = 16
+    val rows = 16
+    val power = 1f + strength.coerceAtLeast(0f)
+    val horizontal = edge == StretchEdge.LEFT || edge == StretchEdge.RIGHT
+    val verts = FloatArray((columns + 1) * (rows + 1) * 2)
+    var i = 0
+    for (row in 0..rows) {
+        for (column in 0..columns) {
+            var u = column.toFloat() / columns
+            var v = row.toFloat() / rows
+            // Measured from the stretched edge, a point of the picture at distance d (0..1)
+            // lands at d^(1 / power): close to the edge, a little picture covers a lot of tile
+            if (horizontal) {
+                u =
+                    if (edge == StretchEdge.LEFT) {
+                        u.pow(1f / power)
+                    } else {
+                        1f - (1f - u).pow(1f / power)
+                    }
+            } else {
+                v =
+                    if (edge == StretchEdge.TOP) {
+                        v.pow(1f / power)
+                    } else {
+                        1f - (1f - v).pow(1f / power)
+                    }
+            }
+            verts[i++] = u * size.width
+            verts[i++] = v * size.height
+        }
+    }
+    val source = image.asAndroidBitmap()
+    // The picture is split evenly over the grid, whatever its own size
+    android.graphics.Canvas(output).apply {
+        drawBitmapMesh(
+            source,
+            columns,
+            rows,
+            verts,
+            0,
+            null,
+            0,
+            android.graphics.Paint(android.graphics.Paint.FILTER_BITMAP_FLAG),
+        )
+    }
+    return output.asImageBitmap()
+}
 
 /**
  * Soft edges on a tile: how far in from each side it fades out, as a share of its own width
@@ -469,7 +547,9 @@ internal suspend fun bakeBackdropBackground(
                             val drawSize: IntSize
                             // A turned or slanted tile can bring parts from off screen into view,
                             // so it is prepared whole
-                            val transformed = copy.rotation != 0f || copy.skewX != 0f || copy.skewY != 0f
+                            val transformed =
+                                copy.rotation != 0f || copy.skewX != 0f || copy.skewY != 0f ||
+                                    (copy.stretch != null && copy.stretch.strength > 0f)
                             if (smoothRadius < 1 && feather == null) {
                                 // A plain stretch of the tiny version: nothing to prepare
                                 drawn = blurred
@@ -526,9 +606,24 @@ internal suspend fun bakeBackdropBackground(
                                     drawSize = cropSize
                                 }
                             }
+                            // The stretch, made before the flip like the fades, so a flipped tile
+                            // swaps its edge
+                            val stretchedDrawn =
+                                copy.stretch
+                                    ?.takeIf { it.strength > 0f }
+                                    ?.let {
+                                        val edge =
+                                            when (it.edge) {
+                                                StretchEdge.LEFT -> if (copy.flip) StretchEdge.RIGHT else StretchEdge.LEFT
+                                                StretchEdge.RIGHT -> if (copy.flip) StretchEdge.LEFT else StretchEdge.RIGHT
+                                                StretchEdge.TOP -> if (copy.flipVertical) StretchEdge.BOTTOM else StretchEdge.TOP
+                                                StretchEdge.BOTTOM -> if (copy.flipVertical) StretchEdge.TOP else StretchEdge.BOTTOM
+                                            }
+                                        drawn?.let { image -> stretched(image, drawSize, edge, it.strength) }
+                                    } ?: drawn
                             // Mirrored about the copy's own middle, so it stays where it is
                             val middle = Offset(offset.x + area.width / 2f, offset.y + area.height / 2f)
-                            if (drawn != null) {
+                            if (stretchedDrawn != null) {
                                 withTransform({
                                     // Turned, then slanted, then flipped, all about the middle
                                     // (the last one listed is applied to the picture first)
@@ -554,7 +649,7 @@ internal suspend fun bakeBackdropBackground(
                                     val flatDim = if (flatEdges.isEmpty()) 1f else copy.flatEdgeOpacity
                                     copy.layers.forEach { (layerBlendMode, layerOpacity) ->
                                         drawImage(
-                                            image = drawn,
+                                            image = stretchedDrawn,
                                             dstOffset = drawOffset,
                                             dstSize = drawSize,
                                             alpha = (layerOpacity * flatDim).coerceIn(0f, 1f),
