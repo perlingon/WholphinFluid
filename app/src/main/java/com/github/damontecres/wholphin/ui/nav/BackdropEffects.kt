@@ -361,7 +361,9 @@ private fun stretched(
 /**
  * Soft edges on a tile: how far in from each side it fades out, as a share of its own width
  * (left and right) or height (top and bottom). 0f = a hard edge, 0.2f = the outer fifth fades,
- * 0.5f = fades all the way to the middle. The sides are as the tile appears on screen, after any
+ * 0.5f = fades all the way to the middle, 1f = across the whole tile. Above 1 the fade is longer
+ * than the tile and never gets solid (2f = still half see-through at the far side). Fades from
+ * opposite sides multiply where they overlap. The sides are as the tile appears on screen, after any
  * flip. Written like CSS margins:
  * - Feather(0.2f): all four sides
  * - Feather(0.1f, 0.2f): top and bottom, then left and right
@@ -884,40 +886,31 @@ private fun tileCrop(
     }
     if (feather != null) {
         CanvasDrawScope().draw(density, layoutDirection, Canvas(result), size) {
-            // Solid between the two fades, see-through at a side that fades. A side without a fade
-            // starts solid, so it keeps a hard edge
-            fun fade(
-                start: Float,
-                end: Float,
-            ): Array<Pair<Float, Color>> {
-                val first = start.coerceIn(0f, 0.5f)
-                val last = end.coerceIn(0f, 0.5f)
-                return listOfNotNull(
-                    0f to if (first > 0f) Color.Transparent else Color.Black,
-                    if (first > 0f) first to Color.Black else null,
-                    if (last > 0f) (1f - last) to Color.Black else null,
-                    1f to if (last > 0f) Color.Transparent else Color.Black,
-                ).toTypedArray()
+            // Each side fades on its own, from see-through at its edge to solid that far in, and
+            // the fades multiply where they overlap. A fade longer than the tile (above 1) never
+            // gets solid: 2f is still half see-through at the opposite edge
+            fun fadeFrom(
+                edge: Offset,
+                towards: Offset,
+                length: Float,
+            ) {
+                if (length <= 0f) return
+                drawRect(
+                    brush =
+                        Brush.linearGradient(
+                            colors = listOf(Color.Transparent, Color.Black),
+                            start = edge,
+                            end = edge + towards * length,
+                        ),
+                    blendMode = BlendMode.DstIn,
+                )
             }
-            // Keep the image only where these are solid: once across, once down
-            drawRect(
-                brush =
-                    Brush.horizontalGradient(
-                        colorStops = fade(feather.left, feather.right),
-                        startX = tileLeft,
-                        endX = tileLeft + tileWidth,
-                    ),
-                blendMode = BlendMode.DstIn,
-            )
-            drawRect(
-                brush =
-                    Brush.verticalGradient(
-                        colorStops = fade(feather.top, feather.bottom),
-                        startY = tileTop,
-                        endY = tileTop + tileHeight,
-                    ),
-                blendMode = BlendMode.DstIn,
-            )
+            val tileRight = tileLeft + tileWidth
+            val tileBottom = tileTop + tileHeight
+            fadeFrom(Offset(tileLeft, 0f), Offset(tileWidth, 0f), feather.left)
+            fadeFrom(Offset(tileRight, 0f), Offset(-tileWidth, 0f), feather.right)
+            fadeFrom(Offset(0f, tileTop), Offset(0f, tileHeight), feather.top)
+            fadeFrom(Offset(0f, tileBottom), Offset(0f, -tileHeight), feather.bottom)
         }
     }
     return result
