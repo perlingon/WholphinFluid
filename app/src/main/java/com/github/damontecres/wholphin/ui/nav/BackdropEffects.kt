@@ -414,7 +414,7 @@ internal suspend fun bakeBackdropBackground(
     groupOpacity: Float,
     smoothRadius: Int,
     outlineCopies: Boolean,
-    // Development aid: leaves out all smoothing, see BackdropDebug.noSmoothing
+    // Development aid: leaves out all smoothing, see debugNoSmoothing in Backdrop
     noSmoothing: Boolean = false,
 ): ImageBitmap? =
     withContext(Dispatchers.Default) {

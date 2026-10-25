@@ -596,6 +596,9 @@ fun Backdrop(
                 // Extra smoothing of the baked glows and blur, as a share of the screen width:
                 // 0 = none, 0.01 = a soft blur about 1% of the screen wide. Only applies when baked
                 val bakeSmooth = 0.006f // the final blur, over everything: glows and all tiles
+                // Development aid: true bakes without any smoothing (bakeSmooth, groupSmooth and each
+                // tile's smooth), to see the tiles as they are. Kept here so Live Edit picks it up
+                val debugNoSmoothing = false
                 // Blur of the mirror tiles as one group, before they are blended over the main
                 // tile. Same scale as bakeSmooth
                 val groupSmooth = 0.0001f
@@ -638,7 +641,7 @@ fun Backdrop(
                         groupLayers,
                         groupOpacity,
                         BackdropDebug.outlineCopies,
-                        BackdropDebug.noSmoothing,
+                        debugNoSmoothing,
                     )
 
                 suspend fun bakeFor(
@@ -673,7 +676,7 @@ fun Backdrop(
                         groupOpacity = groupOpacity,
                         smoothRadius = (bakeWidth * bakeSmooth).roundToInt(),
                         outlineCopies = BackdropDebug.outlineCopies,
-                        noSmoothing = BackdropDebug.noSmoothing,
+                        noSmoothing = debugNoSmoothing,
                     )
 
                 val targetPrimary = targetGlow(backdrop.primaryColor)
