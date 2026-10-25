@@ -433,11 +433,19 @@ fun Backdrop(
                 )
             // Switch for the main tile: true = on, false = off
             val showMainTile = true
+            // Development aid: when above 0, every tile and the baked image itself use this
+            // resolution (pixels wide) instead of their own, to see the layout sharply, e.g. 700.
+            // 0 = off. Kept here so Live Edit picks it up
+            val debugResolution = 0
             val tiles =
-                if (showMainTile) {
-                    mirrorTiles.withFeather() + mainTile.copy(onTop = true)
-                } else {
-                    mirrorTiles.withFeather()
+                (
+                    if (showMainTile) {
+                        mirrorTiles.withFeather() + mainTile.copy(onTop = true)
+                    } else {
+                        mirrorTiles.withFeather()
+                    }
+                ).let { all ->
+                    if (debugResolution > 0) all.map { it.copy(resolution = debugResolution) } else all
                 }
             // Flat edges: a tile marked with reflects = ImageEdge.LEFT, BOTTOM or RIGHT is left
             // out when that edge of the image is one flat colour (plain backgrounds in animation,
@@ -592,7 +600,7 @@ fun Backdrop(
                 val density = LocalDensity.current
                 val layoutDirection = LocalLayoutDirection.current
                 // Size of the baked image; it is soft everywhere, so it can be small
-                val bakeWidth = 480
+                val bakeWidth = if (debugResolution > 0) debugResolution else 480
                 // Extra smoothing of the baked glows and blur, as a share of the screen width:
                 // 0 = none, 0.01 = a soft blur about 1% of the screen wide. Only applies when baked
                 val bakeSmooth = 0.006f // the final blur, over everything: glows and all tiles
