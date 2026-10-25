@@ -294,10 +294,10 @@ fun Backdrop(
                                 skewY = -5f,
                                 width = 0.4f,
                                 height = 0.69f,
-                                stretch = Stretch(StretchEdge.LEFT, 1.5f),
+                                stretch = Stretch(StretchEdge.LEFT, 4f),
                                 flip = true,
                                 resolution = 240,
-                                smooth = 0.001f,
+                                smooth = 0.005f,
                                 feather = Feather(0f, 0.01f, 0.1f, 0.1f),
                                 layers = listOf(BlendMode.Softlight to 1f),
                             ),
@@ -307,11 +307,11 @@ fun Backdrop(
                                 top = 0.3f,
                                 width = 0.4f,
                                 height = 0.5f,
-                                stretch = Stretch(StretchEdge.LEFT, 1.5f),
+                                stretch = Stretch(StretchEdge.LEFT, 4f),
                                 flip = true,
                                 flipVertical = false,
                                 resolution = 240,
-                                smooth = 0.001f,
+                                smooth = 0.005f,
                                 feather = Feather(0.14f, 0.01f, 0.5f, 0.1f),
                                 layers = listOf(BlendMode.SrcOver to 0.5f),
                             ),
@@ -340,8 +340,8 @@ fun Backdrop(
                                 width = 0.7f,
                                 height = 0.7f,
                                 flip = true,
-                                resolution = 230,
-                                smooth = 0.0000003f,
+                                resolution = 330,
+                                smooth = 0.008f,
                                 layers = listOf(BlendMode.SrcOver to 1f),
                             ),
                             // lower left reflection mirror
@@ -391,7 +391,7 @@ fun Backdrop(
                             Tile(
                                 reflects = ImageEdge.BOTTOM,
                                 left = 0.42f,
-                                top = 0.405f,
+                                top = 0.409f,
                                 width = 0.54f,
                                 height = 0.72f,
                                 flip = false,
@@ -413,14 +413,14 @@ fun Backdrop(
                                 stretch = Stretch(StretchEdge.LEFT, 2f),
                                 resolution = 120,
                                 rotation = 5f,
-                                smooth = 0.001f,
+                                smooth = 0.01f,
                                 feather = Feather(0.1f, 0.3f,0.8f,0.5f,),
                                 layers = listOf(BlendMode.Screen to 1f),
                             ),
                             Tile(
                                 reflects = ImageEdge.BOTTOM,
                                 left = 0.435f,
-                                top = 0.665f,
+                                top = 0.675f,
                                 width = 0.52f,
                                 height = 0.28f,
                                 flip = false,
@@ -428,7 +428,7 @@ fun Backdrop(
                                 flipVertical = true,
                                 stretch = Stretch(StretchEdge.TOP, 2.2f),
                                 resolution = 120,
-                                smooth = 0.001f,
+                                smooth = 0.01f,
                                 feather = Feather(0.05f, 0.3f,0.6f,0.3f,),
                                 layers = listOf(BlendMode.SrcOver to 1f),
                             ),
@@ -457,11 +457,11 @@ fun Backdrop(
                     flip = false,
                     flipVertical = false,
                     resolution = 200,
-                    smooth = 0.000009f,
+                    smooth = 0.01f,
                     layers =
                         listOf(
-                            BlendMode.Multiply to 0.2f,
-                            BlendMode.Softlight to 0.3f,
+                            BlendMode.Multiply to 0.1f,
+                            BlendMode.Softlight to 0.2f,
                             BlendMode.Screen to 0.1f
                         ),
                     // When an edge of the image is flat, it is drawn at this share of the above,
@@ -525,60 +525,27 @@ fun Backdrop(
             //   1f = black)
             // They are drawn in order, each on top of the one before
             // Switch for all the vignettes at once: true = on, false = off
-            val showVignettes = false
-            val allVignettes =
-                listOf(
-                    // spotlight on the image
-                    Vignette(
-                        centerX = 0.69f,
-                        centerY = 0.21f,
-                        radius = 0.3f,
-                        widthToHeight = 1.25f,
-                        stops =
-                            listOf(
-                                0f to 0f,
-                                0.18f to 0f,
-                                0.38f to 0f,
-                                0.98f to 0f,
-                                1f to 1f,
-                            ),
-                        blendMode = BlendMode.SrcOver,
-                    ),
-                    // dark bottom-left corner: the other way round, darkest at its centre (which
-                    // sits below the screen) and fading out from there
-                    Vignette(
-                        centerX = 0f,
-                        centerY = 1f,
-                        radius = 0.52f,
-                        widthToHeight = 3.1f,
-                        stops =
-                            listOf(
-                                0f to 0f,
-                                0.2f to 0f,
-                                1f to 0f,
-                            ),
-                    ),
-                )
+            val showVignettes = true
             // Side shade, so the clock and tabs stay readable: darkest at its centre on the top
             // edge, fading out downwards. A wide, flat ellipse, so it spans the whole top.
             val sideShade =
                 Vignette(
-                    centerX = 0.8f,
-                    centerY = 0.5f,
-                    radius = 0.45f,
+                    centerX = 0.7f,
+                    centerY = 0.2f,
+                    radius = 0.68f,
                     widthToHeight = 1f,
                     stops =
                         listOf(
                             0f to 0f,
-                            0.77f to 0f,
-                            0.85f to 0.15f,
-                            1f to 1f,
+                            0.27f to 0f,
+                            0.65f to 0.55f,
+                            1f to 0.88f,
                         ),
                     blendMode = BlendMode.Multiply,
                 )
             val vignettes =
                 if (showVignettes) {
-                    allVignettes + if (enableTopScrim) listOf(sideShade) else emptyList()
+                    if (enableTopScrim) listOf(sideShade) else emptyList()
                 } else {
                     emptyList()
                 }
@@ -638,10 +605,10 @@ fun Backdrop(
                 val density = LocalDensity.current
                 val layoutDirection = LocalLayoutDirection.current
                 // Size of the baked image; it is soft everywhere, so it can be small
-                val bakeWidth = if (debugResolution > 0) debugResolution else 180
+                val bakeWidth = if (debugResolution > 0) debugResolution else 390
                 // Extra smoothing of the baked glows and blur, as a share of the screen width:
                 // 0 = none, 0.01 = a soft blur about 1% of the screen wide. Only applies when baked
-                val bakeSmooth = 0f // the final blur, over everything: glows and all tiles
+                val bakeSmooth = 0.0039f // the final blur, over everything: glows and all tiles
                 // Development aid: true bakes without any smoothing (bakeSmooth, groupSmooth and each
                 // tile's smooth), to see the tiles as they are. Kept here so Live Edit picks it up
                 val debugNoSmoothing = false
@@ -650,7 +617,7 @@ fun Backdrop(
                 val groupSmooth = 0f
                 // How the blurred mirror tiles are blended onto the glows, bottom to top, as blend
                 // mode to opacity, and the opacity of the group as a whole
-                val groupLayers = listOf(BlendMode.Overlay to 1f, BlendMode.Softlight to 0.9f, BlendMode.SrcOver to 1f)
+                val groupLayers = listOf(BlendMode.Overlay to 1f, BlendMode.Softlight to 0.9f, BlendMode.SrcOver to 0.6f)
                 val groupOpacity = 1f
                 // Rounded fade around the group: an ellipse on the screen, solid in the middle and
                 // fading out towards its rim on every side; outside it the group is left out.
@@ -660,18 +627,19 @@ fun Backdrop(
                 val groupFade =
                     listOf(
                         0f to 1f,
-                        0.6f to 1f,
-                        0.85f to 0.3f,
-                        1f to 0f,
+                        0.3f to 1f,
+                        0.32f to 0.7f,
+                        0.48f to 0.05f,
+                        1f to 0.05f,
                     )
                 // Centre of the ellipse, as shares of the screen's width and height, measured from
                 // the inner edge (the side with the rows and text)
-                val groupFadeCenterX = 0.5f
-                val groupFadeCenterY = 0.4f
+                val groupFadeCenterX = 0.65f
+                val groupFadeCenterY = 0.3f
                 // Size of the ellipse from its centre to its rim, as shares of the screen's width
                 // and height. 0.5f, 0.5f with the centre in the middle just touches the screen's edges
-                val groupFadeWidth = 0.6f
-                val groupFadeHeight = 0.8f
+                val groupFadeWidth = 1f
+                val groupFadeHeight = 1.2f
                 val groupMask: DrawScope.() -> Unit = {
                     if (showGroupFade) {
                         val center =
