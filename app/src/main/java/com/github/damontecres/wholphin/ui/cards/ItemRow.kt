@@ -15,7 +15,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.NonRestartableComposable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
@@ -35,6 +34,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.focusRestorer
+import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalConfiguration
@@ -50,19 +50,12 @@ import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.ui.theme.rowHeadline
 import com.github.damontecres.wholphin.ui.tryRequestFocus
 import com.github.damontecres.wholphin.ui.util.RowPivotBringIntoViewSpec
-import kotlin.math.sqrt
 
 // Fading rows (fadeEnd = true), see ItemRow. Tune these to taste
 // Where the focused card goes: the TV default pivot (a share of the row's width), so many slots earlier
 private const val FADE_ROW_PIVOT = 0.3f
 private const val FADE_ROW_SLOTS_EARLIER = 1
-
-// Width of the fade at the row's end, as a share of the screen width. Higher = softer
-private const val FADE_ROW_FEATHER = 0.16f
-
-// How far the fade's edge bends in at the top and bottom, as a share of the row's height.
-// 0 = straight edge
-private const val FADE_ROW_CURVE = 0.08f
+// The fades themselves are tuned in drawRowFades below
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -92,15 +85,14 @@ fun <T> ItemRow(
     val currentOnClickItem by rememberUpdatedState(onClickItem)
     val currentOnLongClickItem by rememberUpdatedState(onLongClickItem)
 
-    // Fading rows end at FluidLayout.rowEnd() with a soft, slightly curved fade, and the focused
-    // card sits one slot before the TV default pivot
+    // Fading rows end at FluidLayout.rowEnd() with soft, curved fades at both ends, and the
+    // focused card sits one slot before the TV default pivot
     val density = LocalDensity.current
-    val screenWidthPx = with(density) { LocalConfiguration.current.screenWidthDp.dp.toPx() }
+    val screenWidth = LocalConfiguration.current.screenWidthDp.dp
     val rowEndPx = with(density) { FluidLayout.rowEnd().toPx() }
     val rowStartPadding = FluidLayout.rowStart(horizontalPadding)
-    // Where the row sits on screen, to place the fade
-    var rowLeftPx by remember { mutableFloatStateOf(0f) }
-    var rowWidthPx by remember { mutableFloatStateOf(0f) }
+    // Where the row sits on screen, read when drawing (not state, so it never recomposes)
+    val rowCoordinates = remember { arrayOfNulls<LayoutCoordinates>(1) }
     val bringIntoViewSpec =
         if (fadeEnd) {
             remember(density, horizontalPadding, rowStartPadding) {
@@ -119,8 +111,8 @@ fun <T> ItemRow(
     // Room after the last card so it can scroll all the way to the pivot, clear of the fade: the
     // pivot puts a card's end at (pivot * width - gap), so the rest of the row is left over
     val endPadding =
-        if (fadeEnd && rowWidthPx > 0f) {
-            with(density) { (rowWidthPx * (1f - FADE_ROW_PIVOT)).toDp() } + horizontalPadding
+        if (fadeEnd) {
+            screenWidth * (1f - FADE_ROW_PIVOT) + horizontalPadding
         } else {
             horizontalPadding
         }
@@ -157,13 +149,17 @@ fun <T> ItemRow(
                         .then(
                             if (fadeEnd) {
                                 Modifier
-                                    .onGloballyPositioned {
-                                        rowLeftPx = it.positionInRoot().x
-                                        rowWidthPx = it.size.width.toFloat()
-                                    }.drawWithContent {
-                                        drawRowEndFade(
-                                            edgeX = rowEndPx - rowLeftPx,
-                                            featherPx = screenWidthPx * FADE_ROW_FEATHER,
+                                    .onGloballyPositioned { rowCoordinates[0] = it }
+                                    .drawWithContent {
+                                        val rowLeft =
+                                            rowCoordinates[0]
+                                                ?.takeIf { it.isAttached }
+                                                ?.positionInRoot()
+                                                ?.x ?: 0f
+                                        drawRowFades(
+                                            endX = rowEndPx - rowLeft,
+                                            startGapPx = rowStartPadding.toPx(),
+                                            screenWidth = screenWidth.toPx(),
                                             // Focused cards grow past the row's top and bottom
                                             overflowPx = Spacing.xxl.toPx(),
                                         )
@@ -228,58 +224,99 @@ fun <T> ItemRow(
 }
 
 /**
- * Draws the row, fading it out towards [edgeX] (fully gone there). The fade's edge is a curve: the
- * right half of a tall ellipse, so it bends in slightly at the top and bottom, see FADE_ROW_CURVE
+ * Draws the row with a soft, rounded fade at each end, like the backdrop image's curved fades:
+ * an ellipse whose centre sits inside the row and whose far side reaches the edge, so the edge
+ * bends in at the top and bottom. Stops are "position to opacity", from the centre (0f) out to
+ * the ellipse's rim (1f). Everything past [endX] is hidden
  *
- * @param edgeX where the row is fully faded out, in pixels from the row's left
- * @param featherPx width of the fade
+ * @param endX where the row ends (fully faded out), in pixels from the row's left
+ * @param startGapPx the gap before the first card, which the start fade is measured against
+ * @param screenWidth the screen's width in pixels, which the end fade is measured against
  * @param overflowPx how far above and below the row content may draw, e.g. a focused card
  */
-private fun ContentDrawScope.drawRowEndFade(
-    edgeX: Float,
-    featherPx: Float,
+private fun ContentDrawScope.drawRowFades(
+    endX: Float,
+    startGapPx: Float,
+    screenWidth: Float,
     overflowPx: Float,
 ) {
+    // End fade, towards FluidLayout.rowEnd()
+    val endFade =
+        listOf(
+            0f to 1f,
+            0.55f to 1f,
+            0.8f to 0.45f,
+            1f to 0f,
+        )
+    // Centre of the curve, measured back from the row's end as a share of the screen width.
+    // Further from the end = a wider, softer fade
+    val endFadeReach = 0.3f
+    // Height of the curve relative to the row's height: lower = rounder (corners cut away more),
+    // higher = flatter (closer to a straight edge)
+    val endFadeHeight = 1f
+
+    // Start fade, at the row's left edge, where cards scroll away
+    val startFade =
+        listOf(
+            0f to 1f,
+            0.55f to 1f,
+            0.8f to 0.45f,
+            1f to 0f,
+        )
+    // Centre of the curve, measured from the row's left edge as a share of the gap before the
+    // first card: 1f = the fade fits in that gap, so the first card is never touched. 0f = off
+    val startFadeReach = 1f
+    val startFadeHeight = 1f
+
+    fun List<Pair<Float, Float>>.asMask() =
+        map { (position, opacity) -> position to Color.Black.copy(alpha = opacity) }.toTypedArray()
+
     val top = -overflowPx
     val bottom = size.height + overflowPx
-    val halfHeight = (bottom - top) / 2f
+    val height = bottom - top
     val centerY = (top + bottom) / 2f
-    // The ellipse's horizontal radius is twice the feather, so its inner, solid half is as wide
-    // as the fade
-    val radiusX = featherPx * 2f
-    // Vertical radius that bends the edge in by the curve's depth at the top and bottom
-    val depth = (size.height * FADE_ROW_CURVE).coerceIn(0.5f, radiusX * 0.13f)
-    val along = 1f - depth / radiusX
-    val radiusY = halfHeight / sqrt(1f - along * along)
-    val center = Offset(edgeX - radiusX, centerY)
-    val stretch = radiusY / radiusX
 
     drawContext.canvas.saveLayer(Rect(0f, top, size.width, bottom), Paint())
     drawContent()
-    scale(scaleX = 1f, scaleY = stretch, pivot = center) {
-        // Only what is right of the ellipse's centre is touched; in scaled space the rows from
-        // top to bottom shrink by the stretch
-        val scaledTop = center.y - (center.y - top) / stretch
-        val scaledBottom = center.y + (bottom - center.y) / stretch
+
+    // Ellipse from its centre out to one edge; only the part between the centre and that edge
+    // is touched
+    fun curvedFade(
+        stops: List<Pair<Float, Float>>,
+        edgeX: Float,
+        reach: Float,
+        curveHeight: Float,
+        towardsRight: Boolean,
+    ) {
+        if (reach < 1f) return
+        val center = Offset(if (towardsRight) edgeX - reach else edgeX + reach, centerY)
+        val stretch = (height * curveHeight / reach).coerceAtLeast(0.01f)
+        scale(scaleX = 1f, scaleY = stretch, pivot = center) {
+            val scaledTop = center.y - (center.y - top) / stretch
+            val scaledBottom = center.y + (bottom - center.y) / stretch
+            drawRect(
+                brush =
+                    Brush.radialGradient(
+                        colorStops = stops.asMask(),
+                        center = center,
+                        radius = reach,
+                    ),
+                topLeft = Offset(if (towardsRight) center.x else edgeX, scaledTop),
+                size = Size(reach, scaledBottom - scaledTop),
+                blendMode = BlendMode.DstIn,
+            )
+        }
+    }
+
+    curvedFade(endFade, endX, screenWidth * endFadeReach, endFadeHeight, towardsRight = true)
+    curvedFade(startFade, 0f, startGapPx * startFadeReach, startFadeHeight, towardsRight = false)
+    // Nothing shows past the row's end
+    if (endX < size.width) {
         drawRect(
-            brush =
-                Brush.radialGradient(
-                    // Eased, so the fade starts gently and ends softly
-                    0.5f to Color.Black,
-                    0.65f to Color.Black.copy(alpha = 0.85f),
-                    0.8f to Color.Black.copy(alpha = 0.5f),
-                    0.92f to Color.Black.copy(alpha = 0.15f),
-                    1f to Color.Transparent,
-                    center = center,
-                    radius = radiusX,
-                ),
-            topLeft = Offset(center.x.coerceAtLeast(0f), scaledTop),
-            size =
-                Size(
-                    (size.width - center.x.coerceAtLeast(0f)).coerceAtLeast(0f),
-                    scaledBottom - scaledTop,
-                ),
-            blendMode = BlendMode.DstIn,
+            color = Color.Black,
+            topLeft = Offset(endX, top),
+            size = Size(size.width - endX, height),
+            blendMode = BlendMode.Clear,
         )
     }
     drawContext.canvas.restore()
