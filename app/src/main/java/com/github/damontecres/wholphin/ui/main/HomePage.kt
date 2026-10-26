@@ -484,6 +484,8 @@ fun HomePageContent(
                                                             .onKeyEvent { onKey(it) },
                                                 )
                                             },
+                                            // Rows end in a soft fade, see FluidLayout.rowEnd
+                                            fadeEnd = true,
                                             showViewMore = showViewMore && row.showViewMore,
                                             viewMoreCardContent = { mod ->
                                                 HomePageViewMoreCard(

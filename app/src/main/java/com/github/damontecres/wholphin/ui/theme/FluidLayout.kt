@@ -97,6 +97,20 @@ object FluidLayout {
     fun rowStart(usual: Dp): Dp = maxOf(usual, headlineInset())
 
     /**
+     * Where a fading card row (the home screen's rows) ends, measured from the left edge of the
+     * screen: clamp(min, target, max). A 16:9 screen gets 0.6 of its width; the extra width of a
+     * wider screen pulls it in, down to 0.5 (reached at about 21:9)
+     */
+    @Composable
+    fun rowEnd(): Dp {
+        val vw = LocalConfiguration.current.screenWidthDp.dp
+        val endShare = 0.4f
+        val endMin = vw * 0.5f
+        val endMax = vw * 0.6f
+        return (endMax - extraWidth() * endShare).coerceIn(endMin, endMax)
+    }
+
+    /**
      * Width of the sharp backdrop image: clamp(min, target, max), with the target tied to the
      * screen's height and min/max shares of the screen width
      */
