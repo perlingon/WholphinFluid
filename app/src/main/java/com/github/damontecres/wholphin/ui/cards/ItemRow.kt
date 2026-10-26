@@ -1,5 +1,6 @@
 package com.github.damontecres.wholphin.ui.cards
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.gestures.LocalBringIntoViewSpec
 import androidx.compose.foundation.layout.Arrangement
@@ -63,6 +64,7 @@ private const val FADE_ROW_FEATHER = 0.16f
 // 0 = straight edge
 private const val FADE_ROW_CURVE = 0.08f
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun <T> ItemRow(
     title: String,
