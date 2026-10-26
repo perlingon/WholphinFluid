@@ -179,6 +179,7 @@ fun Backdrop(
     val glowPrimary = animPrimary.intensified()
     val glowSecondary = animSecondary.intensified()
     val glowTertiary = animTertiary.intensified()
+
     // Paints the theme background and the colour glows in the given colours. Kept as a function
     // so the same drawing serves the live layers and the baked background image
     fun glowPainter(
@@ -327,7 +328,7 @@ fun Backdrop(
                                 flipVertical = true,
                                 resolution = 50,
                                 smooth = 0f,
-                                feather = Feather(0f,0.1f,0.32f,1f),
+                                feather = Feather(0f, 0.1f, 0.32f, 1f),
                                 layers = listOf(BlendMode.SrcOver to 1f),
                             ),
                             Tile(
@@ -336,7 +337,7 @@ fun Backdrop(
                                 top = -0.035f,
                                 skewY = 3.41f,
                                 stretch = Stretch(StretchEdge.RIGHT, 6.3f),
-                                feather = Feather(0f,0.02f,0.07f,0f),
+                                feather = Feather(0f, 0.02f, 0.07f, 0f),
                                 width = 0.7f,
                                 height = 0.7f,
                                 flip = true,
@@ -369,7 +370,7 @@ fun Backdrop(
                                 flipVertical = true,
                                 resolution = 50,
                                 smooth = 0f,
-                                feather = Feather(0.32f,0.2f,0.12f,0.2f),
+                                feather = Feather(0.32f, 0.2f, 0.12f, 0.2f),
                                 layers = listOf(BlendMode.SrcOver to 1f),
                             ),
                             Tile(
@@ -384,7 +385,7 @@ fun Backdrop(
                                 flipVertical = false,
                                 resolution = 50,
                                 smooth = 0f,
-                                feather = Feather(0.32f,0.2f,0.12f,0.2f),
+                                feather = Feather(0.32f, 0.2f, 0.12f, 0.2f),
                                 layers = listOf(BlendMode.SrcOver to 0.6f),
                             ),
                             // bottom reflection
@@ -399,7 +400,7 @@ fun Backdrop(
                                 stretch = Stretch(StretchEdge.TOP, 1.7f),
                                 resolution = 120,
                                 smooth = 0.001f,
-                                feather = Feather(0.2f, 0.5f,0f,0.5f,),
+                                feather = Feather(0.2f, 0.5f, 0f, 0.5f),
                                 layers = listOf(BlendMode.SrcOver to 1f),
                             ),
                             Tile(
@@ -414,7 +415,7 @@ fun Backdrop(
                                 resolution = 120,
                                 rotation = 5f,
                                 smooth = 0.01f,
-                                feather = Feather(0.1f, 0.3f,0.8f,0.5f,),
+                                feather = Feather(0.1f, 0.3f, 0.8f, 0.5f),
                                 layers = listOf(BlendMode.Screen to 1f),
                             ),
                             Tile(
@@ -429,10 +430,10 @@ fun Backdrop(
                                 stretch = Stretch(StretchEdge.TOP, 2.2f),
                                 resolution = 120,
                                 smooth = 0.01f,
-                                feather = Feather(0.05f, 0.3f,0.6f,0.3f,),
+                                feather = Feather(0.05f, 0.3f, 0.6f, 0.3f),
                                 layers = listOf(BlendMode.SrcOver to 1f),
                             ),
-                        )
+                        ),
                     )
                 }
             // Soft edges on the mirror tiles: how far in from each side they fade out, as a share
@@ -441,6 +442,7 @@ fun Backdrop(
             // Feather(top and bottom, left and right) or Feather(top, right, bottom, left), as
             // the tile appears on screen. A tile can set its own with feather = Feather(…)
             val mirrorFeather = Feather(0.2f)
+
             fun List<Tile>.withFeather() = map { if (it.feather == null) it.copy(feather = mirrorFeather) else it }
 
             // The main tile: on its own, with its own blend modes, drawn over the mirror tiles
@@ -453,7 +455,7 @@ fun Backdrop(
                     height = 1.3f,
                     skewY = 12f,
                     stretch = Stretch(StretchEdge.LEFT, 1f),
-                    feather = Feather(0f, 0.6f,0.3f,0.23f,),
+                    feather = Feather(0f, 0.6f, 0.3f, 0.23f),
                     flip = false,
                     flipVertical = false,
                     resolution = 200,
@@ -462,7 +464,7 @@ fun Backdrop(
                         listOf(
                             BlendMode.Multiply to 0.1f,
                             BlendMode.Softlight to 0.2f,
-                            BlendMode.Screen to 0.1f
+                            BlendMode.Screen to 0.1f,
                         ),
                     // When an edge of the image is flat, it is drawn at this share of the above,
                     // so it does not wash out the flat edge colour
@@ -549,6 +551,7 @@ fun Backdrop(
                 } else {
                     emptyList()
                 }
+
             // Draws the vignette for a screen of the given size. origin is where the area being
             // drawn into sits on that screen, so a smaller layer (the sharp image) gets the part
             // of the vignette that falls on it
@@ -673,6 +676,7 @@ fun Backdrop(
                     }
                 }
                 val bakeHeight = (bakeWidth * (maxHeight / maxWidth)).toInt().coerceAtLeast(1)
+
                 // The baked version uses the colours the glows are heading for, not the animated
                 // ones, so it is composed once per backdrop instead of on every animation frame
                 fun targetGlow(color: Color) = color.takeOrElse { Color.Transparent }.intensified()
@@ -956,10 +960,10 @@ fun Backdrop(
                             // Vertical fade, measured from the top of the image to the bottom
                             val verticalFade =
                                 listOf(
-                                    0f   to 1f,
+                                    0f to 1f,
                                     0.75f to 1f,
                                     0.96f to 0.7f,
-                                    1f   to 0f,
+                                    1f to 0f,
                                 )
 
                             fun List<Pair<Float, Float>>.asMask() =
@@ -1174,13 +1178,13 @@ fun Backdrop(
                                 val shift = grainShift.value
                                 scale(scaleX = grain, scaleY = grain, pivot = Offset.Zero) {
                                     translate(left = -shift.x, top = -shift.y) {
-                                    drawRect(
-                                        brush = grainBrush,
-                                        topLeft = shift,
-                                        size = Size(size.width / grain, size.height / grain),
-                                        alpha = grainOpacity.coerceIn(0f, 1f),
-                                        blendMode = grainBlendMode,
-                                    )
+                                        drawRect(
+                                            brush = grainBrush,
+                                            topLeft = shift,
+                                            size = Size(size.width / grain, size.height / grain),
+                                            alpha = grainOpacity.coerceIn(0f, 1f),
+                                            blendMode = grainBlendMode,
+                                        )
                                     }
                                 }
                             }
