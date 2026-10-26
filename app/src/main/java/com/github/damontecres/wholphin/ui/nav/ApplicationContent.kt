@@ -4,6 +4,10 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
@@ -54,7 +58,9 @@ fun ApplicationContent(
     enableTopScrim: Boolean = true,
     viewModel: ApplicationContentViewModel = hiltViewModel(),
 ) {
-    val drawerState = rememberDrawerState(DrawerValue.Closed)
+    // The nav drawer is open when the app starts, with focus in it
+    val drawerState = rememberDrawerState(DrawerValue.Open)
+    var drawerOpenOnStart by remember { mutableStateOf(true) }
     Box(
         modifier = modifier,
     ) {
@@ -95,6 +101,8 @@ fun ApplicationContent(
                             navDrawerListState = navDrawerListState,
                             onClearBackdrop = viewModel::clearBackdrop,
                             modifier = Modifier.fillMaxSize(),
+                            openOnStart = drawerOpenOnStart,
+                            onOpenedOnStart = { drawerOpenOnStart = false },
                         )
                     } else {
                         ErrorMessage("Trying to go to $key without a user logged in", null)

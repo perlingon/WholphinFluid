@@ -107,7 +107,7 @@ object FluidLayout {
         val vh = configuration.screenHeightDp.dp
         val widthMin = vw * 0.3f
         val widthTarget = vh * 1.4f
-        val widthMax = vw * 0.51f
+        val widthMax = vw * 0.48f
         return widthTarget.coerceIn(widthMin, widthMax)
     }
 

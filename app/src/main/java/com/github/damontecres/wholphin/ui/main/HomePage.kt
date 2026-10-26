@@ -83,6 +83,7 @@ import com.github.damontecres.wholphin.ui.indexOfFirstOrNull
 import com.github.damontecres.wholphin.ui.isNotNullOrBlank
 import com.github.damontecres.wholphin.ui.nav.BackdropDebug
 import com.github.damontecres.wholphin.ui.nav.Destination
+import com.github.damontecres.wholphin.ui.nav.LocalNavDrawerOpen
 import com.github.damontecres.wholphin.ui.playback.isPlayKeyUp
 import com.github.damontecres.wholphin.ui.playback.playable
 import com.github.damontecres.wholphin.ui.playback.scale
@@ -319,9 +320,12 @@ fun HomePageContent(
     val currentOnFocusPosition by rememberUpdatedState(onFocusPosition)
     val currentOnClickPlay by rememberUpdatedState(onClickPlay)
 
+    // While the nav drawer is open (as it is when the app starts) it keeps focus; the first row
+    // takes focus once the drawer closes
+    val drawerOpen = LocalNavDrawerOpen.current
     if (takeFocus) {
-        LaunchedEffect(homeRows) {
-            if (!firstFocused && homeRows.isNotEmpty()) {
+        LaunchedEffect(homeRows, drawerOpen) {
+            if (!firstFocused && !drawerOpen && homeRows.isNotEmpty()) {
                 if (position.row >= 0) {
                     val index = position.row.coerceIn(0, rowFocusRequesters.lastIndex)
                     rowFocusRequesters.getOrNull(index)?.tryRequestFocus()
