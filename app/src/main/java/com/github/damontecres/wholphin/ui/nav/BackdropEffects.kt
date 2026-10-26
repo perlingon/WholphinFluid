@@ -13,6 +13,7 @@ import androidx.compose.ui.graphics.Canvas
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.Matrix
 import androidx.compose.ui.graphics.Paint
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.asAndroidBitmap
@@ -45,8 +46,10 @@ import timber.log.Timber
 import java.io.File
 import java.security.MessageDigest
 import kotlin.math.max
+import kotlin.math.pow
 import kotlin.math.roundToInt
 import kotlin.math.sqrt
+import kotlin.math.tan
 
 // The heavy lifting behind the backdrop: composing the baked background and generating film grain.
 // Kept apart from Backdrop.kt on purpose. While tuning values there with Live Edit, the code in
@@ -253,6 +256,14 @@ internal data class Tile(
     val flip: Boolean = false,
     // Upside down, in place
     val flipVertical: Boolean = false,
+    // Turned about its own middle, in degrees: positive = clockwise
+    val rotation: Float = 0f,
+    // Slanted about its own middle, in degrees. skewX leans the vertical edges (positive = the
+    // bottom moves right), skewY the horizontal edges (positive = the right side moves down)
+    val skewX: Float = 0f,
+    val skewY: Float = 0f,
+    // The picture pulled out towards one edge, see Stretch. Null = none
+    val stretch: Stretch? = null,
     // Width in pixels of the version of the image that is stretched over the tile: lower = blurrier
     val resolution: Int = 64,
     // Extra blur on this tile alone, as a share of the screen's width: 0 = none
@@ -273,9 +284,86 @@ internal data class Tile(
 )
 
 /**
+ * Pulls a tile's picture out towards one of its edges, as the tile appears on screen (after any
+ * flip): the part nearest that edge is stretched the most, the far edge is left as it is. Like a
+ * reflection smeared outwards.
+ *
+ * @param edge the edge the picture is pulled towards
+ * @param strength 0f = none, 1f = clearly stretched, 2f = strongly, 4f = very strongly
+ */
+internal data class Stretch(
+    val edge: StretchEdge,
+    val strength: Float,
+)
+
+internal enum class StretchEdge { LEFT, TOP, RIGHT, BOTTOM }
+
+/**
+ * [image] drawn at [size] with its picture pulled towards [edge] (in the image's own
+ * coordinates), through a grid of points that the picture is stretched over
+ */
+private fun stretched(
+    image: ImageBitmap,
+    size: IntSize,
+    edge: StretchEdge,
+    strength: Float,
+): ImageBitmap {
+    val output = Bitmap.createBitmap(size.width, size.height, Bitmap.Config.ARGB_8888)
+    // Points across and down: plenty for a smooth curve on these small, blurry pictures
+    val columns = 16
+    val rows = 16
+    val power = 1f + strength.coerceAtLeast(0f)
+    val horizontal = edge == StretchEdge.LEFT || edge == StretchEdge.RIGHT
+    val verts = FloatArray((columns + 1) * (rows + 1) * 2)
+    var i = 0
+    for (row in 0..rows) {
+        for (column in 0..columns) {
+            var u = column.toFloat() / columns
+            var v = row.toFloat() / rows
+            // Measured from the stretched edge, a point of the picture at distance d (0..1)
+            // lands at d^(1 / power): close to the edge, a little picture covers a lot of tile
+            if (horizontal) {
+                u =
+                    if (edge == StretchEdge.LEFT) {
+                        u.pow(1f / power)
+                    } else {
+                        1f - (1f - u).pow(1f / power)
+                    }
+            } else {
+                v =
+                    if (edge == StretchEdge.TOP) {
+                        v.pow(1f / power)
+                    } else {
+                        1f - (1f - v).pow(1f / power)
+                    }
+            }
+            verts[i++] = u * size.width
+            verts[i++] = v * size.height
+        }
+    }
+    val source = image.asAndroidBitmap()
+    // The picture is split evenly over the grid, whatever its own size
+    android.graphics.Canvas(output).apply {
+        drawBitmapMesh(
+            source,
+            columns,
+            rows,
+            verts,
+            0,
+            null,
+            0,
+            android.graphics.Paint(android.graphics.Paint.FILTER_BITMAP_FLAG),
+        )
+    }
+    return output.asImageBitmap()
+}
+
+/**
  * Soft edges on a tile: how far in from each side it fades out, as a share of its own width
  * (left and right) or height (top and bottom). 0f = a hard edge, 0.2f = the outer fifth fades,
- * 0.5f = fades all the way to the middle. The sides are as the tile appears on screen, after any
+ * 0.5f = fades all the way to the middle, 1f = across the whole tile. Above 1 the fade is longer
+ * than the tile and never gets solid (2f = still half see-through at the far side). Fades from
+ * opposite sides multiply where they overlap. The sides are as the tile appears on screen, after any
  * flip. Written like CSS margins:
  * - Feather(0.2f): all four sides
  * - Feather(0.1f, 0.2f): top and bottom, then left and right
@@ -327,7 +415,11 @@ internal suspend fun bakeBackdropBackground(
     groupLayers: List<Pair<BlendMode, Float>>,
     groupOpacity: Float,
     smoothRadius: Int,
+    // Fades parts of the blurred group out before it is blended, drawn with BlendMode.DstIn
+    groupMask: DrawScope.() -> Unit = {},
     outlineCopies: Boolean,
+    // Development aid: leaves out all smoothing, see debugNoSmoothing in Backdrop
+    noSmoothing: Boolean = false,
 ): ImageBitmap? =
     withContext(Dispatchers.Default) {
         val started = System.nanoTime()
@@ -423,7 +515,7 @@ internal suspend fun bakeBackdropBackground(
             // result. Last, everything is smoothed together
             listOf(
                 Triple(shownTiles.filter { it.behind && !it.onTop }, 0, false),
-                Triple(shownTiles.filter { !it.behind && !it.onTop }, groupSmoothRadius, true),
+                Triple(shownTiles.filter { !it.behind && !it.onTop }, if (noSmoothing) 0 else groupSmoothRadius, true),
                 Triple(shownTiles.filter { it.onTop }, 0, false),
             ).forEach { (passTiles, passRadius, isGroup) ->
                 val target = if (isGroup) ImageBitmap(width, height) else output
@@ -443,7 +535,7 @@ internal suspend fun bakeBackdropBackground(
                                     (size.width * copy.width).roundToInt().coerceAtLeast(1),
                                     (size.height * tileHeight).roundToInt().coerceAtLeast(1),
                                 )
-                            val smoothRadius = (size.width * copy.smooth).roundToInt()
+                            val smoothRadius = if (noSmoothing) 0 else (size.width * copy.smooth).roundToInt()
                             // The fades are made before the flip, so a flipped tile swaps its sides
                             val feather =
                                 copy.feather
@@ -459,6 +551,11 @@ internal suspend fun bakeBackdropBackground(
                             val drawn: ImageBitmap?
                             val drawOffset: IntOffset
                             val drawSize: IntSize
+                            // A turned or slanted tile can bring parts from off screen into view,
+                            // so it is prepared whole
+                            val transformed =
+                                copy.rotation != 0f || copy.skewX != 0f || copy.skewY != 0f ||
+                                    (copy.stretch != null && copy.stretch.strength > 0f)
                             if (smoothRadius < 1 && feather == null) {
                                 // A plain stretch of the tiny version: nothing to prepare
                                 drawn = blurred
@@ -473,7 +570,21 @@ internal suspend fun bakeBackdropBackground(
                                 val visibleTop = maxOf(offset.y, -margin)
                                 val visibleRight = minOf(offset.x + area.width, size.width.roundToInt() + margin)
                                 val visibleBottom = minOf(offset.y + area.height, size.height.roundToInt() + margin)
-                                if (visibleRight <= visibleLeft || visibleBottom <= visibleTop) {
+                                if (transformed) {
+                                    drawn =
+                                        tileCrop(
+                                            blurred,
+                                            area,
+                                            IntOffset.Zero,
+                                            area,
+                                            smoothRadius,
+                                            feather,
+                                            density,
+                                            layoutDirection,
+                                        )
+                                    drawOffset = offset
+                                    drawSize = area
+                                } else if (visibleRight <= visibleLeft || visibleBottom <= visibleTop) {
                                     // Entirely off screen
                                     drawn = null
                                     drawOffset = offset
@@ -501,10 +612,38 @@ internal suspend fun bakeBackdropBackground(
                                     drawSize = cropSize
                                 }
                             }
+                            // The stretch, made before the flip like the fades, so a flipped tile
+                            // swaps its edge
+                            val stretchedDrawn =
+                                copy.stretch
+                                    ?.takeIf { it.strength > 0f }
+                                    ?.let {
+                                        val edge =
+                                            when (it.edge) {
+                                                StretchEdge.LEFT -> if (copy.flip) StretchEdge.RIGHT else StretchEdge.LEFT
+                                                StretchEdge.RIGHT -> if (copy.flip) StretchEdge.LEFT else StretchEdge.RIGHT
+                                                StretchEdge.TOP -> if (copy.flipVertical) StretchEdge.BOTTOM else StretchEdge.TOP
+                                                StretchEdge.BOTTOM -> if (copy.flipVertical) StretchEdge.TOP else StretchEdge.BOTTOM
+                                            }
+                                        drawn?.let { image -> stretched(image, drawSize, edge, it.strength) }
+                                    } ?: drawn
                             // Mirrored about the copy's own middle, so it stays where it is
                             val middle = Offset(offset.x + area.width / 2f, offset.y + area.height / 2f)
-                            if (drawn != null) {
+                            if (stretchedDrawn != null) {
                                 withTransform({
+                                    // Turned, then slanted, then flipped, all about the middle
+                                    // (the last one listed is applied to the picture first)
+                                    if (copy.rotation != 0f) rotate(copy.rotation, pivot = middle)
+                                    if (copy.skewX != 0f || copy.skewY != 0f) {
+                                        translate(middle.x, middle.y)
+                                        transform(
+                                            Matrix().apply {
+                                                this[1, 0] = tan(Math.toRadians(copy.skewX.toDouble())).toFloat()
+                                                this[0, 1] = tan(Math.toRadians(copy.skewY.toDouble())).toFloat()
+                                            },
+                                        )
+                                        translate(-middle.x, -middle.y)
+                                    }
                                     if (copy.flip || copy.flipVertical) {
                                         scale(
                                             scaleX = if (copy.flip) -1f else 1f,
@@ -516,7 +655,7 @@ internal suspend fun bakeBackdropBackground(
                                     val flatDim = if (flatEdges.isEmpty()) 1f else copy.flatEdgeOpacity
                                     copy.layers.forEach { (layerBlendMode, layerOpacity) ->
                                         drawImage(
-                                            image = drawn,
+                                            image = stretchedDrawn,
                                             dstOffset = drawOffset,
                                             dstSize = drawSize,
                                             alpha = (layerOpacity * flatDim).coerceIn(0f, 1f),
@@ -531,6 +670,9 @@ internal suspend fun bakeBackdropBackground(
                     }
                 }
                 boxBlur(target.asAndroidBitmap(), passRadius)
+                if (isGroup && passTiles.isNotEmpty()) {
+                    CanvasDrawScope().draw(density, layoutDirection, Canvas(target), outputSize) { groupMask() }
+                }
                 val sheetOpacity = groupOpacity.coerceIn(0f, 1f)
                 if (isGroup && passTiles.isNotEmpty() && sheetOpacity > 0f) {
                     // The group's sheet onto the glows, with the group's own blend modes
@@ -553,7 +695,7 @@ internal suspend fun bakeBackdropBackground(
                 }
             }
             // The final smoothing, before the vignettes so they keep their shape
-            boxBlur(output.asAndroidBitmap(), smoothRadius)
+            if (!noSmoothing) boxBlur(output.asAndroidBitmap(), smoothRadius)
             CanvasDrawScope().draw(density, layoutDirection, Canvas(output), outputSize) {
                 drawOverlay()
                 if (outlineCopies) {
@@ -613,12 +755,14 @@ internal fun DrawScope.drawFlatEdgeArrows(edges: Set<ImageEdge>) {
                 path.lineTo(inset + arrow, y - arrow * 0.6f)
                 path.lineTo(inset + arrow, y + arrow * 0.6f)
             }
+
             ImageEdge.RIGHT -> {
                 val y = size.height / 2f
                 path.moveTo(size.width - inset, y)
                 path.lineTo(size.width - inset - arrow, y - arrow * 0.6f)
                 path.lineTo(size.width - inset - arrow, y + arrow * 0.6f)
             }
+
             ImageEdge.BOTTOM -> {
                 val x = size.width / 2f
                 path.moveTo(x, size.height - inset)
@@ -747,40 +891,31 @@ private fun tileCrop(
     }
     if (feather != null) {
         CanvasDrawScope().draw(density, layoutDirection, Canvas(result), size) {
-            // Solid between the two fades, see-through at a side that fades. A side without a fade
-            // starts solid, so it keeps a hard edge
-            fun fade(
-                start: Float,
-                end: Float,
-            ): Array<Pair<Float, Color>> {
-                val first = start.coerceIn(0f, 0.5f)
-                val last = end.coerceIn(0f, 0.5f)
-                return listOfNotNull(
-                    0f to if (first > 0f) Color.Transparent else Color.Black,
-                    if (first > 0f) first to Color.Black else null,
-                    if (last > 0f) (1f - last) to Color.Black else null,
-                    1f to if (last > 0f) Color.Transparent else Color.Black,
-                ).toTypedArray()
+            // Each side fades on its own, from see-through at its edge to solid that far in, and
+            // the fades multiply where they overlap. A fade longer than the tile (above 1) never
+            // gets solid: 2f is still half see-through at the opposite edge
+            fun fadeFrom(
+                edge: Offset,
+                towards: Offset,
+                length: Float,
+            ) {
+                if (length <= 0f) return
+                drawRect(
+                    brush =
+                        Brush.linearGradient(
+                            colors = listOf(Color.Transparent, Color.Black),
+                            start = edge,
+                            end = edge + towards * length,
+                        ),
+                    blendMode = BlendMode.DstIn,
+                )
             }
-            // Keep the image only where these are solid: once across, once down
-            drawRect(
-                brush =
-                    Brush.horizontalGradient(
-                        colorStops = fade(feather.left, feather.right),
-                        startX = tileLeft,
-                        endX = tileLeft + tileWidth,
-                    ),
-                blendMode = BlendMode.DstIn,
-            )
-            drawRect(
-                brush =
-                    Brush.verticalGradient(
-                        colorStops = fade(feather.top, feather.bottom),
-                        startY = tileTop,
-                        endY = tileTop + tileHeight,
-                    ),
-                blendMode = BlendMode.DstIn,
-            )
+            val tileRight = tileLeft + tileWidth
+            val tileBottom = tileTop + tileHeight
+            fadeFrom(Offset(tileLeft, 0f), Offset(tileWidth, 0f), feather.left)
+            fadeFrom(Offset(tileRight, 0f), Offset(-tileWidth, 0f), feather.right)
+            fadeFrom(Offset(0f, tileTop), Offset(0f, tileHeight), feather.top)
+            fadeFrom(Offset(0f, tileBottom), Offset(0f, -tileHeight), feather.bottom)
         }
     }
     return result

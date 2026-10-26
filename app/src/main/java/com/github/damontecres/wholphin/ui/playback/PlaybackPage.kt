@@ -12,8 +12,6 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Box
@@ -55,6 +53,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
@@ -72,6 +71,8 @@ import androidx.media3.ui.compose.state.rememberPlayPauseButtonState
 import androidx.media3.ui.compose.state.rememberPresentationState
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.surfaceColorAtElevation
+import com.github.damontecres.wholphin.R
+import com.github.damontecres.wholphin.data.model.TrackIndex
 import com.github.damontecres.wholphin.mpv.MpvPlayer
 import com.github.damontecres.wholphin.preferences.AssPlaybackMode
 import com.github.damontecres.wholphin.preferences.DpadSeekMode
@@ -427,8 +428,8 @@ fun PlaybackPageContent(
                     !controllerViewState.controlsVisible &&
                         skipIndicatorDuration != 0L &&
                         prefs.dpadSeekMode == DpadSeekMode.SEEKBAR_TRICKPLAY,
-                enter = fadeIn() + slideInVertically { it / 2 },
-                exit = fadeOut() + slideOutVertically { it },
+                enter = fadeIn(),
+                exit = fadeOut(),
                 modifier =
                     Modifier
                         .align(Alignment.BottomCenter),
@@ -540,6 +541,31 @@ fun PlaybackPageContent(
                 seriesEnded = state.seriesEnded,
                 seriesEpisodes = state.seriesEpisodes,
                 onClickEpisode = viewModel::playEpisode,
+                subtitleLabel =
+                    state.currentPlayback?.subtitleIndex.let { index ->
+                        when {
+                            index != null && index >= 0 -> {
+                                trackLabel(state.currentMediaInfo.subtitleStreams, index)
+                            }
+
+                            index == TrackIndex.ONLY_FORCED -> {
+                                stringResource(R.string.only_forced_subtitles)
+                            }
+
+                            else -> {
+                                null
+                            }
+                        } ?: stringResource(R.string.subtitles_off)
+                    },
+                audioLabel =
+                    state.currentPlayback
+                        ?.audioIndex
+                        ?.let { trackLabel(state.currentMediaInfo.audioStreams, it) }
+                        ?: stringResource(R.string.audio),
+                onBack = {
+                    player.stop()
+                    viewModel.navigationManager.goBack()
+                },
                 onClickPlaylist = viewModel::playItemInPlaylist,
                 currentSegment = state.currentSegment?.segment,
                 showClock = preferences.appPreferences.interfacePreferences.showClock,
@@ -905,4 +931,26 @@ fun PlaybackPageContent(
             )
         }
     }
+}
+
+/**
+ * Short label for the chosen track, e.g. "ENG · Dolby Digital+ 5.1 1/4": the language code (or
+ * the full title when the track has no language), the format, then which of the tracks it is and
+ * how many there are to choose from
+ */
+private fun trackLabel(
+    streams: List<SimpleMediaStream>,
+    index: Int,
+): String? {
+    val position = streams.indexOfFirst { it.index == index }
+    if (position < 0) return null
+    val stream = streams[position]
+    val name =
+        if (stream.languageCode != null) {
+            listOfNotNull(stream.languageCode, stream.formatDetail).joinToString(" · ")
+        } else {
+            stream.formatDetail ?: stream.displayTitle
+        }
+    // An en space before the count gives it a little more room than the gaps inside the name
+    return if (streams.size > 1) "$name\u2002${position + 1}/${streams.size}" else name
 }

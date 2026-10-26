@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -38,6 +39,7 @@ import androidx.compose.ui.input.key.type
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.media3.common.Player
 import androidx.media3.ui.compose.state.rememberPlayPauseButtonState
@@ -57,11 +59,12 @@ import com.github.damontecres.wholphin.ui.formatSeasonNumber
 import com.github.damontecres.wholphin.ui.ifElse
 import com.github.damontecres.wholphin.ui.playback.ControllerViewState
 import com.github.damontecres.wholphin.ui.playback.isBackKey
+import com.github.damontecres.wholphin.ui.theme.FluidLayout
 import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.ui.theme.rowHeadline
 import com.github.damontecres.wholphin.ui.tryRequestFocus
-import java.util.UUID
 import org.jellyfin.sdk.model.api.BaseItemKind
+import java.util.UUID
 
 /**
  * A run of queue items from one season of one series, in queue order. Items that aren't episodes
@@ -184,6 +187,8 @@ fun QueueRowOverlay(
     modifier: Modifier = Modifier,
     seriesEpisodes: List<BaseItem> = emptyList(),
     onClickEpisode: (BaseItem) -> Unit = onClickPlaylist,
+    // The cards stay within this width (the picture), the heading sits further out to the left
+    rowMaxWidth: Dp = Dp.Unspecified,
 ) {
     val focusRequester = remember { FocusRequester() }
     val hiddenFocusRequester = remember { FocusRequester() }
@@ -225,7 +230,8 @@ fun QueueRowOverlay(
         // the headings in ChapterRowOverlay
         val headlineStyle = MaterialTheme.typography.rowHeadline
         val headlineColor = Color.Unspecified // Color.Unspecified = the theme's text color
-        val headlineInset = 0.dp
+        // Gap between the left edge of the screen and the heading, outside the picture's width
+        val headlineInset = maxOf(FluidLayout.leftMargin(), Spacing.xl)
         // Card image height, gap between cards and the outline on the playing episode
         val cardImageHeight = 112.dp
         val cardGap = Spacing.sm
@@ -267,6 +273,9 @@ fun QueueRowOverlay(
                 horizontalArrangement = Arrangement.spacedBy(cardGap),
                 modifier =
                     Modifier
+                        .align(Alignment.CenterHorizontally)
+                        .widthIn(max = rowMaxWidth)
+                        .padding(horizontal = Spacing.sm)
                         .fillMaxWidth()
                         .focusRestorer(focusRequester)
                         .onFocusChanged {
@@ -281,10 +290,10 @@ fun QueueRowOverlay(
                             }
                             if (it.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
                             when (it.key) {
-                                // Past the last season there is nowhere to go, so stay put
+                                // Down from the last season starts over at the first one
                                 Key.DirectionDown -> {
-                                    if (groupIndex < groups.lastIndex) {
-                                        groupIndex++
+                                    if (groups.size > 1) {
+                                        groupIndex = if (groupIndex < groups.lastIndex) groupIndex + 1 else 0
                                         focusFirst = true
                                     }
                                     true

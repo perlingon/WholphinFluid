@@ -108,6 +108,7 @@
     <string name="record_series">Record Series</string>
     <string name="remove_favorite">Unfavorite</string>
     <string name="restart">Restart</string>
+    <string name="back">Back</string>
     <string name="resume">Resume</string>
     <string name="save">Save</string>
     <string name="search_and_download"><![CDATA[Search & Download]]></string>
@@ -1046,4 +1047,6 @@
         <item quantity="one">First of %1$d episode</item>
         <item quantity="other">First of %1$d episodes</item>
     </plurals>
+    <string name="adjust_video">Adjust video</string>
+    <string name="subtitles_off">Off</string>
 </resources>

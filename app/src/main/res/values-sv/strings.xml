@@ -47,6 +47,7 @@
     <string name="record_series">Spela in serie</string>
     <string name="remove_favorite">Ta bort favorit</string>
     <string name="restart">Starta om</string>
+    <string name="back">Tillbaka</string>
     <string name="resume">Fortsätt</string>
     <string name="save">Spara</string>
     <string name="search">Sök</string>
@@ -718,4 +719,6 @@
         <item quantity="one">Första av %1$d avsnitt</item>
         <item quantity="other">Första av %1$d avsnitt</item>
     </plurals>
+    <string name="adjust_video">Justera video</string>
+    <string name="subtitles_off">Av</string>
 </resources>

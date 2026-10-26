@@ -105,7 +105,6 @@ fun PlaybackDialog(
 ) {
     val isLtr = LocalLayoutDirection.current == LayoutDirection.Ltr
     // TODO, shouldn't this work out of the box?
-    val leftGravity = remember(isLtr) { if (isLtr) Gravity.START else Gravity.END }
     val rightGravity = remember(isLtr) { if (isLtr) Gravity.END else Gravity.START }
     when (type) {
         PlaybackDialogType.DEBUG -> {
@@ -154,24 +153,7 @@ fun PlaybackDialog(
         PlaybackDialogType.SETTINGS -> {
             val options =
                 buildList {
-                    add(
-                        BottomDialogItem(
-                            data = PlaybackDialogType.PLAYBACK_SPEED,
-                            headline = stringResource(R.string.playback_speed),
-                            supporting = settings.playbackSpeed.toString(),
-                            enabled = settings.playbackSpeedEnabled,
-                        ),
-                    )
                     if (enableVideoScale) {
-                        add(
-                            BottomDialogItem(
-                                data = PlaybackDialogType.VIDEO_SCALE,
-                                headline = stringResource(R.string.video_scale),
-                                supporting =
-                                    playbackScaleOptions[settings.contentScale]
-                                        ?.let { stringResource(it) },
-                            ),
-                        )
                         add(
                             BottomDialogItem(
                                 data = PlaybackDialogType.VIDEO_ADJUST,
@@ -189,7 +171,24 @@ fun PlaybackDialog(
                                     },
                             ),
                         )
+                        add(
+                            BottomDialogItem(
+                                data = PlaybackDialogType.VIDEO_SCALE,
+                                headline = stringResource(R.string.video_scale),
+                                supporting =
+                                    playbackScaleOptions[settings.contentScale]
+                                        ?.let { stringResource(it) },
+                            ),
+                        )
                     }
+                    add(
+                        BottomDialogItem(
+                            data = PlaybackDialogType.PLAYBACK_SPEED,
+                            headline = stringResource(R.string.playback_speed),
+                            supporting = settings.playbackSpeed.toString(),
+                            enabled = settings.playbackSpeedEnabled,
+                        ),
+                    )
                     if (enableSubtitleDelay) {
                         add(
                             BottomDialogItem(
@@ -218,7 +217,7 @@ fun PlaybackDialog(
                         onClickPlaybackDialogType(choice.data)
                     }
                 },
-                gravity = leftGravity,
+                gravity = rightGravity,
             )
         }
 
@@ -256,7 +255,7 @@ fun PlaybackDialog(
                 onSelectChoice = { _, value ->
                     onPlaybackActionClick.invoke(PlaybackAction.PlaybackSpeed(value.data))
                 },
-                gravity = leftGravity,
+                gravity = rightGravity,
             )
         }
 
@@ -279,7 +278,7 @@ fun PlaybackDialog(
                 onSelectChoice = { _, choice ->
                     onPlaybackActionClick.invoke(PlaybackAction.Scale(choice.data))
                 },
-                gravity = leftGravity,
+                gravity = rightGravity,
             )
         }
 

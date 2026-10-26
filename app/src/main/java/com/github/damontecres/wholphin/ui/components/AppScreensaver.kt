@@ -39,7 +39,6 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
 import androidx.datastore.core.DataStore
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
@@ -173,29 +172,18 @@ fun AppScreensaverContent(
 
                 var logoError by remember(currentItem) { mutableStateOf(false) }
                 if (!logoError) {
-                    AsyncImage(
-                        model =
-                            ImageRequest
-                                .Builder(LocalContext.current)
-                                .data(currentItem?.logoUrl)
-                                .transitionFactory(CrossFadeFactory(750.milliseconds))
-                                .build(),
-                        contentDescription = "Logo",
-                        onError = {
-                            logoError = true
-                        },
-                        modifier =
-                            Modifier
-                                .align(Alignment.BottomStart)
-                                .size(width = 240.dp, height = 120.dp)
-                                .padding(Spacing.md),
+                    // Same placement, size and fade as the logo in the paused player
+                    CornerLogo(
+                        logoUrl = currentItem?.logoUrl,
+                        onError = { logoError = true },
+                        modifier = Modifier.align(Alignment.BottomStart),
                     )
                 } else {
                     Box(
                         modifier =
                             Modifier
                                 .align(Alignment.BottomStart)
-                                .padding(Spacing.md)
+                                .padding(Spacing.xxl)
                                 .fillMaxWidth(.5f)
                                 .fillMaxHeight(.3f),
                     ) {

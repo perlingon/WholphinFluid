@@ -155,6 +155,7 @@ fun IntervalSeekBarImpl(
     modifier: Modifier = Modifier,
     interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
     enabled: Boolean = true,
+    highlighted: Boolean = false,
 ) {
     val isFocused by interactionSource.collectIsFocusedAsState()
     var hasSeeked by remember { mutableStateOf(false) }
@@ -206,6 +207,7 @@ fun IntervalSeekBarImpl(
             }
         },
         interactionSource = interactionSource,
+        highlighted = highlighted,
         modifier = modifier,
     )
 }
@@ -228,6 +230,8 @@ private fun SeekBarDisplay(
     enabled: Boolean = true,
     originProgress: Float? = null,
     onBack: () -> Boolean = { false },
+    // Show the focused look without having focus, e.g. while the play button next to it is focused
+    highlighted: Boolean = false,
 ) {
     val color = MaterialTheme.colorScheme.border
     val onSurface = MaterialTheme.colorScheme.onSurface
@@ -244,8 +248,22 @@ private fun SeekBarDisplay(
     var rightHandledByRepeat by remember { mutableStateOf(false) }
     // Whether the current Back press was used to undo a seek, so its key-up is consumed too
     var backHandled by remember { mutableStateOf(false) }
+    val looksFocused = isFocused || highlighted
+    // Bar height when focused / unfocused, kept local so Live Edit picks up changes
+    val barHeightFocused = 7.dp
+    val barHeightUnfocused = 4.dp
+    // Playhead dot diameter when focused / unfocused
+    val dotFocused = 19.dp
+    val dotUnfocused = 12.dp
+    // The bar's thickness and the dot animate in the draw phase only: the canvas keeps the
+    // focused height, so focusing the bar doesn't re-measure the controls every frame
     val animatedIndicatorHeight by animateDpAsState(
-        targetValue = 4.dp.times((if (isFocused) 2f else 1f)),
+        targetValue = if (looksFocused) barHeightFocused else barHeightUnfocused,
+        label = "barHeight",
+    )
+    val animatedDot by animateDpAsState(
+        targetValue = if (looksFocused) dotFocused else dotUnfocused,
+        label = "playheadDot",
     )
 
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(Spacing.md)) {
@@ -253,7 +271,7 @@ private fun SeekBarDisplay(
             modifier =
                 Modifier
                     .fillMaxWidth()
-                    .height(animatedIndicatorHeight)
+                    .height(barHeightFocused)
                     .padding(horizontal = Spacing.xs)
                     .onPreviewKeyEvent { event ->
                         if (isBackKey(event)) {
@@ -331,11 +349,12 @@ private fun SeekBarDisplay(
                     }.focusable(enabled = enabled, interactionSource = interactionSource),
             onDraw = {
                 val yOffset = size.height.div(2)
+                val barHeight = animatedIndicatorHeight.toPx()
                 drawLine(
                     color = onSurface.copy(alpha = 0.25f),
                     start = Offset(x = 0f, y = yOffset),
                     end = Offset(x = size.width, y = yOffset),
-                    strokeWidth = size.height,
+                    strokeWidth = barHeight,
                     cap = StrokeCap.Round,
                 )
                 drawLine(
@@ -346,7 +365,7 @@ private fun SeekBarDisplay(
                             x = size.width.times(bufferedProgress),
                             y = yOffset,
                         ),
-                    strokeWidth = size.height,
+                    strokeWidth = barHeight,
                     cap = StrokeCap.Round,
                 )
                 drawLine(
@@ -357,7 +376,7 @@ private fun SeekBarDisplay(
                             x = size.width.times(progress),
                             y = yOffset,
                         ),
-                    strokeWidth = size.height,
+                    strokeWidth = barHeight,
                     cap = StrokeCap.Round,
                 )
                 if (originProgress != null && originProgress != progress) {
@@ -365,21 +384,18 @@ private fun SeekBarDisplay(
                         color = seekSpanColor,
                         start = Offset(x = size.width.times(originProgress), y = yOffset),
                         end = Offset(x = size.width.times(progress), y = yOffset),
-                        strokeWidth = size.height,
+                        strokeWidth = barHeight,
                         cap = StrokeCap.Butt,
                     )
                     drawCircle(
                         color = ghostColor,
-                        radius = size.height * ghostSizeFactor / 2,
+                        radius = barHeight * ghostSizeFactor / 2,
                         center = Offset(x = size.width.times(originProgress), y = yOffset),
                     )
                 }
-                // Playhead dot: diameter when focused / unfocused
-                val dotFocused = 22.dp
-                val dotUnfocused = 12.dp
                 drawCircle(
                     color = Color.White,
-                    radius = (if (isFocused) dotFocused else dotUnfocused).toPx() / 2,
+                    radius = animatedDot.toPx() / 2,
                     center =
                         Offset(
                             x = size.width.times(progress),

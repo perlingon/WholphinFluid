@@ -6,6 +6,7 @@ import android.view.Gravity
 import androidx.annotation.DrawableRes
 import androidx.annotation.OptIn
 import androidx.annotation.StringRes
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -17,8 +18,10 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.lazy.LazyColumn
@@ -34,6 +37,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -44,13 +48,28 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.isSpecified
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -81,7 +100,6 @@ import com.github.damontecres.wholphin.ui.playback.PlaybackDialogType
 import com.github.damontecres.wholphin.ui.playback.insetFromSide
 import com.github.damontecres.wholphin.ui.playback.rememberPictureSideInsetPx
 import com.github.damontecres.wholphin.ui.seekBack
-import com.github.damontecres.wholphin.ui.seekForward
 import com.github.damontecres.wholphin.ui.skipStringRes
 import com.github.damontecres.wholphin.ui.theme.LocalTheme
 import com.github.damontecres.wholphin.ui.theme.Spacing
@@ -152,7 +170,19 @@ fun PlaybackControls(
     modifier: Modifier = Modifier,
     initialFocusRequester: FocusRequester = remember { FocusRequester() },
     seekBarInteractionSource: MutableInteractionSource = remember { MutableInteractionSource() },
+    // Where Up from the play button or seek bar goes (the back button), null when it isn't shown
+    upFocusRequester: FocusRequester? = null,
+    // Where the seek bar starts on screen, so the title above can line up with it
+    onBarStartChange: (Dp) -> Unit = {},
+    // The "Season 1 · 4 episodes left" / "Chapter 5 of 23" hint, at the right end of the button row
+    nextHint: (@Composable () -> Unit)? = null,
+    // Down from the button row, to open the chapter or episode row; null when there is none
+    onDownFromRow: (() -> Unit)? = null,
+    subtitleLabel: String = "",
+    audioLabel: String = "",
 ) {
+    // Down from the play button or seek bar goes to subtitles, the first button in the row below
+    val rowFocusRequester = remember { FocusRequester() }
     val scope = rememberCoroutineScope()
 
     val bringIntoViewRequester = remember { BringIntoViewRequester() }
@@ -183,6 +213,13 @@ fun PlaybackControls(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(0.dp),
     ) {
+        // Gap between the play/pause button and the seek bar, kept local so Live Edit picks up changes
+        val playButtonGap = Spacing.md
+        // Where the seek bar and the button row start on screen, so the first icon can line up
+        // with the bar
+        var barStartX by remember { mutableStateOf(0.dp) }
+        var rowStartX by remember { mutableStateOf(0.dp) }
+        val density = LocalDensity.current
         SeekBar(
             player = player,
             controllerViewState = controllerViewState,
@@ -195,62 +232,135 @@ fun PlaybackControls(
             intervals = seekBarIntervals,
             seekBack = seekBack,
             seekForward = seekForward,
+            leadingGap = playButtonGap,
+            onBarStartChange = {
+                barStartX = it
+                onBarStartChange(it)
+            },
+            leading = {
+                // Play/pause sits to the left of the seek bar, centered on it
+                // Same size as the other player buttons (see PlaybackButton)
+                PlaybackButton(
+                    modifier = Modifier.focusRequester(initialFocusRequester),
+                    iconRes = if (showPlay) R.drawable.baseline_play_arrow_24 else R.drawable.baseline_pause_24,
+                    onClick = {
+                        onControllerInteraction.invoke()
+                        if (showPlay) {
+                            player.play()
+                            skipBackOnResume?.let {
+                                player.seekBack(it)
+                            }
+                        } else {
+                            player.pause()
+                        }
+                    },
+                    onControllerInteraction = onControllerInteraction,
+                )
+            },
             modifier =
                 Modifier
                     .padding(vertical = 0.dp)
-                    .fillMaxWidth(.95f),
+                    .fillMaxWidth(.95f)
+                    .onPreviewKeyEvent { event ->
+                        if (event.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
+                        when (event.key) {
+                            Key.DirectionUp -> {
+                                upFocusRequester?.let {
+                                    it.tryRequestFocus()
+                                    true
+                                } ?: false
+                            }
+
+                            Key.DirectionDown -> {
+                                rowFocusRequester.tryRequestFocus()
+                                true
+                            }
+
+                            else -> {
+                                false
+                            }
+                        }
+                    },
         )
+        // How far the hint sits in from the seek bar's end. Tuning value, kept local so Live Edit
+        // picks up changes
+        val rowSideInset = Spacing.sm
+        // Nudge for the first icon against the start of the seek bar (0.dp = lined up)
+        val rowStartNudge = 0.dp
         Box(
             modifier =
                 Modifier
-                    .padding(horizontal = Spacing.sm)
-                    .fillMaxWidth(),
+                    // Same width as the seek bar; the start is set on the left group below
+                    .fillMaxWidth(.95f)
+                    .padding(end = rowSideInset)
+                    .onGloballyPositioned { rowStartX = with(density) { it.positionInRoot().x.toDp() } }
+                    // Down from the row opens the chapter or episode row
+                    .onPreviewKeyEvent { event ->
+                        if (onDownFromRow != null && event.type == KeyEventType.KeyDown && event.key == Key.DirectionDown) {
+                            onDownFromRow()
+                            true
+                        } else {
+                            false
+                        }
+                    },
         ) {
             // Tuning values, kept local so Live Edit picks up changes.
             // Gap between the settings, media and track groups, e.g. Spacing.md (16) / lg (24) / xl (32)
             val groupGap = Spacing.lg
+            // Buttons in this row: smaller than the play button and without a background (the
+            // dark fade behind the controls gives the icons their contrast)
+            val rowButtonSize = 32.dp
+            val rowIconSize = 24.dp
+            val rowButtonBackground = Color.Transparent
+            // The subtitle icon sits this far inside its button, so the row starts that much earlier
+            val iconInset = (rowButtonSize - rowIconSize) / 2
+            val rowStart = (barStartX - rowStartX - iconInset + rowStartNudge).coerceAtLeast(0.dp)
 
-            // All controls sit in one centered row, with the media controls in the middle
+            // All controls sit in one row on the left, the first icon lined up with the seek bar
             Row(
                 horizontalArrangement = Arrangement.spacedBy(groupGap),
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.align(Alignment.Center),
+                modifier =
+                    Modifier
+                        .align(Alignment.CenterStart)
+                        .padding(start = rowStart),
             ) {
-                LeftPlaybackButtons(
-                    onControllerInteraction = onControllerInteraction,
-                    onClickPlaybackDialogType = onClickPlaybackDialogType,
-                )
-
-                PlaybackButtons(
-                    player = player,
-                    initialFocusRequester = initialFocusRequester,
-                    onControllerInteraction = onControllerInteraction,
-                    onPlaybackActionClick = onPlaybackActionClick,
-                    showPlay = showPlay,
-                    previousEnabled = previousEnabled,
-                    nextEnabled = nextEnabled,
-                    seekBack = seekBack,
-                    seekForward = seekForward,
-                    skipBackOnResume = skipBackOnResume,
-                )
-
+                // Subtitles and audio first, then settings
                 RightPlaybackButtons(
                     onControllerInteraction = onControllerInteraction,
                     onClickPlaybackDialogType = onClickPlaybackDialogType,
+                    subtitlesModifier = Modifier.focusRequester(rowFocusRequester),
+                    subtitleLabel = subtitleLabel,
+                    audioLabel = audioLabel,
+                    buttonSize = rowButtonSize,
+                    iconSize = rowIconSize,
+                    containerColor = rowButtonBackground,
+                )
+
+                LeftPlaybackButtons(
+                    onControllerInteraction = onControllerInteraction,
+                    onClickPlaybackDialogType = onClickPlaybackDialogType,
+                    buttonSize = rowButtonSize,
+                    iconSize = rowIconSize,
+                    containerColor = rowButtonBackground,
                 )
             }
 
-            currentSegment?.let { segment ->
-                TextButton(
-                    stringRes = segment.type.skipStringRes,
-                    onClick = {
-                        player.seekTo(segment.endTicks.ticks.inWholeMilliseconds)
-                    },
-                    modifier =
-                        Modifier
-                            .align(Alignment.CenterEnd)
-                            .padding(end = Spacing.xl),
-                )
+            // On the right: the skip button when there is a segment, then the chapter/episode hint
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(groupGap),
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.align(Alignment.CenterEnd),
+            ) {
+                currentSegment?.let { segment ->
+                    TextButton(
+                        stringRes = segment.type.skipStringRes,
+                        onClick = {
+                            player.seekTo(segment.endTicks.ticks.inWholeMilliseconds)
+                        },
+                    )
+                }
+                nextHint?.invoke()
             }
         }
     }
@@ -268,7 +378,19 @@ fun SeekBar(
     seekForward: Duration,
     modifier: Modifier = Modifier,
     interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
+    leadingGap: Dp = 0.dp,
+    leading: (@Composable () -> Unit)? = null,
+    onBarStartChange: (Dp) -> Unit = {},
 ) {
+    // Width of the leading content, so the timecodes line up with the bar
+    var leadingWidth by remember { mutableStateOf(0.dp) }
+    // Heights of the leading content and of the bar, so the times can sit close under the bar
+    // even though the play button makes the row taller
+    var leadingHeight by remember { mutableStateOf(0.dp) }
+    var barBoxHeight by remember { mutableStateOf(0.dp) }
+    // While the leading content (the play button) has focus, the bar shows its focused look too
+    var leadingFocused by remember { mutableStateOf(false) }
+    val density = LocalDensity.current
     var bufferedProgress by remember(player) { mutableFloatStateOf(player.bufferedPosition.toFloat() / player.duration) }
     var position by remember(player) { mutableLongStateOf(player.currentPosition) }
     var progress by remember(player) { mutableFloatStateOf(player.currentPosition.toFloat() / player.duration) }
@@ -280,29 +402,71 @@ fun SeekBar(
             delay(250L)
         }
     }
+    // How far the times move up from below the row: the empty space under the bar, plus a nudge
+    // (positive = closer to the bar), kept local so Live Edit picks up changes
+    val timecodeNudge = 0.dp
+    val timecodeLift = ((leadingHeight - barBoxHeight) / 2).coerceAtLeast(0.dp) + timecodeNudge
     Column(
         modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        IntervalSeekBarImpl(
-            progress = progress,
-            bufferedProgress = bufferedProgress,
-            onSeek = {
-                onSeekProgress(it)
-            },
-            controllerViewState = controllerViewState,
-//            intervals = intervals,
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(leadingGap),
             modifier = Modifier.fillMaxWidth(),
-            interactionSource = interactionSource,
-            enabled = isEnabled,
-            durationMs = player.duration,
-            seekBack = seekBack,
-            seekForward = seekForward,
-        )
+        ) {
+            if (leading != null) {
+                Box(
+                    modifier =
+                        Modifier
+                            .onSizeChanged {
+                                leadingWidth = with(density) { it.width.toDp() }
+                                leadingHeight = with(density) { it.height.toDp() }
+                            }.onFocusChanged { leadingFocused = it.hasFocus },
+                ) {
+                    leading()
+                }
+            }
+            IntervalSeekBarImpl(
+                progress = progress,
+                bufferedProgress = bufferedProgress,
+                onSeek = {
+                    onSeekProgress(it)
+                },
+                controllerViewState = controllerViewState,
+//                intervals = intervals,
+                modifier =
+                    Modifier
+                        .weight(1f)
+                        .onSizeChanged { barBoxHeight = with(density) { it.height.toDp() } }
+                        .onGloballyPositioned {
+                            // The bar itself is drawn inset by Spacing.xs inside this box
+                            onBarStartChange(with(density) { it.positionInRoot().x.toDp() } + Spacing.xs)
+                        },
+                interactionSource = interactionSource,
+                enabled = isEnabled,
+                durationMs = player.duration,
+                seekBack = seekBack,
+                seekForward = seekForward,
+                highlighted = leadingFocused,
+            )
+        }
         SeekTimecodes(
             positionMs = position,
             durationMs = player.duration,
-            modifier = Modifier.fillMaxWidth(),
+            modifier =
+                Modifier
+                    .padding(start = if (leading != null) leadingWidth + leadingGap else 0.dp)
+                    .fillMaxWidth()
+                    // Drawn up next to the bar, and the space under the bar is given back, so
+                    // the button row below comes closer too
+                    .layout { measurable, constraints ->
+                        val placeable = measurable.measure(constraints)
+                        val lift = timecodeLift.roundToPx()
+                        layout(placeable.width, (placeable.height - lift).coerceAtLeast(0)) {
+                            placeable.place(0, -lift)
+                        }
+                    },
         )
     }
 }
@@ -365,6 +529,9 @@ fun LeftPlaybackButtons(
     onControllerInteraction: () -> Unit,
     onClickPlaybackDialogType: (PlaybackDialogType) -> Unit,
     modifier: Modifier = Modifier,
+    buttonSize: Dp = 36.dp,
+    iconSize: Dp = 28.dp,
+    containerColor: Color = AppColors.TransparentBlack25,
 ) {
     // Gap between buttons in this group, kept local so Live Edit picks up changes
     val buttonGap = Spacing.sm
@@ -372,16 +539,19 @@ fun LeftPlaybackButtons(
         modifier = modifier.focusGroup(),
         horizontalArrangement = Arrangement.spacedBy(buttonGap),
     ) {
-        PlaybackButton(
-            iconRes = R.drawable.vector_settings,
+        PlayerLabelButton(
+            label = stringResource(R.string.adjust_video),
             onClick = {
                 onControllerInteraction.invoke()
                 onClickPlaybackDialogType.invoke(PlaybackDialogType.SETTINGS)
             },
-            enabled = true,
             onControllerInteraction = onControllerInteraction,
-            modifier = Modifier,
-        )
+            buttonSize = buttonSize,
+            iconSize = iconSize,
+            containerColor = containerColor,
+        ) {
+            Icon(painter = painterResource(R.drawable.ic_video_settings), contentDescription = null, modifier = it)
+        }
     }
 }
 
@@ -390,6 +560,12 @@ fun RightPlaybackButtons(
     onControllerInteraction: () -> Unit,
     onClickPlaybackDialogType: (PlaybackDialogType) -> Unit,
     modifier: Modifier = Modifier,
+    subtitlesModifier: Modifier = Modifier,
+    subtitleLabel: String = "",
+    audioLabel: String = "",
+    buttonSize: Dp = 36.dp,
+    iconSize: Dp = 28.dp,
+    containerColor: Color = AppColors.TransparentBlack25,
 ) {
     // Gap between buttons in this group, kept local so Live Edit picks up changes
     val buttonGap = Spacing.sm
@@ -397,28 +573,44 @@ fun RightPlaybackButtons(
         modifier = modifier.focusGroup(),
         horizontalArrangement = Arrangement.spacedBy(buttonGap),
     ) {
-        // Captions
-        PlaybackButton(
-            enabled = true,
-            iconRes = R.drawable.ic_subtitles,
+        // Captions, labelled with the chosen subtitle language
+        PlayerLabelButton(
+            label = subtitleLabel.ifBlank { stringResource(R.string.subtitles) },
             onClick = {
                 onControllerInteraction.invoke()
                 onClickPlaybackDialogType.invoke(PlaybackDialogType.CAPTIONS)
             },
             onControllerInteraction = onControllerInteraction,
-            modifier = Modifier,
-        )
-        // Audio
-        PlaybackFaButton(
-            enabled = true,
-            iconRes = R.string.fa_volume_high,
+            buttonSize = buttonSize,
+            iconSize = iconSize,
+            containerColor = containerColor,
+            modifier = subtitlesModifier,
+        ) {
+            Icon(painter = painterResource(R.drawable.ic_subtitles), contentDescription = null, modifier = it)
+        }
+        // Audio, labelled with the chosen audio track
+        PlayerLabelButton(
+            label = audioLabel.ifBlank { stringResource(R.string.audio) },
             onClick = {
                 onControllerInteraction.invoke()
                 onClickPlaybackDialogType.invoke(PlaybackDialogType.AUDIO)
             },
             onControllerInteraction = onControllerInteraction,
-            modifier = Modifier,
-        )
+            buttonSize = buttonSize,
+            iconSize = iconSize,
+            containerColor = containerColor,
+        ) { iconModifier ->
+            Box(modifier = iconModifier, contentAlignment = Alignment.Center) {
+                Text(
+                    text = stringResource(R.string.fa_volume_high),
+                    // 18 sp at the 28 dp icon size, scaled with it
+                    fontSize = (iconSize.value * 18f / 28f).sp,
+                    fontFamily = FontAwesome,
+                    textAlign = TextAlign.Center,
+                    color = LocalContentColor.current,
+                )
+            }
+        }
     }
 }
 
@@ -444,47 +636,8 @@ fun PlaybackButtons(
             modifier = modifier.focusGroup(),
             horizontalArrangement = Arrangement.spacedBy(buttonGap),
         ) {
-            PlaybackButton(
-                iconRes = R.drawable.baseline_skip_previous_24,
-                onClick = {
-                    onControllerInteraction.invoke()
-                    onPlaybackActionClick.invoke(PlaybackAction.Previous)
-                },
-                enabled = previousEnabled,
-                onControllerInteraction = onControllerInteraction,
-            )
-            PlaybackButton(
-                iconRes = R.drawable.baseline_fast_rewind_24,
-                onClick = {
-                    onControllerInteraction.invoke()
-                    player.seekBack(seekBack)
-                },
-                onControllerInteraction = onControllerInteraction,
-            )
-            PlaybackButton(
-                modifier = Modifier.focusRequester(initialFocusRequester),
-                iconRes = if (showPlay) R.drawable.baseline_play_arrow_24 else R.drawable.baseline_pause_24,
-                onClick = {
-                    onControllerInteraction.invoke()
-                    if (showPlay) {
-                        player.play()
-                        skipBackOnResume?.let {
-                            player.seekBack(it)
-                        }
-                    } else {
-                        player.pause()
-                    }
-                },
-                onControllerInteraction = onControllerInteraction,
-            )
-            PlaybackButton(
-                iconRes = R.drawable.baseline_fast_forward_24,
-                onClick = {
-                    onControllerInteraction.invoke()
-                    player.seekForward(seekForward)
-                },
-                onControllerInteraction = onControllerInteraction,
-            )
+            // Play/pause sits next to the seek bar and restart in the top corner (PlaybackOverlay);
+            // there are no rewind/fast forward buttons, the seek bar does that
             PlaybackButton(
                 iconRes = R.drawable.baseline_skip_next_24,
                 onClick = {
@@ -498,6 +651,89 @@ fun PlaybackButtons(
     }
 }
 
+/**
+ * A round player button that grows a label to the right of its icon while it has focus, like the
+ * back and restart buttons. [icon] gets a modifier that gives it the icon's size.
+ */
+@Composable
+fun PlayerLabelButton(
+    label: String,
+    onClick: () -> Unit,
+    onControllerInteraction: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    // Circle size without focus and icon size; the row under the seek bar passes smaller ones
+    buttonSize: Dp = 36.dp,
+    iconSize: Dp = 28.dp,
+    // Background without focus
+    containerColor: Color = AppColors.TransparentBlack25,
+    icon: @Composable (Modifier) -> Unit,
+) {
+    // Tuning values, kept local so Live Edit picks up changes
+    // Gap between the icon and the label, and after the label
+    val labelGap = Spacing.sm
+    // Longest label before it is cut off with "…"
+    val labelMaxWidth = 260.dp
+    // How dim the "1/4" track count at the end of a label is
+    val countOpacity = 0.6f
+    val labelStyle = MaterialTheme.typography.titleSmall
+    // Dark and see-through without focus; white with dark icon and label with focus
+    val contentColor = MaterialTheme.colorScheme.onSurface
+    val focusedContainerColor = MaterialTheme.colorScheme.onSurface
+    val focusedContentColor = MaterialTheme.colorScheme.inverseOnSurface
+
+    val interactionSource = remember { MutableInteractionSource() }
+    val isFocused by interactionSource.collectIsFocusedAsState()
+    Button(
+        enabled = enabled,
+        onClick = onClick,
+        colors =
+            ClickableSurfaceDefaults.colors(
+                containerColor = containerColor,
+                contentColor = contentColor,
+                focusedContainerColor = focusedContainerColor,
+                focusedContentColor = focusedContentColor,
+                pressedContainerColor = focusedContainerColor,
+                pressedContentColor = focusedContentColor,
+            ),
+        contentPadding = PaddingValues((buttonSize - iconSize) / 2),
+        contentHeight = iconSize,
+        interactionSource = interactionSource,
+        modifier =
+            modifier
+                .height(buttonSize)
+                .widthIn(min = buttonSize)
+                .onFocusChanged { onControllerInteraction.invoke() },
+    ) {
+        icon(Modifier.size(iconSize))
+        AnimatedVisibility(isFocused) {
+            // A trailing "1/4" (which track of how many) is drawn dimmer
+            val countStart = Regex("[ \\u2002]\\d+/\\d+$").find(label)?.range?.first
+            val labelText =
+                buildAnnotatedString {
+                    if (countStart == null) {
+                        append(label)
+                    } else {
+                        append(label.substring(0, countStart))
+                        withStyle(SpanStyle(color = LocalContentColor.current.copy(alpha = countOpacity))) {
+                            append(label.substring(countStart))
+                        }
+                    }
+                }
+            Text(
+                text = labelText,
+                style = labelStyle,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier =
+                    Modifier
+                        .padding(start = labelGap, end = labelGap)
+                        .widthIn(max = labelMaxWidth),
+            )
+        }
+    }
+}
+
 @Composable
 fun PlaybackButton(
     @DrawableRes iconRes: Int,
@@ -506,14 +742,18 @@ fun PlaybackButton(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     interactionSource: MutableInteractionSource? = null,
+    // Overrides the size below, e.g. for the play button next to the seek bar
+    size: Dp? = null,
+    padding: Dp? = null,
 ) {
     // Tuning values, kept local so Live Edit picks up changes. Keep PlaybackButton and
     // PlaybackFaButton in step.
-    // Icon scale: 1f = the original 36 dp buttons, 0.8f = 20% smaller
-    val iconScale = 0.8f
-    val buttonSize = 36.dp * iconScale
+    // Icon scale: 1f = the original 36 dp buttons, 0.8f = 20% smaller. 36 dp matches the back and
+    // restart buttons in the top corner (topButtonSize in PlaybackOverlay)
+    val iconScale = 1f
+    val buttonSize = size ?: (36.dp * iconScale)
     // Space between the button edge and the icon
-    val iconPadding = Spacing.xs * iconScale
+    val iconPadding = padding ?: (Spacing.xs * iconScale)
     val selectedColor = MaterialTheme.colorScheme.border
     Button(
         enabled = enabled,
@@ -557,8 +797,9 @@ fun PlaybackFaButton(
 ) {
     // Tuning values, kept local so Live Edit picks up changes. Keep PlaybackButton and
     // PlaybackFaButton in step.
-    // Icon scale: 1f = the original 36 dp buttons, 0.8f = 20% smaller
-    val iconScale = 0.8f
+    // Icon scale: 1f = the original 36 dp buttons, 0.8f = 20% smaller. 36 dp matches the back and
+    // restart buttons in the top corner (topButtonSize in PlaybackOverlay)
+    val iconScale = 1f
     val buttonSize = 36.dp * iconScale
     // Space between the button edge and the icon
     val iconPadding = Spacing.xs * iconScale
