@@ -5,6 +5,7 @@ package com.github.damontecres.wholphin.ui.nav
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
@@ -32,7 +33,6 @@ import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.ImageShader
 import androidx.compose.ui.graphics.ShaderBrush
-import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.TileMode
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.scale
@@ -909,14 +909,6 @@ fun Backdrop(
                         ).drawWithContent {
                             val start = if (isRtl) size.width else 0f
                             drawContent()
-                            if (drawerIsOpen) {
-                                drawRect(
-                                    brush = SolidColor(Color.Black),
-                                    alpha = .75f,
-                                    // Only darken the image itself, not the empty box before it loads
-                                    blendMode = BlendMode.SrcAtop,
-                                )
-                            }
                             // The same vignette as on the background, continued over the image.
                             // SrcAtop darkens only the image itself, not the empty box around it
                             vignette(
@@ -1196,6 +1188,22 @@ fun Backdrop(
             )
         }
     }
+    // While the nav drawer is open the whole backdrop darkens, background and image together, so
+    // the menu stands out. How dark: 0 = not at all, 1 = fully black
+    val drawerDimDepth = 0.6f
+    val drawerDim by animateFloatAsState(
+        targetValue = if (drawerIsOpen) drawerDimDepth else 0f,
+        animationSpec = tween(300),
+        label = "drawerDim",
+    )
+    Box(
+        modifier =
+            modifier
+                .fillMaxSize()
+                .drawBehind {
+                    if (drawerDim > 0f) drawRect(color = Color.Black, alpha = drawerDim.coerceIn(0f, 1f))
+                },
+    )
 }
 
 /**

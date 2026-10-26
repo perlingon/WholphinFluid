@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -25,35 +26,34 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.KeyboardArrowLeft
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.findViewTreeViewModelStoreOwner
@@ -78,7 +78,6 @@ import com.github.damontecres.wholphin.services.NavDrawerService
 import com.github.damontecres.wholphin.services.NavigationManager
 import com.github.damontecres.wholphin.services.SetupDestination
 import com.github.damontecres.wholphin.services.SetupNavigationManager
-import com.github.damontecres.wholphin.ui.FontAwesome
 import com.github.damontecres.wholphin.ui.components.TimeDisplay
 import com.github.damontecres.wholphin.ui.ifElse
 import com.github.damontecres.wholphin.ui.launchDefault
@@ -281,6 +280,8 @@ fun NavDrawer(
     navDrawerListState: LazyListState,
     onClearBackdrop: () -> Unit,
     modifier: Modifier = Modifier,
+    openOnStart: Boolean = false,
+    onOpenedOnStart: () -> Unit = {},
     viewModel: NavDrawerViewModel =
         hiltViewModel(
             LocalView.current.findViewTreeViewModelStoreOwner()!!,
@@ -293,6 +294,21 @@ fun NavDrawer(
     val density = LocalDensity.current
 
     val focusRequester = remember { FocusRequester() }
+    var drawerHasFocus by remember { mutableStateOf(false) }
+
+    // When the app starts, the drawer opens with focus on the current page's item. Its items may
+    // not be laid out on the first frame, so keep trying for a few frames
+    LaunchedEffect(Unit) {
+        if (openOnStart) {
+            onOpenedOnStart.invoke()
+            repeat(30) {
+                if (drawerHasFocus) return@LaunchedEffect
+                focusRequester.tryRequestFocus()
+                withFrameNanos { }
+            }
+            if (!drawerHasFocus) drawerState.setValue(DrawerValue.Closed)
+        }
+    }
 
     // If the user presses back while on the home page, open the nav drawer, another back press will quit the app
     BackHandler(enabled = (drawerState.currentValue == DrawerValue.Closed && destination is Destination.Home)) {
@@ -335,11 +351,14 @@ fun NavDrawer(
             val spacedBy = 4.dp
             val searchFocusRequester = remember { FocusRequester() }
 
-            ProvideTextStyle(MaterialTheme.typography.labelMedium) {
+            ProvideTextStyle(MaterialTheme.typography.titleLarge) {
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(spacedBy),
-                    modifier = Modifier.fillMaxHeight(),
+                    modifier =
+                        Modifier
+                            .fillMaxHeight()
+                            .onFocusChanged { drawerHasFocus = it.hasFocus },
                 ) {
                     // Even though some must be clicked, focusing on it should clear other focused items
                     val interactionSource = remember { MutableInteractionSource() }
@@ -366,7 +385,6 @@ fun NavDrawer(
                         IconNavItem(
                             text = stringResource(R.string.now_playing),
                             subtext = serviceState.nowPlayingTitle,
-                            icon = Icons.Default.PlayArrow,
                             selected = selectedIndex == NOW_PLAYING_INDEX,
                             drawerOpen = isOpen,
                             interactionSource = interactionSource,
@@ -404,7 +422,6 @@ fun NavDrawer(
                             val interactionSource = remember { MutableInteractionSource() }
                             IconNavItem(
                                 text = stringResource(R.string.search),
-                                icon = Icons.Default.Search,
                                 selected = selectedIndex == SEARCH_INDEX,
                                 drawerOpen = isOpen,
                                 interactionSource = interactionSource,
@@ -425,7 +442,6 @@ fun NavDrawer(
                             val interactionSource = remember { MutableInteractionSource() }
                             IconNavItem(
                                 text = stringResource(R.string.home),
-                                icon = Icons.Default.Home,
                                 selected = selectedIndex == HOME_INDEX,
                                 drawerOpen = isOpen,
                                 interactionSource = interactionSource,
@@ -523,7 +539,6 @@ fun NavDrawer(
                             val interactionSource = remember { MutableInteractionSource() }
                             IconNavItem(
                                 text = stringResource(R.string.settings),
-                                icon = Icons.Default.Settings,
                                 selected = false,
                                 drawerOpen = isOpen,
                                 interactionSource = interactionSource,
@@ -546,17 +561,19 @@ fun NavDrawer(
             modifier = Modifier.fillMaxSize(),
         ) {
             // Drawer content
-            DestinationContent(
-                destination = destination,
-                preferences = preferences,
-                onClearBackdrop = onClearBackdrop,
-                modifier =
-                    Modifier
-                        .fillMaxSize()
-                        .offset {
-                            offset
-                        }.padding(start = closedDrawerWidth + Spacing.sm, end = Spacing.md),
-            )
+            CompositionLocalProvider(LocalNavDrawerOpen provides drawerState.isOpen) {
+                DestinationContent(
+                    destination = destination,
+                    preferences = preferences,
+                    onClearBackdrop = onClearBackdrop,
+                    modifier =
+                        Modifier
+                            .fillMaxSize()
+                            .offset {
+                                offset
+                            }.padding(start = closedDrawerWidth + Spacing.sm, end = Spacing.md),
+                )
+            }
             if (preferences.appPreferences.interfacePreferences.showClock) {
                 TimeDisplay()
             }
@@ -578,7 +595,8 @@ fun NavigationDrawerScope.ProfileIcon(
         modifier = modifier,
         selected = false,
         onClick = onClick,
-        leadingContent = {
+        // The user's picture sits on the right, next to the right-aligned name
+        trailingContent = {
             UserIconCardImage(
                 id = user.id,
                 name = user.name,
@@ -591,14 +609,18 @@ fun NavigationDrawerScope.ProfileIcon(
             Text(
                 text = serverName,
                 maxLines = 1,
+                textAlign = TextAlign.End,
+                modifier = Modifier.fillMaxWidth(),
             )
         },
         interactionSource = interactionSource,
     ) {
         Text(
-            modifier = Modifier,
             text = user.name ?: user.id.toString(),
+            style = MaterialTheme.typography.titleLarge,
             maxLines = 1,
+            textAlign = TextAlign.End,
+            modifier = Modifier.fillMaxWidth(),
         )
     }
 }
@@ -606,7 +628,6 @@ fun NavigationDrawerScope.ProfileIcon(
 @Composable
 fun NavigationDrawerScope.IconNavItem(
     text: String,
-    icon: ImageVector,
     onClick: () -> Unit,
     selected: Boolean,
     drawerOpen: Boolean,
@@ -619,31 +640,20 @@ fun NavigationDrawerScope.IconNavItem(
         modifier = modifier,
         selected = false,
         onClick = onClick,
-        leadingContent = {
-            val color = navItemColor(selected, focused, drawerOpen)
-            Icon(
-                icon,
-                contentDescription = null,
-                tint = color,
-                modifier = Modifier.size(DrawerIconSize),
-            )
-        },
         supportingContent =
             subtext?.let {
                 {
                     Text(
                         text = it,
                         maxLines = 1,
+                        textAlign = TextAlign.End,
+                        modifier = Modifier.fillMaxWidth(),
                     )
                 }
             },
         interactionSource = interactionSource,
     ) {
-        Text(
-            modifier = Modifier,
-            text = text,
-            maxLines = 1,
-        )
+        NavItemText(text, navItemColor(selected, focused, drawerOpen))
     }
 }
 
@@ -659,36 +669,6 @@ fun NavigationDrawerScope.NavItem(
     containerColor: Color = Color.Unspecified,
 ) {
     val context = LocalContext.current
-    val useFont = library !is ServerNavDrawerItem || library.type != CollectionType.LIVETV
-    val icon =
-        remember(library) {
-            when (library) {
-                NavDrawerItem.Favorites -> {
-                    R.string.fa_heart
-                }
-
-                NavDrawerItem.More -> {
-                    R.string.fa_ellipsis
-                }
-
-                NavDrawerItem.Discover -> {
-                    R.string.fa_magnifying_glass_plus
-                }
-
-                is ServerNavDrawerItem -> {
-                    when (library.type) {
-                        CollectionType.MOVIES -> R.string.fa_film
-                        CollectionType.TVSHOWS -> R.string.fa_tv
-                        CollectionType.HOMEVIDEOS -> R.string.fa_video
-                        CollectionType.LIVETV -> R.drawable.gf_dvr
-                        CollectionType.MUSIC -> R.string.fa_music
-                        CollectionType.BOXSETS -> R.string.fa_open_folder
-                        CollectionType.PLAYLISTS -> R.string.fa_list_ul
-                        else -> R.string.fa_film
-                    }
-                }
-            }
-        }
     val focused by interactionSource.collectIsFocusedAsState()
     NavigationDrawerItem(
         modifier = modifier,
@@ -698,28 +678,6 @@ fun NavigationDrawerScope.NavItem(
             NavigationDrawerItemDefaults.colors(
                 containerColor = containerColor,
             ),
-        leadingContent = {
-            val color = navItemColor(selected, focused, drawerOpen)
-            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                if (useFont) {
-                    Text(
-                        text = stringResource(icon),
-                        textAlign = TextAlign.Center,
-                        fontSize = 16.sp,
-                        fontFamily = FontAwesome,
-                        color = color,
-                        modifier = Modifier,
-                    )
-                } else {
-                    Icon(
-                        painter = painterResource(icon),
-                        contentDescription = null,
-                        tint = color,
-                        modifier = Modifier.size(DrawerIconSize),
-                    )
-                }
-            }
-        },
         trailingContent =
             if (library is NavDrawerItem.More) {
                 {
@@ -733,13 +691,32 @@ fun NavigationDrawerScope.NavItem(
             },
         interactionSource = interactionSource,
     ) {
-        Text(
-            modifier = Modifier,
-            text = library.name(context),
-            maxLines = 1,
-        )
+        NavItemText(library.name(context), navItemColor(selected, focused, drawerOpen))
     }
 }
+
+/**
+ * A nav drawer item's name: right-aligned, coloured to show whether it is the current page
+ */
+@Composable
+private fun NavItemText(
+    text: String,
+    color: Color,
+) {
+    Text(
+        text = text,
+        color = color,
+        style = MaterialTheme.typography.titleLarge,
+        maxLines = 1,
+        textAlign = TextAlign.End,
+        modifier = Modifier.fillMaxWidth(),
+    )
+}
+
+/**
+ * Whether the nav drawer is open, for pages that should hold back from taking focus while it is
+ */
+val LocalNavDrawerOpen = compositionLocalOf { false }
 
 @Composable
 @ReadOnlyComposable
