@@ -156,7 +156,7 @@ fun Backdrop(
     // Brightest a glow colour may be, 0 to 1 (1 = no cap). Brighter colours are darkened down
     // to this, keeping their hue and saturation, so a white or yellow poster cannot wash the
     // background out
-    val glowMaxBrightness = 0.7f
+    val glowMaxBrightness = 0.9f
     // Darkest a glow colour may be, 0 to 1 (0 = no cap). Darker colours are lifted up to this,
     // keeping their hue and saturation, so a near-black poster still gives a hint of colour
     val glowMinBrightness = 0.05f
@@ -290,31 +290,32 @@ fun Backdrop(
                             // right reflection
                             Tile(
                                 reflects = ImageEdge.RIGHT,
-                                left = 0.72f,
-                                top = -0.02f,
-                                skewY = -5f,
-                                width = 0.4f,
+                                left = 0.66f,
+                                top = -0.3f,
+                                skewY = -20f,
+                                width = 0.45f,
                                 height = 0.69f,
-                                stretch = Stretch(StretchEdge.LEFT, 4f),
+                                stretch = Stretch(StretchEdge.LEFT, 5f),
                                 flip = true,
-                                resolution = 240,
-                                smooth = 0.005f,
+                                flipVertical = false,
+                                resolution = 340,
+                                smooth = 0.0005f,
                                 feather = Feather(0f, 0.01f, 0.1f, 0.1f),
-                                layers = listOf(BlendMode.Softlight to 1f),
+                                layers = listOf(BlendMode.Overlay to 1f),
                             ),
                             Tile(
                                 reflects = ImageEdge.RIGHT,
-                                left = 0.803f,
-                                top = 0.3f,
+                                left = 0.703f,
+                                top = 0.26f,
                                 width = 0.4f,
                                 height = 0.5f,
                                 stretch = Stretch(StretchEdge.LEFT, 4f),
                                 flip = true,
                                 flipVertical = false,
                                 resolution = 240,
-                                smooth = 0.005f,
+                                smooth = 0.02f,
                                 feather = Feather(0.14f, 0.01f, 0.5f, 0.1f),
-                                layers = listOf(BlendMode.SrcOver to 0.5f),
+                                layers = listOf(BlendMode.SrcOver to 0.9f),
                             ),
                             // left reflection
                             Tile(
@@ -369,9 +370,9 @@ fun Backdrop(
                                 stretch = Stretch(StretchEdge.BOTTOM, 0.9f),
                                 flipVertical = true,
                                 resolution = 50,
-                                smooth = 0f,
+                                smooth = 0.01f,
                                 feather = Feather(0.32f, 0.2f, 0.12f, 0.2f),
-                                layers = listOf(BlendMode.SrcOver to 1f),
+                                layers = listOf(BlendMode.Overlay to 1f),
                             ),
                             Tile(
                                 reflects = ImageEdge.LEFT,
@@ -384,9 +385,9 @@ fun Backdrop(
                                 stretch = Stretch(StretchEdge.BOTTOM, 0.9f),
                                 flipVertical = false,
                                 resolution = 50,
-                                smooth = 0f,
+                                smooth = 0.01f,
                                 feather = Feather(0.32f, 0.2f, 0.12f, 0.2f),
-                                layers = listOf(BlendMode.SrcOver to 0.6f),
+                                layers = listOf(BlendMode.Overlay to 0.8f),
                             ),
                             // bottom reflection
                             Tile(
@@ -540,10 +541,10 @@ fun Backdrop(
                         listOf(
                             0f to 0f,
                             0.27f to 0f,
-                            0.65f to 0.55f,
-                            1f to 0.88f,
+                            0.65f to 0.5f,
+                            1f to 0.7f,
                         ),
-                    blendMode = BlendMode.Multiply,
+                    blendMode = BlendMode.Overlay,
                 )
             val vignettes =
                 if (showVignettes) {
@@ -620,7 +621,7 @@ fun Backdrop(
                 val groupSmooth = 0f
                 // How the blurred mirror tiles are blended onto the glows, bottom to top, as blend
                 // mode to opacity, and the opacity of the group as a whole
-                val groupLayers = listOf(BlendMode.Overlay to 1f, BlendMode.Softlight to 0.9f, BlendMode.SrcOver to 0.6f)
+                val groupLayers = listOf(BlendMode.Overlay to 1f, BlendMode.Softlight to 0.9f, BlendMode.SrcOver to 0.9f)
                 val groupOpacity = 1f
                 // Rounded fade around the group: an ellipse on the screen, solid in the middle and
                 // fading out towards its rim on every side; outside it the group is left out.
@@ -630,14 +631,14 @@ fun Backdrop(
                 val groupFade =
                     listOf(
                         0f to 1f,
-                        0.3f to 1f,
-                        0.32f to 0.7f,
-                        0.48f to 0.05f,
-                        1f to 0.05f,
+                        0.28f to 0.9f,
+                        0.32f to 0.67f,
+                        0.6f to 0.2f,
+                        1f to 0.1f,
                     )
                 // Centre of the ellipse, as shares of the screen's width and height, measured from
                 // the inner edge (the side with the rows and text)
-                val groupFadeCenterX = 0.65f
+                val groupFadeCenterX = 1f
                 val groupFadeCenterY = 0.3f
                 // Size of the ellipse from its centre to its rim, as shares of the screen's width
                 // and height. 0.5f, 0.5f with the centre in the middle just touches the screen's edges
@@ -1139,9 +1140,9 @@ fun Backdrop(
             // Film grain over everything: the baked background and the sharp image.
             // It has to be drawn at full screen resolution, so it is its own layer on top and
             // cannot be part of the small baked image
-            val grainOpacity = 0.4f // strength: 0 = none
-            val grainSize = 0.25f // size of one grain in screen pixels: higher = coarser
-            val grainContrast = 0.2f // range of greys: 0 = all neutral (no grain), 1 = black to white
+            val grainOpacity = 0.3f // strength: 0 = none
+            val grainSize = 0.28f // size of one grain in screen pixels: higher = coarser
+            val grainContrast = 0.35f // range of greys: 0 = all neutral (no grain), 1 = black to white
             // how much the grain gathers into uneven patches: 0 = evenly fine, 1 = all patches
             val grainClumping = 0.45f
             val grainBlendMode = BlendMode.Softlight
