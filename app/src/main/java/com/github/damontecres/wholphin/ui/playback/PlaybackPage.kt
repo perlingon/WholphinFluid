@@ -66,6 +66,7 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.ui.SubtitleView
 import androidx.media3.ui.compose.PlayerSurface
 import androidx.media3.ui.compose.SURFACE_TYPE_SURFACE_VIEW
+import androidx.media3.ui.compose.SURFACE_TYPE_TEXTURE_VIEW
 import androidx.media3.ui.compose.modifiers.resizeWithContentScale
 import androidx.media3.ui.compose.state.rememberPlayPauseButtonState
 import androidx.media3.ui.compose.state.rememberPresentationState
@@ -226,13 +227,13 @@ fun PlaybackPageContent(
             showBuffering = false
         }
     }
+    // Skip while the player is shrunk for "next up", so it can't spill over the UI
+    val activeVideoTransform =
+        if (videoAdjustEnabled && state.nextUp == null) videoTransform else VideoTransform.IDENTITY
     val scaledModifier =
         Modifier
             .resizeWithContentScale(contentScale, presentationState.videoSizeDp)
-            .videoTransform(
-                // Skip while the player is shrunk for "next up", so it can't spill over the UI
-                if (videoAdjustEnabled && state.nextUp == null) videoTransform else VideoTransform.IDENTITY,
-            )
+            .videoTransform(activeVideoTransform)
     val focusRequester = remember { FocusRequester() }
     val playPauseState = rememberPlayPauseButtonState(player)
     val seekBarState = rememberSeekBarState(player, scope)
@@ -392,7 +393,12 @@ fun PlaybackPageContent(
             var playerSurfaceSize by remember { mutableStateOf(IntSize.Zero) }
             PlayerSurface(
                 player = player,
-                surfaceType = SURFACE_TYPE_SURFACE_VIEW,
+                // A SurfaceView goes to the hardware video plane, which many TV boxes clamp to the
+                // screen, so a zoomed picture gets squeezed instead of cropped. A TextureView is
+                // drawn by the GPU like any view and crops correctly, at the cost of HDR and some
+                // GPU time, so use it only while the picture is zoomed, stretched or shifted
+                surfaceType =
+                    if (activeVideoTransform.isIdentity) SURFACE_TYPE_SURFACE_VIEW else SURFACE_TYPE_TEXTURE_VIEW,
                 modifier =
                     scaledModifier.onSizeChanged {
                         playerSurfaceSize = it
