@@ -1052,4 +1052,7 @@
     <string name="adjust_video">Adjust video</string>
     <string name="subtitles_off">Off</string>
     <string name="in_collection">In collection</string>
+    <string name="library_movies">Movies</string>
+    <string name="library_shows">Shows</string>
+    <string name="library_music">Music</string>
 </resources>

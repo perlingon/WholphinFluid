@@ -724,4 +724,7 @@
     <string name="adjust_video">Justera video</string>
     <string name="subtitles_off">Av</string>
     <string name="in_collection">Finns i samling</string>
+    <string name="library_movies">Film</string>
+    <string name="library_shows">Serier</string>
+    <string name="library_music">Musik</string>
 </resources>
