@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
@@ -69,6 +70,7 @@ import com.github.damontecres.wholphin.preferences.BackdropStyle
 import com.github.damontecres.wholphin.services.BackdropResult
 import com.github.damontecres.wholphin.services.ExtractedColors
 import com.github.damontecres.wholphin.ui.CrossFadeFactory
+import com.github.damontecres.wholphin.ui.components.BackdropGlows
 import com.github.damontecres.wholphin.ui.components.BackdropImageAway
 import com.github.damontecres.wholphin.ui.theme.FluidLayout
 import com.github.damontecres.wholphin.ui.theme.LocalFluidTheme
@@ -192,6 +194,12 @@ fun Backdrop(
     val glowPrimary = animPrimary.intensified()
     val glowSecondary = animSecondary.intensified()
     val glowTertiary = animTertiary.intensified()
+    // Shared with the row panel on details pages, which draws a darker copy of the glows
+    SideEffect {
+        BackdropGlows.primary = if (showGlows) glowPrimary else Color.Transparent
+        BackdropGlows.secondary = if (showGlows) glowSecondary else Color.Transparent
+        BackdropGlows.tertiary = if (showGlows) glowTertiary else Color.Transparent
+    }
 
     // Paints the theme background and the colour glows in the given colours. Kept as a function
     // so the same drawing serves the live layers and the baked background image
