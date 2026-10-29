@@ -207,10 +207,18 @@ fun SeriesOverviewContent(
                                 .fillMaxWidth(),
                     )
                 }
+                // Placed and sized like the title or logo on a movie's page. Without the season
+                // tabs above it, it needs the header's own top gap (the page already has Spacing.md)
                 TitleOrLogo(
                     item = series,
                     showLogo = preferences.appPreferences.interfacePreferences.showLogos,
-                    modifier = Modifier.padding(start = HeaderUtils.startPadding),
+                    modifier =
+                        Modifier
+                            .ifElse(
+                                seasonsInDrawer,
+                                Modifier.padding(top = HeaderUtils.topPadding - Spacing.md),
+                            ).fillMaxWidth(.75f)
+                            .padding(start = HeaderUtils.startPadding),
                 )
                 FocusedEpisodeHeader(
                     preferences = preferences,
