@@ -39,6 +39,7 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.CardDefaults
 import com.github.damontecres.wholphin.R
@@ -48,9 +49,12 @@ import com.github.damontecres.wholphin.data.model.BaseItem
 import com.github.damontecres.wholphin.data.model.Person
 import com.github.damontecres.wholphin.preferences.UserPreferences
 import com.github.damontecres.wholphin.ui.AspectRatios
+import com.github.damontecres.wholphin.ui.Cards
 import com.github.damontecres.wholphin.ui.cards.BannerCard
 import com.github.damontecres.wholphin.ui.cards.ExtrasRow
+import com.github.damontecres.wholphin.ui.cards.ItemRow
 import com.github.damontecres.wholphin.ui.cards.PersonRow
+import com.github.damontecres.wholphin.ui.cards.SeasonCard
 import com.github.damontecres.wholphin.ui.components.ErrorMessage
 import com.github.damontecres.wholphin.ui.components.HeaderUtils
 import com.github.damontecres.wholphin.ui.components.InCollectionsRow
@@ -105,6 +109,9 @@ fun SeriesOverviewContent(
     onClickExtra: (Int, ExtrasItem) -> Unit,
     onChooseVersion: (BaseItem, MediaSourceInfo) -> Unit,
     goToSeries: () -> Unit,
+    similar: List<BaseItem>,
+    onClickSimilar: (BaseItem) -> Unit,
+    onLongClickSimilar: (BaseItem) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val scope = rememberCoroutineScope()
@@ -424,6 +431,26 @@ fun SeriesOverviewContent(
                         Modifier
                             .fillMaxWidth()
                             .focusRequester(extrasRowFocusRequester),
+                )
+            }
+            if (similar.isNotEmpty()) {
+                ItemRow(
+                    title = stringResource(R.string.more_like_this),
+                    items = similar,
+                    onClickItem = { _, item -> onClickSimilar(item) },
+                    onLongClickItem = { _, item -> onLongClickSimilar(item) },
+                    cardContent = { _, item, mod, onClick, onLongClick ->
+                        SeasonCard(
+                            item = item,
+                            onClick = onClick,
+                            onLongClick = onLongClick,
+                            modifier = mod,
+                            showImageOverlay = true,
+                            imageHeight = Cards.height2x3,
+                            imageWidth = Dp.Unspecified,
+                        )
+                    },
+                    modifier = Modifier.fillMaxWidth(),
                 )
             }
             // The collections the series is in, last on the page

@@ -230,6 +230,23 @@ class SeriesViewModel
                     )
                 }
 
+                // Similar series, on the series page and the season overview
+                if (state.value.similar.isEmpty()) {
+                    viewModelScope.launchIO {
+                        val similar =
+                            api.libraryApi
+                                .getSimilarItems(
+                                    GetSimilarItemsRequest(
+                                        userId = serverRepository.currentUser?.id,
+                                        itemId = seriesId,
+                                        fields = ItemRowFields,
+                                        limit = 25,
+                                    ),
+                                ).content.items
+                                .map { BaseItem(it, true) }
+                        _state.update { it.copy(similar = similar) }
+                    }
+                }
                 if (seriesPageType == SeriesPageType.DETAILS) {
                     viewModelScope.launchIO {
                         trailerService.getLocalTrailers(series).letNotEmpty { localTrailers ->
@@ -243,22 +260,6 @@ class SeriesViewModel
                     viewModelScope.launchIO {
                         val extras = extrasService.getExtras(series.id)
                         _state.update { it.copy(extras = extras) }
-                    }
-                    if (state.value.similar.isEmpty()) {
-                        viewModelScope.launchIO {
-                            val similar =
-                                api.libraryApi
-                                    .getSimilarItems(
-                                        GetSimilarItemsRequest(
-                                            userId = serverRepository.currentUser?.id,
-                                            itemId = seriesId,
-                                            fields = ItemRowFields,
-                                            limit = 25,
-                                        ),
-                                    ).content.items
-                                    .map { BaseItem(it, true) }
-                            _state.update { it.copy(similar = similar) }
-                        }
                     }
                     viewModelScope.launchIO {
                         val results = seerrService.similar(series).orEmpty()
