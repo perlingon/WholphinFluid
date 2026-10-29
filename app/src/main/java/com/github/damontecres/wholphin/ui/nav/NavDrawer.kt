@@ -863,6 +863,14 @@ internal fun NavItemText(
     showBackChevron: Boolean = false,
     style: TextStyle = MaterialTheme.typography.titleLarge,
 ) {
+    // The chevrons are sized for titleLarge, and scale with a smaller or larger text
+    val baseFontSize = MaterialTheme.typography.titleLarge.fontSize
+    val chevronSize =
+        if (style.fontSize.isSp && baseFontSize.isSp) {
+            NavItemChevronSize * (style.fontSize.value / baseFontSize.value)
+        } else {
+            NavItemChevronSize
+        }
     // A chevron after the name shows that the item opens a submenu; one before it (pointing left)
     // that it goes back out of one
     Row(
@@ -877,7 +885,7 @@ internal fun NavItemText(
                 tint = color,
                 modifier =
                     Modifier
-                        .size(NavItemChevronSize)
+                        .size(chevronSize)
                         .rotate(180f),
             )
         }
@@ -896,7 +904,7 @@ internal fun NavItemText(
                 painter = painterResource(R.drawable.ic_chevron_right),
                 contentDescription = null,
                 tint = color,
-                modifier = Modifier.size(NavItemChevronSize),
+                modifier = Modifier.size(chevronSize),
             )
         }
     }
@@ -1016,7 +1024,7 @@ private fun NavigationDrawerScope.DrawerSubmenuColumn(
                     title,
                     navItemColor(false, headerFocused, drawerOpen),
                     showBackChevron = submenu.heading == null,
-                    style = MaterialTheme.typography.titleSmall,
+                    style = MaterialTheme.typography.titleMedium,
                 )
             }
         }
