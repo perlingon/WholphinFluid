@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.relocation.BringIntoViewRequester
@@ -53,6 +54,8 @@ import com.github.damontecres.wholphin.ui.components.InCollectionsRow
 import com.github.damontecres.wholphin.ui.components.LoadingPage
 import com.github.damontecres.wholphin.ui.components.Optional
 import com.github.damontecres.wholphin.ui.components.PersonContextActions
+import com.github.damontecres.wholphin.ui.components.bleedToScreenEdges
+import com.github.damontecres.wholphin.ui.components.pageSidePadding
 import com.github.damontecres.wholphin.ui.data.AddPlaylistViewModel
 import com.github.damontecres.wholphin.ui.data.ChooseVersionParams
 import com.github.damontecres.wholphin.ui.data.ItemDetailsDialog
@@ -63,6 +66,7 @@ import com.github.damontecres.wholphin.ui.discover.DiscoverRowData
 import com.github.damontecres.wholphin.ui.letNotEmpty
 import com.github.damontecres.wholphin.ui.nav.Destination
 import com.github.damontecres.wholphin.ui.rememberInt
+import com.github.damontecres.wholphin.ui.theme.FluidLayout
 import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.ui.util.ResStringProvider
 import com.github.damontecres.wholphin.util.DataLoadingState
@@ -327,14 +331,18 @@ fun MovieDetailsContent(
             verticalArrangement = Arrangement.spacedBy(Spacing.md),
             // The rows' dark background reaches the bottom of the screen
             contentPadding = PaddingValues(bottom = 0.dp),
-            modifier = Modifier.fillMaxSize(),
+            // Full width, so the row panel reaches the screen's edges
+            modifier = Modifier.fillMaxSize().bleedToScreenEdges(),
         ) {
             item {
+                // Logo, details and buttons are never taller than the sharp backdrop image
                 Column(
                     verticalArrangement = Arrangement.spacedBy(0.dp),
                     modifier =
                         Modifier
                             .fillMaxWidth()
+                            .pageSidePadding()
+                            .heightIn(max = FluidLayout.backdropImageHeight())
                             .bringIntoViewRequester(bringIntoViewRequester),
                 ) {
                     MovieDetailsHeader(
@@ -346,6 +354,8 @@ fun MovieDetailsContent(
                         modifier =
                             Modifier
                                 .fillMaxWidth()
+                                // Gives way to the buttons when there isn't room for both
+                                .weight(1f, fill = false)
                                 .padding(top = HeaderUtils.topPadding, bottom = Spacing.md),
                     )
                     ExpandablePlayButtons(
