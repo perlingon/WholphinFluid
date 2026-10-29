@@ -76,6 +76,20 @@ class ImageUrlService
                             fillHeight = fillHeight,
                             tag = backdropTags.first(),
                         )
+                    } else if (itemType == BaseItemKind.EPISODE &&
+                        parentBackdropId != null &&
+                        parentBackdropId != seriesId &&
+                        parentBackdropTags.isNotEmpty()
+                    ) {
+                        // The episode's season has a backdrop of its own (Jellyfin points to the
+                        // closest parent with one)
+                        getItemImageUrl(
+                            itemId = parentBackdropId,
+                            imageType = imageType,
+                            fillWidth = fillWidth,
+                            fillHeight = fillHeight,
+                            tag = parentBackdropTags.first(),
+                        )
                     } else if (seriesId != null && (itemType == BaseItemKind.EPISODE || itemType == BaseItemKind.SEASON)) {
                         seriesBackdropUrl(
                             seriesId = seriesId,

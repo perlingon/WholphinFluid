@@ -238,6 +238,8 @@ class SeriesViewModel
                         trailers = remoteTrailers,
                     )
                 }
+                // With the seasons known, the season overview can use the season's own backdrop
+                if (seriesPageType == SeriesPageType.OVERVIEW) submitBackdrop(series)
 
                 // Similar series, on the series page and the season overview
                 if (state.value.similar.isEmpty()) {
@@ -312,7 +314,16 @@ class SeriesViewModel
 
         private suspend fun submitBackdrop(series: BaseItem) {
             if (seriesPageType == SeriesPageType.OVERVIEW) {
-                backdropService.submitSeason(series, currentSeasonNumber)
+                // The season's own backdrop if it has one, otherwise one of the series'
+                val season =
+                    state.value.seasons
+                        .firstOrNull { it?.indexNumber == currentSeasonNumber }
+                        ?.takeIf { !it.data.backdropImageTags.isNullOrEmpty() }
+                if (season != null) {
+                    backdropService.submit(season)
+                } else {
+                    backdropService.submitSeason(series, currentSeasonNumber)
+                }
             } else {
                 backdropService.submit(series)
             }
