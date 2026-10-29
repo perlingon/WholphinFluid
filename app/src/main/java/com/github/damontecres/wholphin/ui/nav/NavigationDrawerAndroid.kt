@@ -157,6 +157,9 @@ internal class NavigationDrawerScopeImpl(
 // Space a closed drawer takes up beside the page: none, since a closed drawer is hidden
 internal val CollapsedDrawerItemWidth = 0.dp
 internal val ExpandedDrawerItemWidth = 224.dp
+
+// Space above the drawer's items: half the drawer's width (224dp)
+internal val DrawerTopPadding = 112.dp
 internal val DrawerIconSize = 24.dp
 internal val DrawerIconPadding = (ListItemDefaults.IconSize - DrawerIconSize) / 2
 internal val DrawerAnimationStiffness = Spring.StiffnessMedium

@@ -447,6 +447,7 @@ fun NavDrawer(
                                 .graphicsLayer { alpha = 1f - (1f - SubmenuParentAlpha) * submenuAlpha }
                                 .width(ExpandedDrawerItemWidth)
                                 .fillMaxHeight()
+                                .padding(top = DrawerTopPadding)
                                 .onFocusChanged { topHasFocus = it.hasFocus }
                                 .onPreviewKeyEvent {
                                     // Right from the top level goes to the submenu, the page is beyond it
@@ -801,6 +802,7 @@ private fun NavigationDrawerScope.DrawerSubmenuColumn(
             modifier
                 .width(SubmenuDrawerWidth)
                 .fillMaxHeight()
+                .padding(top = DrawerTopPadding)
                 .onPreviewKeyEvent {
                     // Left goes back up to the top level, at the current page's item
                     it.type == KeyEventType.KeyDown && it.key == Key.DirectionLeft && onLeft()
