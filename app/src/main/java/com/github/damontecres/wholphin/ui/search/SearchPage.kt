@@ -74,6 +74,7 @@ import com.github.damontecres.wholphin.ui.detail.livetv.ProgramDialog
 import com.github.damontecres.wholphin.ui.nav.Destination
 import com.github.damontecres.wholphin.ui.nav.rememberDrawerSubmenu
 import com.github.damontecres.wholphin.ui.onMain
+import com.github.damontecres.wholphin.ui.theme.FluidLayout
 import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.ui.titleStringRes
 import com.github.damontecres.wholphin.ui.tryRequestFocus
@@ -801,15 +802,13 @@ fun SearchResultPlaceholder(
         verticalArrangement = Arrangement.spacedBy(Spacing.sm),
         modifier = modifier.padding(bottom = Spacing.xl),
     ) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.titleLarge,
-            color = MaterialTheme.colorScheme.onBackground,
-        )
+        // Like a row's title, and the row's content, at the left margin
+        ItemRowTitle(title)
         Text(
             text = message,
             style = MaterialTheme.typography.titleMedium,
             color = messageColor,
+            modifier = Modifier.padding(start = FluidLayout.headlineInset()),
         )
     }
 }
