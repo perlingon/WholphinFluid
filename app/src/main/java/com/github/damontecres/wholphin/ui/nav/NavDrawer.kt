@@ -305,6 +305,7 @@ fun NavDrawer(
     openOnStart: Boolean = false,
     onOpenedOnStart: () -> Unit = {},
     hidden: Boolean = false,
+    onTopMenuFocusChange: (Boolean) -> Unit = {},
     viewModel: NavDrawerViewModel =
         hiltViewModel(
             LocalView.current.findViewTreeViewModelStoreOwner()!!,
@@ -753,7 +754,10 @@ fun NavDrawer(
                         viewModel.setIndex(SEARCH_INDEX)
                         viewModel.navigationManager.navigateToFromDrawer(Destination.Search(query))
                     },
-                    onFocusChange = { topMenuHasFocus = it },
+                    onFocusChange = {
+                        topMenuHasFocus = it
+                        onTopMenuFocusChange(it)
+                    },
                     modifier =
                         Modifier
                             .align(Alignment.TopCenter)
