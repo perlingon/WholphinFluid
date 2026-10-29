@@ -657,12 +657,15 @@ fun NavDrawer(
                             drawerOpen = isOpen,
                             focusable = (!topHasFocus && !settingsHasFocus) || enteringSubmenu,
                             spacedBy = spacedBy,
-                            // Heading: the page's own, or the name of the drawer item it opens from
+                            // Heading: the name of the drawer item the page opens from
                             title =
-                                submenu.title
-                                    ?: (previewItem.takeIf { previewSubmenu != null } ?: serviceState.items.getOrNull(selectedIndex))
+                                if (submenu.showHeading) {
+                                    (previewItem.takeIf { previewSubmenu != null } ?: serviceState.items.getOrNull(selectedIndex))
                                         ?.name(context)
-                                    ?: if (selectedIndex == SEARCH_INDEX) stringResource(R.string.search) else "",
+                                        ?: if (selectedIndex == SEARCH_INDEX) stringResource(R.string.search) else ""
+                                } else {
+                                    null
+                                },
                             onClick = { index ->
                                 submenu.onSelect(index)
                                 // Move on into the page, once the tab's content can take focus
@@ -966,7 +969,7 @@ private fun NavigationDrawerScope.DrawerSubmenuColumn(
     drawerOpen: Boolean,
     focusable: Boolean,
     spacedBy: Dp,
-    title: String,
+    title: String?,
     onClick: (Int) -> Unit,
     onLeft: () -> Boolean,
     modifier: Modifier = Modifier,
@@ -995,22 +998,24 @@ private fun NavigationDrawerScope.DrawerSubmenuColumn(
     ) {
         // The heading: the name of what the tabs belong to, with a back chevron. Choosing it goes
         // back up to the top level, like left does
-        val headerInteractionSource = remember { MutableInteractionSource() }
-        val headerFocused by headerInteractionSource.collectIsFocusedAsState()
-        NavigationDrawerItem(
-            selected = false,
-            onClick = { onLeft() },
-            interactionSource = headerInteractionSource,
-            modifier =
-                Modifier
-                    .padding(bottom = Spacing.md)
-                    .focusProperties { canFocus = focusable },
-        ) {
-            NavItemText(
-                title,
-                navItemColor(false, headerFocused, drawerOpen),
-                showBackChevron = true,
-            )
+        if (title != null) {
+            val headerInteractionSource = remember { MutableInteractionSource() }
+            val headerFocused by headerInteractionSource.collectIsFocusedAsState()
+            NavigationDrawerItem(
+                selected = false,
+                onClick = { onLeft() },
+                interactionSource = headerInteractionSource,
+                modifier =
+                    Modifier
+                        .padding(bottom = Spacing.md)
+                        .focusProperties { canFocus = focusable },
+            ) {
+                NavItemText(
+                    title,
+                    navItemColor(false, headerFocused, drawerOpen),
+                    showBackChevron = true,
+                )
+            }
         }
         submenu.tabs.forEachIndexed { index, tab ->
             val interactionSource = remember { MutableInteractionSource() }

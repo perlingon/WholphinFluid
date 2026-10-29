@@ -161,7 +161,8 @@ fun SeriesOverviewContent(
             tabs = tabs,
             selectedIndex = selectedTabIndex,
             onSelect = onClickSeason,
-            title = series.title,
+            // The series' logo or title already says whose seasons these are
+            showHeading = false,
         )
 
     Box(
