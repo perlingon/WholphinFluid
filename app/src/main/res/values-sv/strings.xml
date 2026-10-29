@@ -191,6 +191,8 @@
     <string name="hide_debug_info">Dölj felsökningsinfo</string>
     <string name="hide">Dölj</string>
     <string name="home">Hem</string>
+    <string name="spotlight">I fokus</string>
+    <string name="switch_account">Byt konto</string>
     <string name="immediate">Omedelbar</string>
     <string name="intro">Intro</string>
     <string name="jump_letters">#ABCDEFGHIJKLMNOPQRSTUVWXYZÅÄÖ</string>
