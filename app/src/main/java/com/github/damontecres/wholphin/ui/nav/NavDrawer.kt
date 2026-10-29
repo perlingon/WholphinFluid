@@ -379,13 +379,16 @@ fun NavDrawer(
         val fromDrawer = drawerHasFocus
         val enterPage = enterPageOnArrival
         enterPageOnArrival = false
-        releaseToContent = true
+        // Until it's known whether the page has a submenu, it can't take focus from the drawer: if
+        // it did, the drawer would close and then open again for the submenu
+        releaseToContent = !fromDrawer
         if (fromDrawer) {
             var frames = 0
             while (submenuHost.submenu?.destination != destination && frames++ < 10) {
                 withFrameNanos { }
             }
             val arrived = submenuHost.submenu?.takeIf { it.destination == destination }
+            if (arrived == null || enterPage) releaseToContent = true
             if (arrived != null && enterPage) {
                 // A tab was chosen before the page opened: go into it, as when one is clicked. The
                 // chosen item stays shown and focused until then: if focus were dropped, it would
