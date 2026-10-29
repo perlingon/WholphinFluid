@@ -59,6 +59,7 @@
     <string name="hide_debug_info">Hide debug info</string>
     <string name="hide">Hide</string>
     <string name="home">Home</string>
+    <string name="spotlight">Spotlight</string>
     <string name="immediate">Immediate</string>
     <string name="intro">Intro</string>
     <string name="jump_letters">#ABCDEFGHIJKLMNOPQRSTUVWXYZ</string>

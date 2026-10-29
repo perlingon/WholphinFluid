@@ -566,7 +566,7 @@ fun NavDrawer(
                             item {
                                 val interactionSource = remember { MutableInteractionSource() }
                                 IconNavItem(
-                                    text = stringResource(R.string.home),
+                                    text = stringResource(R.string.spotlight),
                                     selected = selectedIndex == HOME_INDEX,
                                     drawerOpen = isOpen,
                                     interactionSource = interactionSource,
