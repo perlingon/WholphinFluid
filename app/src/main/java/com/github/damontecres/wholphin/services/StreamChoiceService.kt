@@ -30,6 +30,7 @@ import org.jellyfin.sdk.model.api.SubtitlePlaybackMode
 import org.jellyfin.sdk.model.api.UserConfiguration
 import org.jellyfin.sdk.model.serializer.toUUIDOrNull
 import timber.log.Timber
+import java.util.Locale
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -140,7 +141,7 @@ class StreamChoiceService
             stc: List<SeriesTrackChoice>?,
             prefs: UserPreferences,
         ): StreamChoiceResult? {
-            val stc = stc ?: getSeriesTrackChoices(item, SeriesTrackChoiceType.SUBTITLE)
+            val stc = stc ?: getSeriesTrackChoices(item, SeriesTrackChoiceType.AUDIO)
             return source.mediaStreams?.letNotEmpty { streams ->
                 val candidates = streams.filter { it.type == MediaStreamType.AUDIO }
                 chooseAudioStream(candidates, itemPlayback, stc, prefs)
@@ -261,6 +262,7 @@ class StreamChoiceService
             itemPlayback: ItemPlayback?,
             stc: List<SeriesTrackChoice>,
             prefs: UserPreferences,
+            fallbackLanguage: String? = deviceLanguage(),
         ): StreamChoiceResult {
             if (itemPlayback != null && itemPlayback.subtitleIndex != TrackIndex.UNSPECIFIED) {
                 if (itemPlayback.subtitleIndex == TrackIndex.DISABLED) {
@@ -350,16 +352,7 @@ class StreamChoiceService
                 val stream =
                     when (subtitleMode) {
                         SubtitlePlaybackMode.ALWAYS -> {
-                            if (subtitleLanguage.isNotNullOrBlank()) {
-                                candidates.firstOrNull {
-                                    // Prefer non-forced first
-                                    !it.isForced && it.language.equalsLangOrUnknown(subtitleLanguage)
-                                } ?: candidates.firstOrNull {
-                                    it.language.equalsLangOrUnknown(subtitleLanguage)
-                                }
-                            } else {
-                                candidates.firstOrNull { !it.isForced } ?: candidates.firstOrNull()
-                            }
+                            chooseAlwaysSubtitle(candidates, subtitleLanguage, fallbackLanguage)
                         }
 
                         SubtitlePlaybackMode.ONLY_FORCED -> {
@@ -445,6 +438,36 @@ class StreamChoiceService
                 Timber.v("Using subtitle STC from %s", first.parentId)
                 result.first().stream with StreamChoiceReason.from(first, result)
             }
+        }
+
+        /**
+         * Picks a track for [SubtitlePlaybackMode.ALWAYS], which should show subtitles whenever there are any.
+         *
+         * Full (not forced/signs) tracks without SDH win first, in the preferred language, then [fallbackLanguage]
+         * (the device's language), then SDH tracks in those languages, then unknown language, then any language.
+         * Within each step SRT beats other text formats, which beat image formats (PGS, VobSub).
+         */
+        private fun chooseAlwaysSubtitle(
+            candidates: List<MediaStream>,
+            subtitleLanguage: String?,
+            fallbackLanguage: String?,
+        ): MediaStream? {
+            val sorted = candidates.sortedBy { it.formatRank }
+            val full = sorted.filter { !isForcedOrSigns(it) }
+            val languages = listOfNotNull(subtitleLanguage, fallbackLanguage).filter { it.isNotUnknown }.distinctBy { it.normalizedLang }
+            val steps =
+                buildList<(MediaStream) -> Boolean> {
+                    languages.forEach { lang -> add { !it.isHearingImpaired && it.language.sameLang(lang) } }
+                    languages.forEach { lang -> add { it.language.sameLang(lang) } }
+                    add { !it.isHearingImpaired && it.language.isUnknown }
+                    add { it.language.isUnknown }
+                    if (languages.isEmpty()) add { !it.isHearingImpaired && it.isDefault }
+                    add { !it.isHearingImpaired }
+                    add { true }
+                }
+            return steps.firstNotNullOfOrNull { step -> full.firstOrNull(step) }
+                ?: languages.firstNotNullOfOrNull { lang -> sorted.firstOrNull { it.language.sameLang(lang) } }
+                ?: sorted.firstOrNull()
         }
 
         /** Finds a forced/signs track: subtitle pref -> audio -> unknown -> null. */
@@ -540,7 +563,63 @@ private val String?.isUnknown: Boolean
 private val String?.isNotUnknown: Boolean
     get() = !this.isUnknown
 
-private fun String?.equalsLangOrUnknown(lang: String): Boolean = equals(lang, ignoreCase = true) || this.isUnknown
+/** ISO 639-2/B codes that Jellyfin may report, mapped to the 639-2/T codes [Locale.getISO3Language] returns */
+private val bibliographicLangCodes =
+    mapOf(
+        "alb" to "sqi",
+        "arm" to "hye",
+        "baq" to "eus",
+        "bur" to "mya",
+        "chi" to "zho",
+        "cze" to "ces",
+        "dut" to "nld",
+        "fre" to "fra",
+        "geo" to "kat",
+        "ger" to "deu",
+        "gre" to "ell",
+        "ice" to "isl",
+        "mac" to "mkd",
+        "may" to "msa",
+        "per" to "fas",
+        "rum" to "ron",
+        "slo" to "slk",
+        "wel" to "cym",
+    )
+
+/** Lowercase ISO 639-2/T code, so "sv"/"swe" and "ger"/"deu" compare equal */
+private val String.normalizedLang: String
+    get() {
+        val lower = lowercase()
+        bibliographicLangCodes[lower]?.let { return it }
+        return if (lower.length == 2) {
+            try {
+                Locale.forLanguageTag(lower).isO3Language.ifBlank { lower }
+            } catch (_: Exception) {
+                lower
+            }
+        } else {
+            lower
+        }
+    }
+
+private fun String?.sameLang(lang: String): Boolean = this != null && this.isNotUnknown && this.normalizedLang == lang.normalizedLang
+
+/** Lower is better: SRT, then other text subtitles, then image based subtitles */
+private val MediaStream.formatRank: Int
+    get() =
+        when {
+            codec.equals("subrip", true) || codec.equals("srt", true) -> 0
+            isTextSubtitleStream -> 1
+            else -> 2
+        }
+
+/** The device's language as an ISO 639-2 code, used as a second choice for subtitles */
+private fun deviceLanguage(): String? =
+    try {
+        Locale.getDefault().isO3Language.takeIf { it.isNotBlank() }
+    } catch (_: Exception) {
+        null
+    }
 
 private fun String?.equalsLangExact(lang: String?): Boolean = this.isNotUnknown && lang.isNotUnknown && equals(lang, ignoreCase = true)
 
