@@ -21,8 +21,9 @@ class DrawerSubmenu(
     val tabs: List<TabDetails>,
     val selectedIndex: Int,
     val onSelect: (Int) -> Unit,
-    // Whether the tabs are headed by the name of the drawer item the page belongs to
-    val showHeading: Boolean = true,
+    // The heading over the tabs and what choosing it does. By default it's the name of the drawer
+    // item the page belongs to, and goes back up to the drawer's top level
+    val heading: DrawerSubmenuHeading? = null,
 )
 
 /**
@@ -67,6 +68,15 @@ class DrawerSubmenuHost {
     }
 }
 
+/**
+ * A page's own heading for its submenu, in place of the drawer item's name
+ */
+@Stable
+class DrawerSubmenuHeading(
+    val label: String,
+    val onClick: () -> Unit,
+)
+
 val LocalDrawerSubmenuHost = staticCompositionLocalOf<DrawerSubmenuHost?> { null }
 
 /**
@@ -86,7 +96,7 @@ fun rememberDrawerSubmenu(
     selectedIndex: Int,
     onSelect: (Int) -> Unit,
     enabled: Boolean = true,
-    showHeading: Boolean = true,
+    heading: DrawerSubmenuHeading? = null,
 ): Boolean {
     val host = LocalDrawerSubmenuHost.current ?: return false
     val destination = LocalDestination.current
@@ -94,7 +104,7 @@ fun rememberDrawerSubmenu(
     val currentOnSelect by rememberUpdatedState(onSelect)
     val select = remember { { index: Int -> currentOnSelect(index) } }
     val show = enabled && selectedIndex in tabs.indices
-    LaunchedEffect(host, show, tabs, selectedIndex, showHeading) {
+    LaunchedEffect(host, show, tabs, selectedIndex, heading?.label) {
         if (show) {
             // A tab chosen in the drawer before the page opened: switch to it first, the submenu is
             // registered once that tab is selected
@@ -103,7 +113,7 @@ fun rememberDrawerSubmenu(
                 select(pending)
                 return@LaunchedEffect
             }
-            host.set(owner, DrawerSubmenu(destination, tabs, selectedIndex, select, showHeading))
+            host.set(owner, DrawerSubmenu(destination, tabs, selectedIndex, select, heading))
         } else {
             host.clear(owner)
         }

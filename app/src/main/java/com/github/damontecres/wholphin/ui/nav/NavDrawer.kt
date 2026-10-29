@@ -659,12 +659,10 @@ fun NavDrawer(
                             spacedBy = spacedBy,
                             // Heading: the name of the drawer item the page opens from
                             title =
-                                if (submenu.showHeading) {
+                                submenu.heading?.label ?: run {
                                     (previewItem.takeIf { previewSubmenu != null } ?: serviceState.items.getOrNull(selectedIndex))
                                         ?.name(context)
                                         ?: if (selectedIndex == SEARCH_INDEX) stringResource(R.string.search) else ""
-                                } else {
-                                    null
                                 },
                             onClick = { index ->
                                 submenu.onSelect(index)
@@ -969,7 +967,7 @@ private fun NavigationDrawerScope.DrawerSubmenuColumn(
     drawerOpen: Boolean,
     focusable: Boolean,
     spacedBy: Dp,
-    title: String?,
+    title: String,
     onClick: (Int) -> Unit,
     onLeft: () -> Boolean,
     modifier: Modifier = Modifier,
@@ -1003,7 +1001,7 @@ private fun NavigationDrawerScope.DrawerSubmenuColumn(
             val headerFocused by headerInteractionSource.collectIsFocusedAsState()
             NavigationDrawerItem(
                 selected = false,
-                onClick = { onLeft() },
+                onClick = { submenu.heading?.onClick?.invoke() ?: onLeft() },
                 interactionSource = headerInteractionSource,
                 modifier =
                     Modifier

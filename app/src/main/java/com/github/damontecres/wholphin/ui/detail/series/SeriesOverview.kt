@@ -197,6 +197,7 @@ fun SeriesOverview(
                 preferences = preferences,
                 series = st.data,
                 seasons = state.seasons,
+                goToSeries = { viewModel.navigateTo(Destination.MediaItem(st.data)) },
                 episodes = state.episodes,
                 chosenStreams = chosenStreams,
                 peopleInEpisode = state.peopleInEpisode.people,

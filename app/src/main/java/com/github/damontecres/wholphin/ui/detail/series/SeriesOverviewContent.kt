@@ -38,6 +38,7 @@ import androidx.compose.ui.focus.focusRestorer
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.CardDefaults
 import com.github.damontecres.wholphin.R
@@ -59,6 +60,7 @@ import com.github.damontecres.wholphin.ui.components.TitleOrLogo
 import com.github.damontecres.wholphin.ui.formatSeasonNumber
 import com.github.damontecres.wholphin.ui.ifElse
 import com.github.damontecres.wholphin.ui.logTab
+import com.github.damontecres.wholphin.ui.nav.DrawerSubmenuHeading
 import com.github.damontecres.wholphin.ui.nav.rememberDrawerSubmenu
 import com.github.damontecres.wholphin.ui.playback.isPlayKeyUp
 import com.github.damontecres.wholphin.ui.rememberInt
@@ -101,6 +103,7 @@ fun SeriesOverviewContent(
     onConfirmDelete: (BaseItem) -> Unit,
     onClickExtra: (Int, ExtrasItem) -> Unit,
     onChooseVersion: (BaseItem, MediaSourceInfo) -> Unit,
+    goToSeries: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val scope = rememberCoroutineScope()
@@ -161,8 +164,9 @@ fun SeriesOverviewContent(
             tabs = tabs,
             selectedIndex = selectedTabIndex,
             onSelect = onClickSeason,
-            // The series' logo or title already says whose seasons these are
-            showHeading = false,
+            // The series' logo or title already says whose seasons these are, so the heading is
+            // a way to the series' own page instead
+            heading = DrawerSubmenuHeading(stringResource(R.string.go_to_series), goToSeries),
         )
 
     Box(
