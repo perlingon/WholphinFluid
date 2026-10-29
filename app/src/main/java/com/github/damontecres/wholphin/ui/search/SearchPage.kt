@@ -422,6 +422,15 @@ fun SearchPage(
                     )
                 }
 
+                // Before any type has its results, one "Searching…" instead of a row for each type
+                isLibraryTab &&
+                    state.includedSearchableTypes.all {
+                        state.results.getOrDefault(it, SearchResult.Searching) is SearchResult.Searching
+                    } &&
+                    (!seerrActive || !state.discoverEnabled || state.seerrResults !is SearchResult.SuccessSeerr) -> {
+                    SearchingMessage(Modifier.fillMaxSize())
+                }
+
                 isLibraryTab -> {
                     LazyColumn(
                         contentPadding =
@@ -570,11 +579,7 @@ fun SearchCombinedResults(
         SearchResult.NoQuery -> {}
 
         SearchResult.Searching -> {
-            SearchResultPlaceholder(
-                title = stringResource(R.string.results),
-                message = stringResource(R.string.searching),
-                modifier = modifier.padding(Spacing.md),
-            )
+            SearchingMessage(modifier)
         }
 
         is SearchResult.Error -> {
@@ -765,6 +770,23 @@ fun SearchRowResult(
                 )
             }
         }
+    }
+}
+
+/**
+ * "Searching…" in the middle of the results area, while a search is running
+ */
+@Composable
+fun SearchingMessage(modifier: Modifier = Modifier) {
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = modifier,
+    ) {
+        Text(
+            text = stringResource(R.string.searching),
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onBackground,
+        )
     }
 }
 
