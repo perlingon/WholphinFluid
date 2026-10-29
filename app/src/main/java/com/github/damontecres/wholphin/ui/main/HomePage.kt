@@ -306,11 +306,18 @@ fun HomePageContent(
     },
     onClickViewMore: (RowColumn, HomeRowLoadingState.Success) -> Unit = { _, _ -> },
 ) {
+    // Before anything on the page has had focus (the nav drawer has it when the app starts), the
+    // header and backdrop show the first item of the first row that has loaded
     val focusedItem =
         remember(homeRows, position) {
-            (homeRows.getOrNull(position.row) as? HomeRowLoadingState.Success)?.items?.getOrNull(
-                position.column,
-            )
+            if (position.row >= 0) {
+                (homeRows.getOrNull(position.row) as? HomeRowLoadingState.Success)?.items?.getOrNull(
+                    position.column,
+                )
+            } else {
+                homeRows
+                    .firstNotNullOfOrNull { (it as? HomeRowLoadingState.Success)?.items?.firstOrNull() }
+            }
         }
 
     val rowFocusRequesters = remember(homeRows.size) { List(homeRows.size) { FocusRequester() } }
