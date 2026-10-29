@@ -66,6 +66,7 @@ import com.github.damontecres.wholphin.preferences.BackdropStyle
 import com.github.damontecres.wholphin.services.BackdropResult
 import com.github.damontecres.wholphin.services.ExtractedColors
 import com.github.damontecres.wholphin.ui.CrossFadeFactory
+import com.github.damontecres.wholphin.ui.components.BackdropImageAway
 import com.github.damontecres.wholphin.ui.theme.FluidLayout
 import com.github.damontecres.wholphin.ui.theme.LocalFluidTheme
 import kotlinx.coroutines.Dispatchers
@@ -956,6 +957,16 @@ fun Backdrop(
                             if (dip.value > 0f) drawRect(color = dipColor, alpha = dip.value.coerceIn(0f, 1f))
                         },
             )
+            // How the sharp image gets out of the way of the rows below a details page's buttons
+            // (see DetailRowsGroup). Tuning values, kept local so Live Edit picks them up
+            val imageAwayDuration = 500 // ms
+            val imageAwayLift = 0.3f // how far it moves up, as a share of its height
+            val imageAway =
+                animateFloatAsState(
+                    if (BackdropImageAway.away) 1f else 0f,
+                    animationSpec = tween(imageAwayDuration),
+                    label = "backdrop_image_away",
+                )
             AsyncImage(
                 model =
                     ImageRequest
@@ -975,11 +986,13 @@ fun Backdrop(
                         .align(Alignment.TopEnd)
                         .padding(end = imageEdgeMargin)
                         .size(imageWidth, imageHeight)
-                        .graphicsLayer(
-                            compositingStrategy = CompositingStrategy.Offscreen,
-                            // Development switch, see BackdropDebug
-                            alpha = if (BackdropDebug.hideImage) 0f else 1f,
-                        ).drawWithContent {
+                        .graphicsLayer {
+                            compositingStrategy = CompositingStrategy.Offscreen
+                            // Out of the way while focus is in the rows below a details page's
+                            // buttons: faded out and moved up. Development switch, see BackdropDebug
+                            alpha = if (BackdropDebug.hideImage) 0f else 1f - imageAway.value
+                            translationY = -imageAway.value * size.height * imageAwayLift
+                        }.drawWithContent {
                             val start = if (isRtl) size.width else 0f
                             drawContent()
                             // The same vignette as on the background, continued over the image.

@@ -63,6 +63,7 @@ import com.github.damontecres.wholphin.ui.components.ContextMenu
 import com.github.damontecres.wholphin.ui.components.ContextMenuActions
 import com.github.damontecres.wholphin.ui.components.ContextMenuDialog
 import com.github.damontecres.wholphin.ui.components.DeleteButton
+import com.github.damontecres.wholphin.ui.components.DetailRowsGroup
 import com.github.damontecres.wholphin.ui.components.DialogItem
 import com.github.damontecres.wholphin.ui.components.DialogParams
 import com.github.damontecres.wholphin.ui.components.ErrorMessage
@@ -376,7 +377,8 @@ fun SeriesDetailsContent(
                     .fillMaxSize(),
         ) {
             LazyColumn(
-                contentPadding = PaddingValues(bottom = 80.dp),
+                // The rows' dark background reaches the bottom of the screen
+                contentPadding = PaddingValues(bottom = 0.dp),
                 verticalArrangement = Arrangement.spacedBy(Spacing.md),
                 modifier = Modifier,
             ) {
@@ -504,183 +506,174 @@ fun SeriesDetailsContent(
                         }
                     }
                 }
-                val singleSeasonEpisodes = (episodes as? EpisodeList.Success)?.episodes?.takeIf { seasons.size == 1 }
-                if (singleSeasonEpisodes != null) {
-                    item {
-                        ItemRow(
-                            title = stringResource(R.string.episodes) + " (${singleSeasonEpisodes.size})",
-                            items = singleSeasonEpisodes,
-                            onClickItem = { index, item ->
-                                position = SEASONS_ROW
-                                onClickItem.invoke(index, item)
-                            },
-                            onLongClickItem = { index, item ->
-                                position = SEASONS_ROW
-                                onLongClickItem.invoke(index, item)
-                            },
-                            modifier =
-                                Modifier
-                                    .fillMaxWidth()
-                                    .focusRequester(focusRequesters[SEASONS_ROW]),
-                            cardContent = @Composable { index, episode, mod, onClick, onLongClick ->
-                                BannerCard(
-                                    name = episode?.name,
-                                    item = episode,
-                                    aspectRatio =
-                                        episode
-                                            ?.aspectRatio
-                                            ?.coerceAtLeast(AspectRatios.FOUR_THREE)
-                                            ?: AspectRatios.WIDE,
-                                    cornerText = episode?.ui?.episodeCornerText,
-                                    played = episode?.data?.userData?.played ?: false,
-                                    playPercent = episode?.data?.userData?.playedPercentage ?: 0.0,
-                                    onClick = onClick,
-                                    onLongClick = onLongClick,
-                                    modifier = mod,
-                                )
-                            },
-                        )
-                    }
-                } else {
-                    item {
-                        ItemRow(
-                            title = stringResource(R.string.tv_seasons) + " (${seasons.size})",
-                            items = seasons,
-                            onClickItem = { index, item ->
-                                position = SEASONS_ROW
-                                onClickItem.invoke(index, item)
-                            },
-                            onLongClickItem = { index, item ->
-                                position = SEASONS_ROW
-                                onLongClickItem.invoke(index, item)
-                            },
-                            modifier =
-                                Modifier
-                                    .fillMaxWidth()
-                                    .focusRequester(focusRequesters[SEASONS_ROW]),
-                            cardContent = @Composable { index, item, mod, onClick, onLongClick ->
-                                SeasonCard(
-                                    item = item,
-                                    onClick = onClick,
-                                    onLongClick = onLongClick,
-                                    imageHeight = Cards.height2x3,
-                                    imageWidth = Dp.Unspecified,
-                                    showImageOverlay = true,
-                                    modifier = mod,
-                                )
-                            },
-                        )
-                    }
-                }
-                if (people.isNotEmpty()) {
-                    item {
-                        PersonRow(
-                            people = people,
-                            onClick = {
-                                position = PEOPLE_ROW
-                                onClickPerson.invoke(it)
-                            },
-                            onLongClick = { index, person ->
-                                position = PEOPLE_ROW
-                                onShowContextMenu.invoke(
-                                    ContextMenu.ForPerson(
-                                        fromLongClick = true,
-                                        person = person,
-                                        actions =
-                                            PersonContextActions(
-                                                navigateTo = actions.navigateTo,
-                                                onClickFavorite = actions.onClickFavorite,
-                                            ),
-                                    ),
-                                )
-                            },
-                            modifier =
-                                Modifier
-                                    .fillMaxWidth()
-                                    .focusRequester(focusRequesters[PEOPLE_ROW]),
-                        )
-                    }
-                }
-                if (extras.isNotEmpty()) {
-                    item {
-                        ExtrasRow(
-                            extras = extras,
-                            onClickItem = { index, item ->
-                                position = EXTRAS_ROW
-                                onClickExtra.invoke(index, item)
-                            },
-                            onLongClickItem = { _, _ -> },
-                            modifier =
-                                Modifier
-                                    .fillMaxWidth()
-                                    .focusRequester(focusRequesters[EXTRAS_ROW]),
-                        )
-                    }
-                }
-                // The collections it's in, below the cast and above similar titles
+                // Everything below the buttons, together on a dark background
                 item {
-                    InCollectionsRow(series.id, Modifier.fillMaxWidth())
-                }
-                if (similar.isNotEmpty()) {
-                    item {
-                        ItemRow(
-                            title = stringResource(R.string.more_like_this),
-                            items = similar,
-                            onClickItem = { index, item ->
-                                position = SIMILAR_ROW
-                                onClickItem.invoke(index, item)
-                            },
-                            onLongClickItem = { index, item ->
-                                position = SIMILAR_ROW
-                                onShowContextMenu.invoke(
-                                    ContextMenu.ForBaseItem(
-                                        fromLongClick = true,
+                    DetailRowsGroup {
+                        val singleSeasonEpisodes = (episodes as? EpisodeList.Success)?.episodes?.takeIf { seasons.size == 1 }
+                        if (singleSeasonEpisodes != null) {
+                            ItemRow(
+                                title = stringResource(R.string.episodes) + " (${singleSeasonEpisodes.size})",
+                                items = singleSeasonEpisodes,
+                                onClickItem = { index, item ->
+                                    position = SEASONS_ROW
+                                    onClickItem.invoke(index, item)
+                                },
+                                onLongClickItem = { index, item ->
+                                    position = SEASONS_ROW
+                                    onLongClickItem.invoke(index, item)
+                                },
+                                modifier =
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .focusRequester(focusRequesters[SEASONS_ROW]),
+                                cardContent = @Composable { index, episode, mod, onClick, onLongClick ->
+                                    BannerCard(
+                                        name = episode?.name,
+                                        item = episode,
+                                        aspectRatio =
+                                            episode
+                                                ?.aspectRatio
+                                                ?.coerceAtLeast(AspectRatios.FOUR_THREE)
+                                                ?: AspectRatios.WIDE,
+                                        cornerText = episode?.ui?.episodeCornerText,
+                                        played = episode?.data?.userData?.played ?: false,
+                                        playPercent = episode?.data?.userData?.playedPercentage ?: 0.0,
+                                        onClick = onClick,
+                                        onLongClick = onLongClick,
+                                        modifier = mod,
+                                    )
+                                },
+                            )
+                        } else {
+                            ItemRow(
+                                title = stringResource(R.string.tv_seasons) + " (${seasons.size})",
+                                items = seasons,
+                                onClickItem = { index, item ->
+                                    position = SEASONS_ROW
+                                    onClickItem.invoke(index, item)
+                                },
+                                onLongClickItem = { index, item ->
+                                    position = SEASONS_ROW
+                                    onLongClickItem.invoke(index, item)
+                                },
+                                modifier =
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .focusRequester(focusRequesters[SEASONS_ROW]),
+                                cardContent = @Composable { index, item, mod, onClick, onLongClick ->
+                                    SeasonCard(
                                         item = item,
-                                        chosenStreams = null,
-                                        showGoTo = true,
-                                        showStreamChoices = false,
-                                        canDelete = false,
-                                        canRemoveContinueWatching = false,
-                                        canRemoveNextUp = false,
-                                        actions = actions,
+                                        onClick = onClick,
+                                        onLongClick = onLongClick,
+                                        imageHeight = Cards.height2x3,
+                                        imageWidth = Dp.Unspecified,
+                                        showImageOverlay = true,
+                                        modifier = mod,
+                                    )
+                                },
+                            )
+                        }
+                        if (people.isNotEmpty()) {
+                            PersonRow(
+                                people = people,
+                                onClick = {
+                                    position = PEOPLE_ROW
+                                    onClickPerson.invoke(it)
+                                },
+                                onLongClick = { index, person ->
+                                    position = PEOPLE_ROW
+                                    onShowContextMenu.invoke(
+                                        ContextMenu.ForPerson(
+                                            fromLongClick = true,
+                                            person = person,
+                                            actions =
+                                                PersonContextActions(
+                                                    navigateTo = actions.navigateTo,
+                                                    onClickFavorite = actions.onClickFavorite,
+                                                ),
+                                        ),
+                                    )
+                                },
+                                modifier =
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .focusRequester(focusRequesters[PEOPLE_ROW]),
+                            )
+                        }
+                        if (extras.isNotEmpty()) {
+                            ExtrasRow(
+                                extras = extras,
+                                onClickItem = { index, item ->
+                                    position = EXTRAS_ROW
+                                    onClickExtra.invoke(index, item)
+                                },
+                                onLongClickItem = { _, _ -> },
+                                modifier =
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .focusRequester(focusRequesters[EXTRAS_ROW]),
+                            )
+                        }
+                        // The collections it's in, below the cast and above similar titles
+                        InCollectionsRow(series.id, Modifier.fillMaxWidth())
+                        if (similar.isNotEmpty()) {
+                            ItemRow(
+                                title = stringResource(R.string.more_like_this),
+                                items = similar,
+                                onClickItem = { index, item ->
+                                    position = SIMILAR_ROW
+                                    onClickItem.invoke(index, item)
+                                },
+                                onLongClickItem = { index, item ->
+                                    position = SIMILAR_ROW
+                                    onShowContextMenu.invoke(
+                                        ContextMenu.ForBaseItem(
+                                            fromLongClick = true,
+                                            item = item,
+                                            chosenStreams = null,
+                                            showGoTo = true,
+                                            showStreamChoices = false,
+                                            canDelete = false,
+                                            canRemoveContinueWatching = false,
+                                            canRemoveNextUp = false,
+                                            actions = actions,
+                                        ),
+                                    )
+                                },
+                                cardContent = { index, item, mod, onClick, onLongClick ->
+                                    SeasonCard(
+                                        item = item,
+                                        onClick = onClick,
+                                        onLongClick = onLongClick,
+                                        modifier = mod,
+                                        showImageOverlay = true,
+                                        imageHeight = Cards.height2x3,
+                                        imageWidth = Dp.Unspecified,
+                                    )
+                                },
+                                modifier =
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .focusRequester(focusRequesters[SIMILAR_ROW]),
+                            )
+                        }
+                        if (discovered.isNotEmpty()) {
+                            DiscoverRow(
+                                row =
+                                    DiscoverRowData(
+                                        ResStringProvider(R.string.discover),
+                                        DataLoadingState.Success(discovered),
+                                        type = DiscoverRequestType.UNKNOWN,
                                     ),
-                                )
-                            },
-                            cardContent = { index, item, mod, onClick, onLongClick ->
-                                SeasonCard(
-                                    item = item,
-                                    onClick = onClick,
-                                    onLongClick = onLongClick,
-                                    modifier = mod,
-                                    showImageOverlay = true,
-                                    imageHeight = Cards.height2x3,
-                                    imageWidth = Dp.Unspecified,
-                                )
-                            },
-                            modifier =
-                                Modifier
-                                    .fillMaxWidth()
-                                    .focusRequester(focusRequesters[SIMILAR_ROW]),
-                        )
-                    }
-                }
-                if (discovered.isNotEmpty()) {
-                    item {
-                        DiscoverRow(
-                            row =
-                                DiscoverRowData(
-                                    ResStringProvider(R.string.discover),
-                                    DataLoadingState.Success(discovered),
-                                    type = DiscoverRequestType.UNKNOWN,
-                                ),
-                            onClickItem = { index: Int, item: DiscoverItem ->
-                                position = DISCOVER_ROW
-                                onClickDiscover.invoke(index, item)
-                            },
-                            onLongClickItem = { _, _ -> },
-                            onCardFocus = {},
-                            focusRequester = focusRequesters[DISCOVER_ROW],
-                        )
+                                onClickItem = { index: Int, item: DiscoverItem ->
+                                    position = DISCOVER_ROW
+                                    onClickDiscover.invoke(index, item)
+                                },
+                                onLongClickItem = { _, _ -> },
+                                onCardFocus = {},
+                                focusRequester = focusRequesters[DISCOVER_ROW],
+                            )
+                        }
                     }
                 }
             }
