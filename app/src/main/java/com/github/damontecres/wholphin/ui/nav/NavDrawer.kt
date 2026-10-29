@@ -30,6 +30,8 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -96,8 +98,8 @@ import com.github.damontecres.wholphin.ui.components.TabDetails
 import com.github.damontecres.wholphin.ui.components.TimeDisplay
 import com.github.damontecres.wholphin.ui.ifElse
 import com.github.damontecres.wholphin.ui.launchDefault
+import com.github.damontecres.wholphin.ui.playback.overlay.PlayerLabelButton
 import com.github.damontecres.wholphin.ui.preferences.PreferenceScreenOption
-import com.github.damontecres.wholphin.ui.spacedByWithFooter
 import com.github.damontecres.wholphin.ui.theme.LocalTheme
 import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.ui.toServerString
@@ -348,6 +350,7 @@ fun NavDrawer(
     val selectedTabFocusRequester = submenu?.firstFocusTab?.tabFocusRequester
     var topHasFocus by remember { mutableStateOf(false) }
     var submenuHasFocus by remember { mutableStateOf(false) }
+    var settingsHasFocus by remember { mutableStateOf(false) }
     // Submenu items can't take focus while the top level has it, so pressing right on the top level
     // doesn't land on them. This lets them while focus is being moved there on purpose
     var enteringSubmenu by remember { mutableStateOf(false) }
@@ -517,8 +520,8 @@ fun NavDrawer(
                                 .offset { IntOffset(-submenuShift.roundToPx(), 0) }
                                 .graphicsLayer { alpha = 1f - (1f - SubmenuParentAlpha) * submenuAlpha }
                                 .width(ExpandedDrawerItemWidth)
-                                .fillMaxHeight()
-                                .padding(top = DrawerTopPadding)
+                                .fillMaxHeight(DrawerHeightFraction)
+                                .align(Alignment.CenterStart)
                                 .onFocusChanged { topHasFocus = it.hasFocus },
                     ) {
                         AnimatedVisibility(
@@ -549,7 +552,7 @@ fun NavDrawer(
                             state = navDrawerListState,
                             contentPadding = PaddingValues(0.dp),
                             horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedByWithFooter(spacedBy),
+                            verticalArrangement = Arrangement.spacedBy(spacedBy),
                             modifier =
                                 Modifier
                                     .focusGroup()
@@ -624,45 +627,13 @@ fun NavDrawer(
                                             ),
                                 )
                             }
-                            // Settings and Switch account sit together at the bottom
-                            item {
-                                Column(
-                                    horizontalAlignment = Alignment.CenterHorizontally,
-                                    verticalArrangement = Arrangement.spacedBy(spacedBy),
-                                ) {
-                                    IconNavItem(
-                                        text = stringResource(R.string.settings),
-                                        selected = false,
-                                        drawerOpen = isOpen,
-                                        interactionSource = remember { MutableInteractionSource() },
-                                        onClick = {
-                                            viewModel.navigationManager.navigateTo(
-                                                Destination.Settings(
-                                                    PreferenceScreenOption.BASIC,
-                                                ),
-                                            )
-                                        },
-                                    )
-                                    IconNavItem(
-                                        text = stringResource(R.string.switch_account),
-                                        selected = false,
-                                        drawerOpen = isOpen,
-                                        interactionSource = remember { MutableInteractionSource() },
-                                        onClick = {
-                                            viewModel.navigateToSetup(
-                                                SetupDestination.UserList(server),
-                                            )
-                                        },
-                                    )
-                                }
-                            }
                         }
                     }
                     if (submenu != null) {
                         DrawerSubmenuColumn(
                             submenu = submenu,
                             drawerOpen = isOpen,
-                            focusable = !topHasFocus || enteringSubmenu,
+                            focusable = (!topHasFocus && !settingsHasFocus) || enteringSubmenu,
                             spacedBy = spacedBy,
                             onClick = { index ->
                                 submenu.onSelect(index)
@@ -682,10 +653,29 @@ fun NavDrawer(
                             onLeft = { focusRequester.tryRequestFocus() },
                             modifier =
                                 Modifier
+                                    .align(Alignment.CenterStart)
                                     .offset { IntOffset((ExpandedDrawerItemWidth - submenuShift).roundToPx(), 0) }
                                     .graphicsLayer { alpha = submenuAlpha }
                                     .onFocusChanged { submenuHasFocus = it.hasFocus },
                         )
+                    }
+                    // Settings isn't in the menus: it's a button in the bottom start corner
+                    PlayerLabelButton(
+                        label = stringResource(R.string.settings),
+                        onClick = {
+                            viewModel.navigationManager.navigateTo(
+                                Destination.Settings(PreferenceScreenOption.BASIC),
+                            )
+                        },
+                        onControllerInteraction = {},
+                        containerColor = Color.Transparent,
+                        modifier =
+                            Modifier
+                                .align(Alignment.BottomStart)
+                                .padding(start = Spacing.md, bottom = Spacing.lg)
+                                .onFocusChanged { settingsHasFocus = it.hasFocus },
+                    ) {
+                        Icon(imageVector = Icons.Default.Settings, contentDescription = null, modifier = it)
                     }
                 }
             }
@@ -935,8 +925,7 @@ private fun NavigationDrawerScope.DrawerSubmenuColumn(
         modifier =
             modifier
                 .width(SubmenuDrawerWidth)
-                .fillMaxHeight()
-                .padding(top = DrawerTopPadding)
+                .fillMaxHeight(DrawerHeightFraction)
                 .onPreviewKeyEvent {
                     // Left goes back up to the top level, at the current page's item
                     it.type == KeyEventType.KeyDown && it.key == Key.DirectionLeft && onLeft()

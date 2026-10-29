@@ -158,8 +158,8 @@ internal class NavigationDrawerScopeImpl(
 internal val CollapsedDrawerItemWidth = 0.dp
 internal val ExpandedDrawerItemWidth = 224.dp
 
-// Space above the drawer's items: half the drawer's width (224dp)
-internal val DrawerTopPadding = 112.dp
+// The menus' height, as a part of the screen's height; they're centred vertically
+internal const val DrawerHeightFraction = .75f
 internal val DrawerIconSize = 24.dp
 internal val DrawerIconPadding = (ListItemDefaults.IconSize - DrawerIconSize) / 2
 internal val DrawerAnimationStiffness = Spring.StiffnessMedium

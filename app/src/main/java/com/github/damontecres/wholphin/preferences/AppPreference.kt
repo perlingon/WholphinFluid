@@ -814,6 +814,13 @@ sealed interface AppPreference<Pref, T> {
                 summary = R.string.customize_home_summary,
             )
 
+        val SwitchAccount =
+            AppClickablePreference<AppPreferences>(
+                title = R.string.switch_account,
+                getter = { },
+                setter = { prefs, _ -> prefs },
+            )
+
         val UserInterfaceLanguage =
             AppClickablePreference<AppPreferences>(
                 title = R.string.user_interface_language,
@@ -1253,6 +1260,7 @@ val basicPreferences =
             title = R.string.profile_specific_settings,
             preferences =
                 listOf(
+                    AppPreference.SwitchAccount,
                     AppPreference.ProtectProfilePreference,
                     AppPreference.CustomizeHome,
                     AppPreference.UserPinnedNavDrawerItems,
