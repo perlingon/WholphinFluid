@@ -272,7 +272,6 @@ class HomeDataService
                     val request =
                         GetLatestMediaRequest(
                             fields = library.itemFields,
-                            imageTypeLimit = 1,
                             parentId = row.parentId,
                             groupItems = true,
                             limit = limit,
