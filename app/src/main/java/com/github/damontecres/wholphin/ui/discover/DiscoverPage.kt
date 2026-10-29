@@ -9,12 +9,12 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.focusRequester
-import com.github.damontecres.wholphin.R
 import com.github.damontecres.wholphin.preferences.UserPreferences
 import com.github.damontecres.wholphin.ui.components.ErrorMessage
 import com.github.damontecres.wholphin.ui.components.TabDetails
 import com.github.damontecres.wholphin.ui.components.TabbedPage
 import com.github.damontecres.wholphin.ui.nav.Destination
+import com.github.damontecres.wholphin.ui.nav.DiscoverTabs
 import com.github.damontecres.wholphin.ui.nav.NavDrawerItem
 import com.github.damontecres.wholphin.util.DiscoverRequestType
 
@@ -24,15 +24,7 @@ fun DiscoverPage(
     modifier: Modifier = Modifier,
 ) {
     val tabs =
-        remember {
-            listOf(
-                TabDetails(R.string.discover),
-                TabDetails(R.string.request),
-                TabDetails(R.string.search),
-                TabDetails(R.string.movies_title),
-                TabDetails(R.string.tv_shows_title),
-            )
-        }
+        remember { DiscoverTabs.map { TabDetails(it) } }
     var showHeader by rememberSaveable { mutableStateOf(true) }
 
     TabbedPage(

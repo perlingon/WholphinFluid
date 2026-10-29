@@ -12,7 +12,6 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.github.damontecres.wholphin.R
 import com.github.damontecres.wholphin.data.ServerRepository
 import com.github.damontecres.wholphin.data.model.BaseItem
 import com.github.damontecres.wholphin.data.model.CollectionFolderFilter
@@ -35,6 +34,7 @@ import com.github.damontecres.wholphin.ui.data.ArtistSortOptions
 import com.github.damontecres.wholphin.ui.data.SongSortOptions
 import com.github.damontecres.wholphin.ui.launchDefault
 import com.github.damontecres.wholphin.ui.nav.Destination
+import com.github.damontecres.wholphin.ui.nav.MusicLibraryTabs
 import com.github.damontecres.wholphin.util.ApiRequestPager
 import com.github.damontecres.wholphin.util.GetItemsRequestHandler
 import dagger.assisted.Assisted
@@ -115,15 +115,7 @@ fun CollectionFolderMusic(
         ),
 ) {
     val tabs =
-        remember {
-            listOf(
-                TabDetails(R.string.recommended),
-                TabDetails(R.string.albums),
-                TabDetails(R.string.artists),
-                TabDetails(R.string.genres),
-                TabDetails(R.string.songs),
-            )
-        }
+        remember { MusicLibraryTabs.map { TabDetails(it) } }
     var showHeader by rememberSaveable { mutableStateOf(true) }
 
     val actions =

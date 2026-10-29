@@ -40,6 +40,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
@@ -91,6 +92,7 @@ import com.github.damontecres.wholphin.services.NavDrawerService
 import com.github.damontecres.wholphin.services.NavigationManager
 import com.github.damontecres.wholphin.services.SetupDestination
 import com.github.damontecres.wholphin.services.SetupNavigationManager
+import com.github.damontecres.wholphin.ui.components.TabDetails
 import com.github.damontecres.wholphin.ui.components.TimeDisplay
 import com.github.damontecres.wholphin.ui.ifElse
 import com.github.damontecres.wholphin.ui.launchDefault
@@ -313,10 +315,37 @@ fun NavDrawer(
     val focusRequester = remember { FocusRequester() }
     var drawerHasFocus by remember { mutableStateOf(false) }
 
+    val serviceState by viewModel.serviceState.collectAsState()
+    val state by viewModel.state.collectAsState()
+
     // The current page's tabs, shown as a second level of the drawer (see DrawerSubmenu)
     val submenuHost = remember { DrawerSubmenuHost() }
-    val submenu = submenuHost.submenu?.takeIf { !hidden && it.destination == destination }
-    val selectedTabFocusRequester = submenu?.let { it.tabs.getOrNull(it.selectedIndex)?.tabFocusRequester }
+    val pageSubmenu = submenuHost.submenu?.takeIf { !hidden && it.destination == destination }
+
+    // Right on an item with a submenu whose page isn't open shows that page's tabs without opening
+    // it. The page opens once one of them is chosen, on that tab
+    var previewIndex by remember { mutableStateOf<Int?>(null) }
+    val previewItem = previewIndex?.let { serviceState.items.getOrNull(it) }
+    val previewTabs = remember(previewItem) { previewItem?.knownTabs?.map { TabDetails(it) } }
+    // After choosing a tab of a page that wasn't open, move on into the page once it has opened
+    var enterPageOnArrival by remember { mutableStateOf(false) }
+    val previewSubmenu =
+        previewIndex?.let { index ->
+            if (hidden || previewItem == null || previewTabs == null) return@let null
+            DrawerSubmenu(
+                destination = null,
+                tabs = previewTabs,
+                selectedIndex = -1,
+                onSelect = { tab ->
+                    previewItem.itemDestination?.let { submenuHost.choosePendingTab(it, tab) }
+                    enterPageOnArrival = true
+                    viewModel.onClickDrawerItem(index, previewItem)
+                },
+            )
+        }
+    val submenu = previewSubmenu ?: pageSubmenu
+    val currentSubmenu by rememberUpdatedState(submenu)
+    val selectedTabFocusRequester = submenu?.firstFocusTab?.tabFocusRequester
     var topHasFocus by remember { mutableStateOf(false) }
     var submenuHasFocus by remember { mutableStateOf(false) }
     // Submenu items can't take focus while the top level has it, so pressing right on the top level
@@ -333,10 +362,7 @@ fun NavDrawer(
             // The submenu's items may not be laid out yet, so keep trying for a few frames
             var frames = 0
             while (!submenuHasFocus && frames++ < 30) {
-                submenuHost.submenu
-                    ?.let { it.tabs.getOrNull(it.selectedIndex) }
-                    ?.tabFocusRequester
-                    ?.tryRequestFocus()
+                currentSubmenu?.firstFocusTab?.tabFocusRequester?.tryRequestFocus()
                 withFrameNanos { }
             }
             enteringSubmenu = false
@@ -348,14 +374,34 @@ fun NavDrawer(
     LaunchedEffect(destination) {
         viewModel.updateSelectedIndex()
         val fromDrawer = drawerHasFocus
+        val enterPage = enterPageOnArrival
+        enterPageOnArrival = false
+        previewIndex = null
         releaseToContent = true
         if (fromDrawer) {
             var frames = 0
             while (submenuHost.submenu?.destination != destination && frames++ < 10) {
                 withFrameNanos { }
             }
-            if (submenuHost.submenu?.destination == destination) focusSubmenu()
+            val arrived = submenuHost.submenu?.takeIf { it.destination == destination }
+            if (arrived != null && enterPage) {
+                // A tab was chosen before the page opened: go into it, as when one is clicked
+                repeat(60) {
+                    if (!drawerHasFocus) return@LaunchedEffect
+                    submenuHost.submenu
+                        ?.let { it.tabs.getOrNull(it.selectedIndex) }
+                        ?.contentFocusRequester
+                        ?.tryRequestFocus()
+                    withFrameNanos { }
+                }
+            } else if (arrived != null) {
+                focusSubmenu()
+            }
         }
+    }
+    // The preview of another page's tabs ends when going back up to the top level, or out of the drawer
+    LaunchedEffect(topHasFocus, drawerHasFocus) {
+        if (topHasFocus || !drawerHasFocus) previewIndex = null
     }
     // Full screen pages have no drawer
     LaunchedEffect(hidden) {
@@ -380,8 +426,6 @@ fun NavDrawer(
         }
     }
 
-    val serviceState by viewModel.serviceState.collectAsState()
-    val state by viewModel.state.collectAsState()
     // A negative index is a built-in page, >=0 is a library
     val selectedIndex = state.selectedIndex
 
@@ -544,12 +588,16 @@ fun NavDrawer(
                                     onClick = {
                                         viewModel.onClickDrawerItem(index, it)
                                     },
-                                    // Right on an item with a submenu goes into its submenu, opening
-                                    // its page first if it isn't the current one
+                                    // Right on an item with a submenu goes into its submenu. For a page
+                                    // that isn't open, it shows the page's tabs without opening it,
+                                    // unless they aren't known until it opens (Favorites)
                                     onRight =
                                         if (it.hasSubmenu) {
                                             {
-                                                if (selectedIndex == index && submenu != null) {
+                                                if (selectedIndex == index && pageSubmenu != null) {
+                                                    focusSubmenu()
+                                                } else if (it.knownTabs != null) {
+                                                    previewIndex = index
                                                     focusSubmenu()
                                                 } else {
                                                     viewModel.onClickDrawerItem(index, it)
@@ -801,6 +849,9 @@ internal fun NavItemText(
 }
 
 internal val NavItemChevronSize = 20.dp
+
+// The submenu item that takes focus on entering the submenu: the selected tab, or the first
+private val DrawerSubmenu.firstFocusTab get() = tabs.getOrNull(selectedIndex) ?: tabs.firstOrNull()
 
 /**
  * Whether this item's page has tabs, which show as a submenu in the drawer

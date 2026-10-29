@@ -33,6 +33,22 @@ class DrawerSubmenuHost {
         private set
     private var owner: Any? = null
 
+    // A tab chosen in the drawer before its page was opened, for the page to switch to
+    private var pendingTab: Pair<Destination, Int>? = null
+
+    fun choosePendingTab(
+        destination: Destination,
+        index: Int,
+    ) {
+        pendingTab = destination to index
+    }
+
+    fun takePendingTab(destination: Destination?): Int? =
+        pendingTab
+            ?.takeIf { it.first == destination }
+            ?.second
+            ?.also { pendingTab = null }
+
     fun set(
         owner: Any,
         submenu: DrawerSubmenu,
@@ -77,6 +93,13 @@ fun rememberDrawerSubmenu(
     val show = enabled && selectedIndex in tabs.indices
     LaunchedEffect(host, show, tabs, selectedIndex) {
         if (show) {
+            // A tab chosen in the drawer before the page opened: switch to it first, the submenu is
+            // registered once that tab is selected
+            val pending = host.takePendingTab(destination)
+            if (pending != null && pending != selectedIndex && pending in tabs.indices) {
+                select(pending)
+                return@LaunchedEffect
+            }
             host.set(owner, DrawerSubmenu(destination, tabs, selectedIndex, select))
         } else {
             host.clear(owner)
