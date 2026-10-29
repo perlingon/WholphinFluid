@@ -401,8 +401,13 @@ fun SeriesDetailsContent(
                                 .focusGroup()
                                 .padding(bottom = Spacing.md),
                     ) {
+                        // Plays the next episode, so once some of the series is watched it reads "Resume"
+                        val started =
+                            series.data.userData?.let {
+                                !it.played && ((it.playedPercentage ?: 0.0) > 0.0 || (it.playbackPositionTicks ?: 0L) > 0L)
+                            } == true
                         ExpandablePlayButton(
-                            title = R.string.play,
+                            title = if (started) R.string.resume else R.string.play,
                             resume = Duration.ZERO,
                             icon = Icons.Default.PlayArrow,
                             onClick = {
