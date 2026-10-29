@@ -17,23 +17,17 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowDropDown
-import androidx.compose.material.icons.filled.KeyboardArrowLeft
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -76,9 +70,7 @@ import androidx.lifecycle.findViewTreeViewModelStoreOwner
 import androidx.lifecycle.viewModelScope
 import androidx.tv.material3.DrawerState
 import androidx.tv.material3.DrawerValue
-import androidx.tv.material3.Icon
 import androidx.tv.material3.MaterialTheme
-import androidx.tv.material3.NavigationDrawerItemDefaults
 import androidx.tv.material3.NavigationDrawerScope
 import androidx.tv.material3.ProvideTextStyle
 import androidx.tv.material3.Text
@@ -97,7 +89,6 @@ import com.github.damontecres.wholphin.ui.components.TimeDisplay
 import com.github.damontecres.wholphin.ui.ifElse
 import com.github.damontecres.wholphin.ui.launchDefault
 import com.github.damontecres.wholphin.ui.preferences.PreferenceScreenOption
-import com.github.damontecres.wholphin.ui.setup.UserIconCardImage
 import com.github.damontecres.wholphin.ui.spacedByWithFooter
 import com.github.damontecres.wholphin.ui.theme.LocalTheme
 import com.github.damontecres.wholphin.ui.theme.Spacing
@@ -381,13 +372,8 @@ fun NavDrawer(
     }
     val serviceState by viewModel.serviceState.collectAsState()
     val state by viewModel.state.collectAsState()
-    val moreExpanded = state.moreExpanded
     // A negative index is a built-in page, >=0 is a library
     val selectedIndex = state.selectedIndex
-
-    BackHandler(enabled = moreExpanded && drawerState.currentValue == DrawerValue.Open) {
-        viewModel.setShowMore(false)
-    }
 
     val closedDrawerWidth = CollapsedDrawerItemWidth
     // With the submenu showing, the top level slides left (out of view, apart from SubmenuParentPeek)
@@ -425,7 +411,7 @@ fun NavDrawer(
         drawerContent = { drawerValue ->
             val isOpen = drawerValue.isOpen
             val spacedBy = 4.dp
-            val searchFocusRequester = remember { FocusRequester() }
+            val firstItemFocusRequester = remember { FocusRequester() }
 
             ProvideTextStyle(MaterialTheme.typography.titleLarge) {
                 Box(
@@ -440,6 +426,14 @@ fun NavDrawer(
                                     // otherwise the current page's item
                                     if (requestedFocusDirection == FocusDirection.Left) {
                                         (selectedTabFocusRequester ?: focusRequester).tryRequestFocus()
+                                    }
+                                }
+                                onExit = {
+                                    // Up and down stay within the drawer, they don't reach the top menu
+                                    if (requestedFocusDirection == FocusDirection.Up ||
+                                        requestedFocusDirection == FocusDirection.Down
+                                    ) {
+                                        cancelFocusChange()
                                     }
                                 }
                             }.focusGroup(),
@@ -467,22 +461,6 @@ fun NavDrawer(
                                     }
                                 },
                     ) {
-                        // Even though some must be clicked, focusing on it should clear other focused items
-                        val interactionSource = remember { MutableInteractionSource() }
-                        val userImageUrl = remember(user) { viewModel.getUserImage(user) }
-                        ProfileIcon(
-                            user = user,
-                            imageUrl = userImageUrl,
-                            serverName = server.name ?: server.url,
-                            drawerOpen = isOpen,
-                            interactionSource = interactionSource,
-                            onClick = {
-                                viewModel.navigateToSetup(
-                                    SetupDestination.UserList(server),
-                                )
-                            },
-                            modifier = Modifier,
-                        )
                         AnimatedVisibility(
                             visible = serviceState.nowPlayingEnabled,
                             enter = expandVertically(expandFrom = Alignment.Top),
@@ -518,33 +496,13 @@ fun NavDrawer(
                                     .focusProperties {
                                         onEnter = {
                                             if (requestedFocusDirection == FocusDirection.Down) {
-                                                searchFocusRequester.tryRequestFocus()
+                                                firstItemFocusRequester.tryRequestFocus()
                                             } else {
                                                 focusRequester.tryRequestFocus()
                                             }
                                         }
                                     }.fillMaxHeight(),
                         ) {
-                            item {
-                                val interactionSource = remember { MutableInteractionSource() }
-                                IconNavItem(
-                                    text = stringResource(R.string.search),
-                                    selected = selectedIndex == SEARCH_INDEX,
-                                    drawerOpen = isOpen,
-                                    interactionSource = interactionSource,
-                                    onClick = {
-                                        viewModel.setIndex(SEARCH_INDEX)
-                                        viewModel.navigationManager.navigateToFromDrawer(Destination.Search())
-                                    },
-                                    modifier =
-                                        Modifier
-                                            .focusRequester(searchFocusRequester)
-                                            .ifElse(
-                                                selectedIndex == SEARCH_INDEX,
-                                                Modifier.focusRequester(focusRequester),
-                                            ),
-                                )
-                            }
                             item {
                                 val interactionSource = remember { MutableInteractionSource() }
                                 IconNavItem(
@@ -563,6 +521,7 @@ fun NavDrawer(
                                     },
                                     modifier =
                                         Modifier
+                                            .focusRequester(firstItemFocusRequester)
                                             .ifElse(
                                                 selectedIndex == HOME_INDEX,
                                                 Modifier.focusRequester(focusRequester),
@@ -574,7 +533,6 @@ fun NavDrawer(
                                 NavItem(
                                     library = it,
                                     selected = selectedIndex == index,
-                                    moreExpanded = moreExpanded,
                                     drawerOpen = isOpen,
                                     interactionSource = interactionSource,
                                     onClick = {
@@ -588,76 +546,37 @@ fun NavDrawer(
                                             ),
                                 )
                             }
-                            if (serviceState.moreItems.isNotEmpty()) {
-                                item {
-                                    val index = serviceState.items.size
-                                    val interactionSource = remember { MutableInteractionSource() }
-                                    NavItem(
-                                        library = NavDrawerItem.More,
+                            // Settings and Switch account sit together at the bottom
+                            item {
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.spacedBy(spacedBy),
+                                ) {
+                                    IconNavItem(
+                                        text = stringResource(R.string.settings),
                                         selected = false,
-                                        moreExpanded = moreExpanded,
                                         drawerOpen = isOpen,
-                                        interactionSource = interactionSource,
+                                        interactionSource = remember { MutableInteractionSource() },
                                         onClick = {
-                                            viewModel.onClickDrawerItem(index, NavDrawerItem.More)
-                                        },
-                                        modifier =
-                                            Modifier
-                                                .ifElse(
-                                                    selectedIndex == index,
-                                                    Modifier.focusRequester(focusRequester),
+                                            viewModel.navigationManager.navigateTo(
+                                                Destination.Settings(
+                                                    PreferenceScreenOption.BASIC,
                                                 ),
-                                    )
-                                }
-                            }
-                            if (moreExpanded) {
-                                itemsIndexed(serviceState.moreItems) { index, it ->
-                                    val adjustedIndex =
-                                        remember(serviceState) { (index + serviceState.items.size) }
-                                    val interactionSource = remember { MutableInteractionSource() }
-                                    NavItem(
-                                        library = it,
-                                        selected = selectedIndex == adjustedIndex,
-                                        moreExpanded = moreExpanded,
-                                        drawerOpen = isOpen,
-                                        onClick = {
-                                            viewModel.onClickDrawerItem(
-                                                adjustedIndex,
-                                                it,
                                             )
                                         },
-                                        containerColor =
-                                            if (isOpen) {
-                                                MaterialTheme.colorScheme.surface.copy(alpha = .5f)
-                                            } else {
-                                                Color.Transparent
-                                            },
-                                        interactionSource = interactionSource,
-                                        modifier =
-                                            Modifier
-                                                .ifElse(
-                                                    selectedIndex == adjustedIndex,
-                                                    Modifier.focusRequester(focusRequester),
-                                                ),
+                                    )
+                                    IconNavItem(
+                                        text = stringResource(R.string.switch_account),
+                                        selected = false,
+                                        drawerOpen = isOpen,
+                                        interactionSource = remember { MutableInteractionSource() },
+                                        onClick = {
+                                            viewModel.navigateToSetup(
+                                                SetupDestination.UserList(server),
+                                            )
+                                        },
                                     )
                                 }
-                            }
-                            item {
-                                val interactionSource = remember { MutableInteractionSource() }
-                                IconNavItem(
-                                    text = stringResource(R.string.settings),
-                                    selected = false,
-                                    drawerOpen = isOpen,
-                                    interactionSource = interactionSource,
-                                    onClick = {
-                                        viewModel.navigationManager.navigateTo(
-                                            Destination.Settings(
-                                                PreferenceScreenOption.BASIC,
-                                            ),
-                                        )
-                                    },
-                                    modifier = Modifier,
-                                )
                             }
                         }
                     }
@@ -727,56 +646,21 @@ fun NavDrawer(
                             }.focusGroup(),
                 )
             }
+            // Search isn't in the drawer: it's in the top menu, which shows on pressing up at the
+            // top of a page
+            if (destination !is Destination.Search) {
+                TopMenu(
+                    onSearch = {
+                        viewModel.setIndex(SEARCH_INDEX)
+                        viewModel.navigationManager.navigateToFromDrawer(Destination.Search())
+                    },
+                    modifier = Modifier.align(Alignment.TopCenter),
+                )
+            }
             if (preferences.appPreferences.interfacePreferences.showClock) {
                 TimeDisplay()
             }
         }
-    }
-}
-
-@Composable
-fun NavigationDrawerScope.ProfileIcon(
-    user: JellyfinUser,
-    imageUrl: String?,
-    serverName: String,
-    drawerOpen: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
-) {
-    NavigationDrawerItem(
-        modifier = modifier,
-        selected = false,
-        onClick = onClick,
-        // The user's picture sits on the right, next to the right-aligned name
-        trailingContent = {
-            UserIconCardImage(
-                id = user.id,
-                name = user.name,
-                imageUrl = imageUrl,
-                alpha = if (drawerOpen) 1f else .5f,
-                modifier = Modifier.size(DrawerIconSize),
-            )
-        },
-        supportingContent = {
-            Text(
-                text = serverName,
-                maxLines = 1,
-                textAlign = TextAlign.End,
-                modifier = Modifier.fillMaxWidth(),
-            )
-        },
-        interactionSource = interactionSource,
-    ) {
-        Text(
-            text = (user.name ?: user.id.toString()).uppercase(),
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = NavItemFontWeight,
-            letterSpacing = NavItemLetterSpacing,
-            maxLines = 1,
-            textAlign = TextAlign.End,
-            modifier = Modifier.fillMaxWidth(),
-        )
     }
 }
 
@@ -817,7 +701,6 @@ fun NavigationDrawerScope.NavItem(
     library: NavDrawerItem,
     onClick: () -> Unit,
     selected: Boolean,
-    moreExpanded: Boolean,
     drawerOpen: Boolean,
     modifier: Modifier = Modifier,
     interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
@@ -830,17 +713,6 @@ fun NavigationDrawerScope.NavItem(
         selected = false,
         onClick = onClick,
         colors = navDrawerItemColors(containerColor),
-        trailingContent =
-            if (library is NavDrawerItem.More) {
-                {
-                    Icon(
-                        imageVector = if (moreExpanded) Icons.Default.ArrowDropDown else Icons.Default.KeyboardArrowLeft,
-                        contentDescription = null,
-                    )
-                }
-            } else {
-                null
-            },
         interactionSource = interactionSource,
     ) {
         NavItemText(library.name(context), navItemColor(selected, focused, drawerOpen))
@@ -944,8 +816,6 @@ private fun NavigationDrawerScope.DrawerSubmenuColumn(
                 }.focusGroup()
                 .verticalScroll(rememberScrollState()),
     ) {
-        // Leave room for the profile item at the top of the top level
-        Spacer(Modifier.height(NavigationDrawerItemDefaults.ContainerHeightTwoLine))
         submenu.tabs.forEachIndexed { index, tab ->
             val interactionSource = remember { MutableInteractionSource() }
             val focused by interactionSource.collectIsFocusedAsState()
