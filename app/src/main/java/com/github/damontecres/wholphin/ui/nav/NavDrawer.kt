@@ -394,16 +394,16 @@ fun NavDrawer(
     // The page area, to move focus into it
     val contentFocusRequester = remember { FocusRequester() }
     var contentHasFocus by remember { mutableStateOf(false) }
-    var openedFromTopMenu by remember { mutableStateOf(false) }
+    var closeDrawerOnArrival by remember { mutableStateOf(false) }
 
     // On a new page, opened from the drawer: if it has a submenu (it's a page with tabs) move on to
     // it, otherwise let the page take focus as usual
     LaunchedEffect(destination) {
         viewModel.updateSelectedIndex()
-        if (openedFromTopMenu) {
-            // A search from the top menu: the results open with the drawer closed. The top menu
-            // goes away with the page change, so focus could otherwise land in the drawer
-            openedFromTopMenu = false
+        if (closeDrawerOnArrival) {
+            // A search from the top menu, or a submenu heading that opens another page (eg "Go to
+            // series"): the page opens with the drawer closed, and focus moves into it
+            closeDrawerOnArrival = false
             releaseToContent = true
             drawerState.setValue(DrawerValue.Closed)
             var frames = 0
@@ -683,6 +683,10 @@ fun NavDrawer(
                                         ?.name(context)
                                         ?: if (selectedIndex == SEARCH_INDEX) stringResource(R.string.search) else ""
                                 },
+                            onHeadingClick = { heading ->
+                                closeDrawerOnArrival = true
+                                heading.onClick()
+                            },
                             onClick = { index ->
                                 submenu.onSelect(index)
                                 // Move on into the page, once the tab's content can take focus
@@ -780,7 +784,7 @@ fun NavDrawer(
                     reveal = topMenuReveal,
                     preferences = preferences,
                     onSearch = { query ->
-                        openedFromTopMenu = true
+                        closeDrawerOnArrival = true
                         viewModel.setIndex(SEARCH_INDEX)
                         viewModel.navigationManager.navigateToFromDrawer(Destination.Search(query))
                     },
@@ -999,6 +1003,7 @@ private fun NavigationDrawerScope.DrawerSubmenuColumn(
     focusable: Boolean,
     spacedBy: Dp,
     title: String,
+    onHeadingClick: (DrawerSubmenuHeading) -> Unit,
     onClick: (Int) -> Unit,
     onLeft: () -> Boolean,
     modifier: Modifier = Modifier,
@@ -1032,7 +1037,7 @@ private fun NavigationDrawerScope.DrawerSubmenuColumn(
             val headerFocused by headerInteractionSource.collectIsFocusedAsState()
             NavigationDrawerItem(
                 selected = false,
-                onClick = { submenu.heading?.onClick?.invoke() ?: onLeft() },
+                onClick = { submenu.heading?.let { onHeadingClick(it) } ?: onLeft() },
                 interactionSource = headerInteractionSource,
                 modifier =
                     Modifier
