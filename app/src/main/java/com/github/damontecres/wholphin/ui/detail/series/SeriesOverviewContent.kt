@@ -161,6 +161,7 @@ fun SeriesOverviewContent(
             tabs = tabs,
             selectedIndex = selectedTabIndex,
             onSelect = onClickSeason,
+            title = series.title,
         )
 
     Box(

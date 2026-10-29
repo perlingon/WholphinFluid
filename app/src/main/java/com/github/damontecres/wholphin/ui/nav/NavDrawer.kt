@@ -49,6 +49,7 @@ import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
@@ -656,6 +657,12 @@ fun NavDrawer(
                             drawerOpen = isOpen,
                             focusable = (!topHasFocus && !settingsHasFocus) || enteringSubmenu,
                             spacedBy = spacedBy,
+                            // Heading: the page's own, or the name of the drawer item it opens from
+                            title =
+                                submenu.title
+                                    ?: (previewItem.takeIf { previewSubmenu != null } ?: serviceState.items.getOrNull(selectedIndex))
+                                        ?.name(context)
+                                    ?: if (selectedIndex == SEARCH_INDEX) stringResource(R.string.search) else "",
                             onClick = { index ->
                                 submenu.onSelect(index)
                                 // Move on into the page, once the tab's content can take focus
@@ -851,13 +858,26 @@ internal fun NavItemText(
     text: String,
     color: Color,
     showChevron: Boolean = false,
+    showBackChevron: Boolean = false,
 ) {
-    // A chevron after the name shows that the item opens a submenu
+    // A chevron after the name shows that the item opens a submenu; one before it (pointing left)
+    // that it goes back out of one
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(Spacing.xs, Alignment.End),
         modifier = Modifier.fillMaxWidth(),
     ) {
+        if (showBackChevron) {
+            Icon(
+                painter = painterResource(R.drawable.ic_chevron_right),
+                contentDescription = null,
+                tint = color,
+                modifier =
+                    Modifier
+                        .size(NavItemChevronSize)
+                        .rotate(180f),
+            )
+        }
         Text(
             text = text.uppercase(),
             color = color,
@@ -946,6 +966,7 @@ private fun NavigationDrawerScope.DrawerSubmenuColumn(
     drawerOpen: Boolean,
     focusable: Boolean,
     spacedBy: Dp,
+    title: String,
     onClick: (Int) -> Unit,
     onLeft: () -> Boolean,
     modifier: Modifier = Modifier,
@@ -972,6 +993,25 @@ private fun NavigationDrawerScope.DrawerSubmenuColumn(
                 }.focusGroup()
                 .verticalScroll(rememberScrollState()),
     ) {
+        // The heading: the name of what the tabs belong to, with a back chevron. Choosing it goes
+        // back up to the top level, like left does
+        val headerInteractionSource = remember { MutableInteractionSource() }
+        val headerFocused by headerInteractionSource.collectIsFocusedAsState()
+        NavigationDrawerItem(
+            selected = false,
+            onClick = { onLeft() },
+            interactionSource = headerInteractionSource,
+            modifier =
+                Modifier
+                    .padding(bottom = Spacing.md)
+                    .focusProperties { canFocus = focusable },
+        ) {
+            NavItemText(
+                title,
+                navItemColor(false, headerFocused, drawerOpen),
+                showBackChevron = true,
+            )
+        }
         submenu.tabs.forEachIndexed { index, tab ->
             val interactionSource = remember { MutableInteractionSource() }
             val focused by interactionSource.collectIsFocusedAsState()

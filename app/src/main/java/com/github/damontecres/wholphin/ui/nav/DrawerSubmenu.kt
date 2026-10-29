@@ -21,6 +21,8 @@ class DrawerSubmenu(
     val tabs: List<TabDetails>,
     val selectedIndex: Int,
     val onSelect: (Int) -> Unit,
+    // Heading over the tabs, if not the name of the drawer item the page belongs to
+    val title: String? = null,
 )
 
 /**
@@ -84,6 +86,7 @@ fun rememberDrawerSubmenu(
     selectedIndex: Int,
     onSelect: (Int) -> Unit,
     enabled: Boolean = true,
+    title: String? = null,
 ): Boolean {
     val host = LocalDrawerSubmenuHost.current ?: return false
     val destination = LocalDestination.current
@@ -91,7 +94,7 @@ fun rememberDrawerSubmenu(
     val currentOnSelect by rememberUpdatedState(onSelect)
     val select = remember { { index: Int -> currentOnSelect(index) } }
     val show = enabled && selectedIndex in tabs.indices
-    LaunchedEffect(host, show, tabs, selectedIndex) {
+    LaunchedEffect(host, show, tabs, selectedIndex, title) {
         if (show) {
             // A tab chosen in the drawer before the page opened: switch to it first, the submenu is
             // registered once that tab is selected
@@ -100,7 +103,7 @@ fun rememberDrawerSubmenu(
                 select(pending)
                 return@LaunchedEffect
             }
-            host.set(owner, DrawerSubmenu(destination, tabs, selectedIndex, select))
+            host.set(owner, DrawerSubmenu(destination, tabs, selectedIndex, select, title))
         } else {
             host.clear(owner)
         }
