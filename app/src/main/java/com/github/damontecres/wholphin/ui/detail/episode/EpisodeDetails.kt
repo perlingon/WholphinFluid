@@ -328,33 +328,33 @@ fun EpisodeDetailsContent(
                                 .focusRequester(focusRequesters[HEADER_ROW]),
                     )
                 }
-                // The series' similar titles, as on the series page
-                if (similar.isNotEmpty()) {
-                    item {
-                        ItemRow(
-                            title = stringResource(R.string.more_like_this),
-                            items = similar,
-                            onClickItem = { _, item -> onClickSimilar(item) },
-                            onLongClickItem = { _, item -> onLongClickSimilar(item) },
-                            cardContent = { _, item, mod, onClick, onLongClick ->
-                                SeasonCard(
-                                    item = item,
-                                    onClick = onClick,
-                                    onLongClick = onLongClick,
-                                    modifier = mod,
-                                    showImageOverlay = true,
-                                    imageHeight = Cards.height2x3,
-                                    imageWidth = Dp.Unspecified,
-                                )
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                        )
-                    }
-                }
-                // The collections the series is in, last on the page
+            }
+            // The series' similar titles, as on the series page
+            if (similar.isNotEmpty()) {
                 item {
-                    InCollectionsRow(ep.data.seriesId ?: ep.id, Modifier.fillMaxWidth())
+                    ItemRow(
+                        title = stringResource(R.string.more_like_this),
+                        items = similar,
+                        onClickItem = { _, item -> onClickSimilar(item) },
+                        onLongClickItem = { _, item -> onLongClickSimilar(item) },
+                        cardContent = { _, item, mod, onClick, onLongClick ->
+                            SeasonCard(
+                                item = item,
+                                onClick = onClick,
+                                onLongClick = onLongClick,
+                                modifier = mod,
+                                showImageOverlay = true,
+                                imageHeight = Cards.height2x3,
+                                imageWidth = Dp.Unspecified,
+                            )
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
                 }
+            }
+            // The collections the series is in, last on the page
+            item {
+                InCollectionsRow(ep.data.seriesId ?: ep.id, Modifier.fillMaxWidth())
             }
         }
     }
