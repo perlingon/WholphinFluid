@@ -69,6 +69,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
@@ -860,6 +861,7 @@ internal fun NavItemText(
     color: Color,
     showChevron: Boolean = false,
     showBackChevron: Boolean = false,
+    style: TextStyle = MaterialTheme.typography.titleLarge,
 ) {
     // A chevron after the name shows that the item opens a submenu; one before it (pointing left)
     // that it goes back out of one
@@ -882,7 +884,7 @@ internal fun NavItemText(
         Text(
             text = text.uppercase(),
             color = color,
-            style = MaterialTheme.typography.titleLarge,
+            style = style,
             fontWeight = NavItemFontWeight,
             letterSpacing = NavItemLetterSpacing,
             maxLines = 1,
@@ -1005,13 +1007,16 @@ private fun NavigationDrawerScope.DrawerSubmenuColumn(
                 interactionSource = headerInteractionSource,
                 modifier =
                     Modifier
-                        .padding(bottom = Spacing.md)
+                        .padding(bottom = Spacing.xs)
                         .focusProperties { canFocus = focusable },
             ) {
+                // Smaller than the tabs. A page's own heading goes somewhere else (eg "Go to
+                // series"), not back, so it has no back chevron
                 NavItemText(
                     title,
                     navItemColor(false, headerFocused, drawerOpen),
-                    showBackChevron = true,
+                    showBackChevron = submenu.heading == null,
+                    style = MaterialTheme.typography.titleSmall,
                 )
             }
         }
