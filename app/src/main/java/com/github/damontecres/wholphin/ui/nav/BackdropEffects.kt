@@ -925,7 +925,7 @@ private fun tileCrop(
  * Blurs a bitmap in place, see-through parts included. Three passes of a box blur come very close to a Gaussian blur
  * and are fast enough for the small baked image
  */
-private fun boxBlur(
+internal fun boxBlur(
     bitmap: Bitmap,
     radius: Int,
 ) {

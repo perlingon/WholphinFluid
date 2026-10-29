@@ -37,6 +37,7 @@ import androidx.compose.ui.graphics.ImageShader
 import androidx.compose.ui.graphics.ShaderBrush
 import androidx.compose.ui.graphics.TileMode
 import androidx.compose.ui.graphics.asAndroidBitmap
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.drawscope.translate
@@ -928,6 +929,16 @@ fun Backdrop(
                     }
                     RegisterBackdropBaker(prebake)
                 }
+                // While focus is in the rows below a details page's buttons (see DetailRowsGroup)
+                // the background fades over to a blurrier copy of itself, made once per background.
+                // Tuning values, kept local so Live Edit picks them up
+                val awayBlur = 0.02f // extra blur, as a share of the screen's width
+                val awayBlurDuration = 500 // ms
+                val awayBlurAmount by animateFloatAsState(
+                    if (BackdropImageAway.away) 1f else 0f,
+                    animationSpec = tween(awayBlurDuration),
+                    label = "backdrop_background_blur",
+                )
                 Crossfade(
                     targetState = shownBackground.value,
                     animationSpec = tween(fadeIn.inWholeMilliseconds.toInt()),
@@ -940,6 +951,30 @@ fun Backdrop(
                             contentScale = ContentScale.FillBounds,
                             modifier = Modifier.fillMaxSize(),
                         )
+                        val blurRadius = (image.width * awayBlur).roundToInt()
+                        val blurred by produceState<ImageBitmap?>(null, image, blurRadius) {
+                            value =
+                                if (blurRadius < 1) {
+                                    null
+                                } else {
+                                    withContext(Dispatchers.Default) {
+                                        val copy = image.asAndroidBitmap().copy(Bitmap.Config.ARGB_8888, true)
+                                        boxBlur(copy, blurRadius)
+                                        copy.asImageBitmap()
+                                    }
+                                }
+                        }
+                        blurred?.let { blurredImage ->
+                            if (awayBlurAmount > 0f) {
+                                Image(
+                                    bitmap = blurredImage,
+                                    contentDescription = null,
+                                    contentScale = ContentScale.FillBounds,
+                                    alpha = awayBlurAmount,
+                                    modifier = Modifier.fillMaxSize(),
+                                )
+                            }
+                        }
                     } else if (showGlows) {
                         // Until the first image is ready, show the plain glows
                         Box(modifier = Modifier.fillMaxSize().drawBehind(drawGlows))
