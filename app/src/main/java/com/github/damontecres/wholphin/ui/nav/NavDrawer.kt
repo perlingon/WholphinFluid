@@ -44,12 +44,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
@@ -428,6 +430,12 @@ fun NavDrawer(
                         Modifier
                             .width(ExpandedDrawerItemWidth + if (submenu != null) SubmenuDrawerWidth else 0.dp)
                             .fillMaxHeight()
+                            // The submenu slides in from the right edge of the drawer, not over the page
+                            .drawWithContent {
+                                clipRect(right = (ExpandedDrawerItemWidth + SubmenuParentPeek).toPx()) {
+                                    this@drawWithContent.drawContent()
+                                }
+                            }
                             .onFocusChanged { drawerHasFocus = it.hasFocus }
                             .focusProperties {
                                 onEnter = {
