@@ -376,7 +376,6 @@ fun NavDrawer(
         val fromDrawer = drawerHasFocus
         val enterPage = enterPageOnArrival
         enterPageOnArrival = false
-        previewIndex = null
         releaseToContent = true
         if (fromDrawer) {
             var frames = 0
@@ -385,18 +384,29 @@ fun NavDrawer(
             }
             val arrived = submenuHost.submenu?.takeIf { it.destination == destination }
             if (arrived != null && enterPage) {
-                // A tab was chosen before the page opened: go into it, as when one is clicked
-                repeat(60) {
-                    if (!drawerHasFocus) return@LaunchedEffect
+                // A tab was chosen before the page opened: go into it, as when one is clicked. The
+                // chosen item stays shown and focused until then: if focus were dropped, it would
+                // land back in the drawer, which would close and open again
+                var contentFrames = 0
+                while (drawerHasFocus && contentFrames++ < 180) {
                     submenuHost.submenu
                         ?.let { it.tabs.getOrNull(it.selectedIndex) }
                         ?.contentFocusRequester
                         ?.tryRequestFocus()
                     withFrameNanos { }
                 }
-            } else if (arrived != null) {
-                focusSubmenu()
+                if (drawerHasFocus) {
+                    // The page couldn't take focus: show its own submenu instead
+                    previewIndex = null
+                    withFrameNanos { }
+                    focusSubmenu()
+                }
+            } else {
+                previewIndex = null
+                if (arrived != null) focusSubmenu()
             }
+        } else {
+            previewIndex = null
         }
     }
     // The preview of another page's tabs ends when going back up to the top level, or out of the drawer
@@ -659,7 +669,7 @@ fun NavDrawer(
                                 // Move on into the page, once the tab's content can take focus
                                 releaseToContent = true
                                 scope.launch {
-                                    repeat(60) {
+                                    repeat(180) {
                                         if (!drawerHasFocus) return@launch
                                         submenu.tabs
                                             .getOrNull(index)
