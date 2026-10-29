@@ -727,4 +727,16 @@
     <string name="library_movies">Film</string>
     <string name="library_shows">Serier</string>
     <string name="library_music">Musik</string>
+    <string name="recently_added_movies">Nyligen tillagda filmer</string>
+    <string name="recently_added_shows">Nyligen tillagda serier</string>
+    <string name="recently_added_music">Nyligen tillagd musik</string>
+    <string name="recently_released_movies">Nyligen släppta filmer</string>
+    <string name="recently_released_shows">Nyligen släppta serier</string>
+    <string name="recently_released_music">Nyligen släppt musik</string>
+    <string name="genres_movies">Filmgenrer</string>
+    <string name="genres_shows">Seriegenrer</string>
+    <string name="genres_music">Musikgenrer</string>
+    <string name="studios_movies">Filmstudior</string>
+    <string name="studios_shows">TV-kanaler</string>
+    <string name="studios_music">Skivbolag</string>
 </resources>

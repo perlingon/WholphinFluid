@@ -109,6 +109,7 @@ import com.github.damontecres.wholphin.ui.theme.LocalTheme
 import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.ui.toServerString
 import com.github.damontecres.wholphin.ui.tryRequestFocus
+import com.github.damontecres.wholphin.ui.util.libraryKindOf
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -280,25 +281,9 @@ data class ServerNavDrawerItem(
 
     // Libraries with a common default name, such as "Movies" or "Shows", show it in the app's
     // language; any other name is shown as it is
-    override fun name(context: Context): String = translatedLibraryNames[name.trim().lowercase()]?.let { context.getString(it) } ?: name
+    override fun name(context: Context): String = libraryKindOf(name)?.let { context.getString(it.nameRes) } ?: name
 
     companion object {
-        private val translatedLibraryNames =
-            mapOf(
-                "movies" to R.string.library_movies,
-                "films" to R.string.library_movies,
-                "film" to R.string.library_movies,
-                "filmer" to R.string.library_movies,
-                "shows" to R.string.library_shows,
-                "tv shows" to R.string.library_shows,
-                "tv-shows" to R.string.library_shows,
-                "tv" to R.string.library_shows,
-                "series" to R.string.library_shows,
-                "serier" to R.string.library_shows,
-                "music" to R.string.library_music,
-                "musik" to R.string.library_music,
-            )
-
         fun getId(itemId: UUID) = "s_" + itemId.toServerString()
     }
 }

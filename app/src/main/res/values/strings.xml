@@ -1055,4 +1055,16 @@
     <string name="library_movies">Movies</string>
     <string name="library_shows">Shows</string>
     <string name="library_music">Music</string>
+    <string name="recently_added_movies">Recently added movies</string>
+    <string name="recently_added_shows">Recently added shows</string>
+    <string name="recently_added_music">Recently added music</string>
+    <string name="recently_released_movies">Recently released movies</string>
+    <string name="recently_released_shows">Recently released shows</string>
+    <string name="recently_released_music">Recently released music</string>
+    <string name="genres_movies">Movie genres</string>
+    <string name="genres_shows">TV genres</string>
+    <string name="genres_music">Music genres</string>
+    <string name="studios_movies">Movie studios</string>
+    <string name="studios_shows">TV networks</string>
+    <string name="studios_music">Record labels</string>
 </resources>

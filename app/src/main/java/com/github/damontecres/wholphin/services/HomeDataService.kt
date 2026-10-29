@@ -21,6 +21,7 @@ import com.github.damontecres.wholphin.ui.util.ResArgStringProvider
 import com.github.damontecres.wholphin.ui.util.ResProviderStringProvider
 import com.github.damontecres.wholphin.ui.util.ResStringProvider
 import com.github.damontecres.wholphin.ui.util.StringStringProvider
+import com.github.damontecres.wholphin.ui.util.libraryRowTitle
 import com.github.damontecres.wholphin.util.ApiRequestPager
 import com.github.damontecres.wholphin.util.GetArtistsHandler
 import com.github.damontecres.wholphin.util.GetGenresRequestHandler
@@ -187,7 +188,7 @@ class HomeDataService
                             .firstOrNull { it.itemId == row.parentId }
 
                     val title =
-                        library?.name?.let { ResArgStringProvider(R.string.genres_in, it) }
+                        library?.name?.let { libraryRowTitle(R.string.genres_in, it) }
                             ?: ResStringProvider(R.string.genres)
                     val genres =
                         items.map {
@@ -233,7 +234,7 @@ class HomeDataService
                         libraries
                             .firstOrNull { it.itemId == row.parentId }
                     val title =
-                        library?.name?.let { ResArgStringProvider(R.string.studios_in, it) }
+                        library?.name?.let { libraryRowTitle(R.string.studios_in, it) }
                             ?: ResStringProvider(R.string.studios)
                     val studios =
                         items.map {
@@ -298,7 +299,7 @@ class HomeDataService
                     val library = libraries.firstOrNull { it.itemId == row.parentId }
                     val title =
                         library?.name?.let {
-                            ResArgStringProvider(R.string.recently_released_in, it)
+                            libraryRowTitle(R.string.recently_released_in, it)
                         } ?: ResStringProvider(R.string.recently_released)
                     val request =
                         GetItemsRequest(
