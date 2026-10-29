@@ -1225,6 +1225,18 @@ sealed interface AppPreference<Pref, T> {
 val basicPreferences =
     listOf(
         PreferenceGroup(
+            title = R.string.profile_specific_settings,
+            preferences =
+                listOf(
+                    AppPreference.SwitchAccount,
+                    AppPreference.ProtectProfilePreference,
+                    AppPreference.CustomizeHome,
+                    AppPreference.UserPinnedNavDrawerItems,
+                    AppPreference.UserInterfaceLanguage,
+                    AppPreference.UserProfileSettings,
+                ),
+        ),
+        PreferenceGroup(
             title = R.string.ui_interface,
             preferences =
                 listOf(
@@ -1254,18 +1266,6 @@ val basicPreferences =
                     AppPreference.AutoPlayNextUp,
                     AppPreference.AutoPlayNextDelay,
                     AppPreference.PassOutProtection,
-                ),
-        ),
-        PreferenceGroup(
-            title = R.string.profile_specific_settings,
-            preferences =
-                listOf(
-                    AppPreference.SwitchAccount,
-                    AppPreference.ProtectProfilePreference,
-                    AppPreference.CustomizeHome,
-                    AppPreference.UserPinnedNavDrawerItems,
-                    AppPreference.UserInterfaceLanguage,
-                    AppPreference.UserProfileSettings,
                 ),
         ),
         PreferenceGroup(
