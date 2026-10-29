@@ -55,7 +55,11 @@ fun FocusedEpisodeHeader(
             overview = dto?.overview ?: "",
             maxLines = 3,
             onClick = overviewOnClick,
-            modifier = Modifier.onFocusChanged(overviewOnFocus),
+            // The text (not its focus background) lines up with the title
+            modifier =
+                Modifier
+                    .padding(start = HeaderUtils.startPadding - Spacing.sm)
+                    .onFocusChanged(overviewOnFocus),
         )
     }
 }

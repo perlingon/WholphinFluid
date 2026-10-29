@@ -100,14 +100,17 @@ fun MovieDetailsHeader(
                     maxLines = 3,
                     onClick = overviewOnClick,
                     textBoxHeight = Dp.Unspecified,
+                    // The text (not its focus background) lines up with the title
                     modifier =
-                        Modifier.onFocusChanged {
-                            if (it.isFocused) {
-                                scope.launch(ExceptionHandler()) {
-                                    bringIntoViewRequester.bringIntoView()
+                        Modifier
+                            .padding(start = HeaderUtils.startPadding - Spacing.sm)
+                            .onFocusChanged {
+                                if (it.isFocused) {
+                                    scope.launch(ExceptionHandler()) {
+                                        bringIntoViewRequester.bringIntoView()
+                                    }
                                 }
-                            }
-                        },
+                            },
                 )
             }
 

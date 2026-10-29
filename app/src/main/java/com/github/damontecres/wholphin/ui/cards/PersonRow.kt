@@ -49,7 +49,7 @@ fun PersonRow(
             text = stringResource(title),
             style = MaterialTheme.typography.rowHeadline,
             color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.padding(start = Spacing.sm),
+            modifier = Modifier.padding(start = FluidLayout.headlineInset()),
         )
         LazyRow(
             state = rememberLazyListState(),
@@ -105,6 +105,7 @@ fun DiscoverPersonRow(
             text = stringResource(title),
             style = MaterialTheme.typography.rowHeadline,
             color = MaterialTheme.colorScheme.onBackground,
+            modifier = Modifier.padding(start = FluidLayout.headlineInset()),
         )
         LazyRow(
             state = rememberLazyListState(),
@@ -118,7 +119,6 @@ fun DiscoverPersonRow(
                 ),
             modifier =
                 Modifier
-                    .padding(start = Spacing.md)
                     .fillMaxWidth()
                     .focusRestorer(firstFocus),
         ) {
