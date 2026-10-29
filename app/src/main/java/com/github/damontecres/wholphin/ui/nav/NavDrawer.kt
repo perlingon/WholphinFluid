@@ -391,10 +391,28 @@ fun NavDrawer(
         }
     }
 
+    // The page area, to move focus into it
+    val contentFocusRequester = remember { FocusRequester() }
+    var contentHasFocus by remember { mutableStateOf(false) }
+    var openedFromTopMenu by remember { mutableStateOf(false) }
+
     // On a new page, opened from the drawer: if it has a submenu (it's a page with tabs) move on to
     // it, otherwise let the page take focus as usual
     LaunchedEffect(destination) {
         viewModel.updateSelectedIndex()
+        if (openedFromTopMenu) {
+            // A search from the top menu: the results open with the drawer closed. The top menu
+            // goes away with the page change, so focus could otherwise land in the drawer
+            openedFromTopMenu = false
+            releaseToContent = true
+            drawerState.setValue(DrawerValue.Closed)
+            var frames = 0
+            while (!contentHasFocus && frames++ < 30) {
+                contentFocusRequester.tryRequestFocus()
+                withFrameNanos { }
+            }
+            return@LaunchedEffect
+        }
         val fromDrawer = drawerHasFocus
         val enterPage = enterPageOnArrival
         enterPageOnArrival = false
@@ -740,7 +758,9 @@ fun NavDrawer(
                                     cancelFocusChange()
                                 }
                             }
-                        }.focusGroup(),
+                        }.onFocusChanged { contentHasFocus = it.hasFocus }
+                        .focusRequester(contentFocusRequester)
+                        .focusGroup(),
                 )
             }
             // After the pages, so these take priority over going back a page
@@ -760,6 +780,7 @@ fun NavDrawer(
                     reveal = topMenuReveal,
                     preferences = preferences,
                     onSearch = { query ->
+                        openedFromTopMenu = true
                         viewModel.setIndex(SEARCH_INDEX)
                         viewModel.navigationManager.navigateToFromDrawer(Destination.Search(query))
                     },
