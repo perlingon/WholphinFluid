@@ -71,13 +71,6 @@ fun CollectionButtons(
                     modifier = Modifier.focusRequester(firstFocus),
                 )
             }
-            item {
-                ExpandableFaButton(
-                    title = R.string.shuffle,
-                    iconStringRes = R.string.fa_shuffle,
-                    onClick = { onClickPlayAll.invoke(true) },
-                )
-            }
 
             item("favorite") {
                 val favorite = remember(state.collection) { state.collection?.favorite == true }

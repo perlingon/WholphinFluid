@@ -528,14 +528,6 @@ fun buildDialogForSeason(
                     onClickPlay.invoke(false)
                 },
             )
-            add(
-                DialogItem(
-                    resources.getString(R.string.shuffle),
-                    R.string.fa_shuffle,
-                ) {
-                    onClickPlay.invoke(true)
-                },
-            )
         }
     return DialogParams(
         title = s.name ?: resources.getString(R.string.tv_season),

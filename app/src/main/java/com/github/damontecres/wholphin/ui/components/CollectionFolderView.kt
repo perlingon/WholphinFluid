@@ -977,6 +977,9 @@ fun CollectionFolderViewContent(
                         onShowFilterDropdown = { filterDropdownShowing = it },
                         filterButtonFocusRequester = filterButtonFocusRequester,
                         randomButtonFocusRequester = randomButtonFocusRequester,
+                        showShuffle =
+                            item?.data?.collectionType == CollectionType.MUSIC ||
+                                item?.data?.collectionType == CollectionType.PLAYLISTS,
                     )
 
                     when (val pager = state.items) {

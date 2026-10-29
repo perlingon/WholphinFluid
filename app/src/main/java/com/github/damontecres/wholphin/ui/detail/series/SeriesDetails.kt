@@ -421,22 +421,6 @@ fun SeriesDetailsContent(
                                     },
                         )
                         ExpandableFaButton(
-                            title = R.string.shuffle,
-                            iconStringRes = R.string.fa_shuffle,
-                            onClick = {
-                                position = HEADER_ROW
-                                playOnClick.invoke(true)
-                            },
-                            modifier =
-                                Modifier.onFocusChanged {
-                                    if (it.isFocused) {
-                                        scope.launch(ExceptionHandler()) {
-                                            bringIntoViewRequester.bringIntoView()
-                                        }
-                                    }
-                                },
-                        )
-                        ExpandableFaButton(
                             title = if (played) R.string.mark_unwatched else R.string.mark_watched,
                             iconStringRes = if (played) R.string.fa_eye else R.string.fa_eye_slash,
                             onClick = watchOnClick,
@@ -800,14 +784,6 @@ fun buildDialogForSeason(
                     Icons.Default.PlayArrow,
                 ) {
                     onClickPlay.invoke(false)
-                },
-            )
-            add(
-                DialogItem(
-                    resources.getString(R.string.shuffle),
-                    R.string.fa_shuffle,
-                ) {
-                    onClickPlay.invoke(true)
                 },
             )
             if (canDelete) {
