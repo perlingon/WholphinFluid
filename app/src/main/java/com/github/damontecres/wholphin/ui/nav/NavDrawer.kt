@@ -869,7 +869,7 @@ private val DrawerSubmenu.firstFocusTab get() = tabs.getOrNull(selectedIndex) ?:
 val NavDrawerItem.hasSubmenu: Boolean
     get() =
         when (this) {
-            NavDrawerItem.Favorites, NavDrawerItem.Discover -> true
+            NavDrawerItem.Discover -> true
             is ServerNavDrawerItem ->
                 type == CollectionType.MOVIES ||
                     type == CollectionType.TVSHOWS ||
