@@ -22,6 +22,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
@@ -942,6 +943,9 @@ fun Backdrop(
                 // Tuning values, kept local so Live Edit picks them up
                 val awayBlur = 0.02f // extra blur, as a share of the screen's width
                 val awayBlurDuration = 500 // ms
+                // Read through a state, so a new value from Live Edit reaches the content below
+                // even where it would otherwise keep the old one
+                val awayBlurShare by rememberUpdatedState(awayBlur)
                 val awayBlurAmount by animateFloatAsState(
                     if (BackdropImageAway.away) 1f else 0f,
                     animationSpec = tween(awayBlurDuration),
@@ -959,7 +963,7 @@ fun Backdrop(
                             contentScale = ContentScale.FillBounds,
                             modifier = Modifier.fillMaxSize(),
                         )
-                        val blurRadius = (image.width * awayBlur).roundToInt()
+                        val blurRadius = (image.width * awayBlurShare).roundToInt()
                         val blurred by produceState<ImageBitmap?>(null, image, blurRadius) {
                             value =
                                 if (blurRadius < 1) {
@@ -1006,6 +1010,8 @@ fun Backdrop(
             // (see DetailRowsGroup). Tuning values, kept local so Live Edit picks them up
             val imageAwayDuration = 500 // ms
             val imageAwayLift = 0.3f // how far it moves up, as a share of its height
+            // Read through a state when drawing, so a new value from Live Edit is used straight away
+            val imageAwayLiftShare = rememberUpdatedState(imageAwayLift)
             val imageAway =
                 animateFloatAsState(
                     if (BackdropImageAway.away) 1f else 0f,
@@ -1036,7 +1042,7 @@ fun Backdrop(
                             // Out of the way while focus is in the rows below a details page's
                             // buttons: faded out and moved up. Development switch, see BackdropDebug
                             alpha = if (BackdropDebug.hideImage) 0f else 1f - imageAway.value
-                            translationY = -imageAway.value * size.height * imageAwayLift
+                            translationY = -imageAway.value * size.height * imageAwayLiftShare.value
                         }.drawWithContent {
                             val start = if (isRtl) size.width else 0f
                             drawContent()
