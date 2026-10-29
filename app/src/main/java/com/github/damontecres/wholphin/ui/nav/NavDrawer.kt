@@ -66,6 +66,7 @@ import androidx.compose.ui.input.key.type
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -393,6 +394,7 @@ fun NavDrawer(
 
     // The page area, to move focus into it
     val contentFocusRequester = remember { FocusRequester() }
+    val focusManager = LocalFocusManager.current
     var contentHasFocus by remember { mutableStateOf(false) }
     var closeDrawerOnArrival by remember { mutableStateOf(false) }
 
@@ -403,14 +405,18 @@ fun NavDrawer(
         if (closeDrawerOnArrival) {
             // A search from the top menu, or a submenu heading that opens another page (eg "Go to
             // series"): the page opens with the drawer closed, and focus moves into it
+            // The drawer is open while it has focus, and closes once focus leaves it. The page may
+            // still be loading with nothing to focus, so if it can't take focus straight away,
+            // focus is taken out of the drawer, and the page is tried until it can take it
             closeDrawerOnArrival = false
             releaseToContent = true
-            drawerState.setValue(DrawerValue.Closed)
             var frames = 0
-            while (!contentHasFocus && frames++ < 30) {
+            while (!contentHasFocus && frames++ < 180) {
                 contentFocusRequester.tryRequestFocus()
+                if (frames == 10 && drawerHasFocus) focusManager.clearFocus(force = true)
                 withFrameNanos { }
             }
+            if (!drawerHasFocus) drawerState.setValue(DrawerValue.Closed)
             return@LaunchedEffect
         }
         val fromDrawer = drawerHasFocus
