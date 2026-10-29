@@ -34,6 +34,18 @@ class NavigationManager
         }
 
         /**
+         * Go to the specified [Destination] in place of the current page, so going back skips it
+         */
+        fun replaceCurrent(destination: Destination) {
+            if (backStack.isEmpty()) {
+                backStack.add(destination)
+            } else {
+                backStack[backStack.lastIndex] = destination
+            }
+            log()
+        }
+
+        /**
          * Go to the previous page
          */
         fun goBack() {

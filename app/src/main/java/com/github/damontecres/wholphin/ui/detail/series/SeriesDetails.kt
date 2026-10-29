@@ -20,6 +20,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -173,6 +174,22 @@ fun SeriesDetails(
         DataLoadingState.Loading,
         DataLoadingState.Pending,
         -> {
+            LoadingPage(modifier)
+        }
+
+        // A series with only one season has no page of its own: it opens straight into that season
+        is DataLoadingState.Success<BaseItem> if state.seasons.size == 1 -> {
+            val series = st.data
+            val season = state.seasons.firstOrNull()
+            LaunchedEffect(series.id) {
+                viewModel.replaceWith(
+                    Destination.SeriesOverview(
+                        series.id,
+                        BaseItemKind.SERIES,
+                        season?.let { SeasonEpisodeIds(it.id, it.indexNumber, null, null) },
+                    ),
+                )
+            }
             LoadingPage(modifier)
         }
 

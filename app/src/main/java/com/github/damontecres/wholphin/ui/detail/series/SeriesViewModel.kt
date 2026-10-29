@@ -531,6 +531,13 @@ class SeriesViewModel
             }
         }
 
+        /**
+         * Show [destination] in place of this page
+         */
+        fun replaceWith(destination: Destination) {
+            navigationManager.replaceCurrent(destination)
+        }
+
         fun navigateTo(destination: Destination) {
             release()
             navigationManager.navigateTo(destination)

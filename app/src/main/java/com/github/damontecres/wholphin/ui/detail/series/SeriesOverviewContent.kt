@@ -167,6 +167,8 @@ fun SeriesOverviewContent(
             // The series' logo or title already says whose seasons these are, so the heading is
             // a way to the series' own page instead
             heading = DrawerSubmenuHeading(stringResource(R.string.go_to_series), goToSeries),
+            // A series with only one season has no season menu, and no series page to go to
+            enabled = seasons.size > 1,
         )
 
     Box(
