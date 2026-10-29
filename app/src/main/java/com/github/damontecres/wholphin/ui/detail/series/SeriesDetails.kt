@@ -84,6 +84,7 @@ import com.github.damontecres.wholphin.ui.discover.DiscoverRow
 import com.github.damontecres.wholphin.ui.discover.DiscoverRowData
 import com.github.damontecres.wholphin.ui.letNotEmpty
 import com.github.damontecres.wholphin.ui.nav.Destination
+import com.github.damontecres.wholphin.ui.nav.OnBackdropHeader
 import com.github.damontecres.wholphin.ui.rememberInt
 import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.ui.util.ResStringProvider
@@ -705,58 +706,60 @@ fun SeriesDetailsHeader(
     bringIntoViewRequester: BringIntoViewRequester,
     modifier: Modifier = Modifier,
 ) {
-    val scope = rememberCoroutineScope()
-    val dto = series.data
-    Column(
-        verticalArrangement = Arrangement.spacedBy(Spacing.xs),
-        modifier = modifier,
-    ) {
-        TitleOrLogo(
-            item = series,
-            showLogo = showLogo,
-            modifier =
-                Modifier
-                    .fillMaxWidth(.75f)
-                    .padding(start = HeaderUtils.startPadding),
-        )
+    OnBackdropHeader {
+        val scope = rememberCoroutineScope()
+        val dto = series.data
         Column(
             verticalArrangement = Arrangement.spacedBy(Spacing.xs),
-            modifier = Modifier.fillMaxWidth(.60f),
+            modifier = modifier,
         ) {
-            QuickDetails(
-                series.ui.quickDetails,
-                null,
-                Modifier.padding(start = HeaderUtils.startPadding),
+            TitleOrLogo(
+                item = series,
+                showLogo = showLogo,
+                modifier =
+                    Modifier
+                        .fillMaxWidth(.75f)
+                        .padding(start = HeaderUtils.startPadding),
             )
-            dto.studios?.let {
-                val studios = remember { series.studioNames }
-                GenreText(
-                    studios,
-                    textStyle = MaterialTheme.typography.bodyLarge,
-                    modifier = Modifier.padding(start = HeaderUtils.startPadding),
+            Column(
+                verticalArrangement = Arrangement.spacedBy(Spacing.xs),
+                modifier = Modifier.fillMaxWidth(.60f),
+            ) {
+                QuickDetails(
+                    series.ui.quickDetails,
+                    null,
+                    Modifier.padding(start = HeaderUtils.startPadding),
                 )
-            }
-            dto.genres?.letNotEmpty {
-                GenreText(it, Modifier.padding(start = HeaderUtils.startPadding, bottom = Spacing.xs))
-            }
-            dto.overview?.let { overview ->
-                OverviewText(
-                    overview = overview,
-                    maxLines = 3,
-                    onClick = overviewOnClick,
-                    textBoxHeight = Dp.Unspecified,
-                    // The text (not its focus background) lines up with the title
-                    modifier =
-                        Modifier
-                            .padding(start = HeaderUtils.startPadding - Spacing.sm)
-                            .onFocusChanged {
-                                if (it.isFocused) {
-                                    scope.launch(ExceptionHandler()) {
-                                        bringIntoViewRequester.bringIntoView()
+                dto.studios?.let {
+                    val studios = remember { series.studioNames }
+                    GenreText(
+                        studios,
+                        textStyle = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.padding(start = HeaderUtils.startPadding),
+                    )
+                }
+                dto.genres?.letNotEmpty {
+                    GenreText(it, Modifier.padding(start = HeaderUtils.startPadding, bottom = Spacing.xs))
+                }
+                dto.overview?.let { overview ->
+                    OverviewText(
+                        overview = overview,
+                        maxLines = 3,
+                        onClick = overviewOnClick,
+                        textBoxHeight = Dp.Unspecified,
+                        // The text (not its focus background) lines up with the title
+                        modifier =
+                            Modifier
+                                .padding(start = HeaderUtils.startPadding - Spacing.sm)
+                                .onFocusChanged {
+                                    if (it.isFocused) {
+                                        scope.launch(ExceptionHandler()) {
+                                            bringIntoViewRequester.bringIntoView()
+                                        }
                                     }
-                                }
-                            },
-                )
+                                },
+                    )
+                }
             }
         }
     }

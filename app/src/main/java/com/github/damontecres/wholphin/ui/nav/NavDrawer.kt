@@ -808,7 +808,8 @@ fun NavDrawer(
                 )
             }
             if (!hidden && preferences.appPreferences.interfacePreferences.showClock) {
-                TimeDisplay()
+                // Dark on a light backdrop
+                TimeDisplay(color = BackdropContrast.clockText())
             }
         }
     }

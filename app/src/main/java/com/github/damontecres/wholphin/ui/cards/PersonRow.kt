@@ -26,6 +26,7 @@ import com.github.damontecres.wholphin.R
 import com.github.damontecres.wholphin.data.model.DiscoverItem
 import com.github.damontecres.wholphin.data.model.Person
 import com.github.damontecres.wholphin.ui.ifElse
+import com.github.damontecres.wholphin.ui.nav.BackdropContrast
 import com.github.damontecres.wholphin.ui.rememberInt
 import com.github.damontecres.wholphin.ui.theme.FluidLayout
 import com.github.damontecres.wholphin.ui.theme.Spacing
@@ -48,7 +49,7 @@ fun PersonRow(
         Text(
             text = stringResource(title),
             style = MaterialTheme.typography.rowHeadline,
-            color = MaterialTheme.colorScheme.onBackground,
+            color = BackdropContrast.rowText(),
             modifier = Modifier.padding(start = FluidLayout.headlineInset()),
         )
         LazyRow(
@@ -104,7 +105,7 @@ fun DiscoverPersonRow(
         Text(
             text = stringResource(title),
             style = MaterialTheme.typography.rowHeadline,
-            color = MaterialTheme.colorScheme.onBackground,
+            color = BackdropContrast.rowText(),
             modifier = Modifier.padding(start = FluidLayout.headlineInset()),
         )
         LazyRow(

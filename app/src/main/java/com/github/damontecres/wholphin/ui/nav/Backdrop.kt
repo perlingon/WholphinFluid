@@ -2,6 +2,7 @@
 
 package com.github.damontecres.wholphin.ui.nav
 
+import android.graphics.Bitmap
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
@@ -14,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -34,6 +36,7 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.ImageShader
 import androidx.compose.ui.graphics.ShaderBrush
 import androidx.compose.ui.graphics.TileMode
+import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.drawscope.translate
@@ -47,13 +50,17 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import androidx.core.graphics.drawable.toBitmap
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.tv.material3.MaterialTheme
 import coil3.annotation.ExperimentalCoilApi
+import coil3.asDrawable
 import coil3.compose.AsyncImage
 import coil3.compose.useExistingImageAsPlaceholder
+import coil3.imageLoader
 import coil3.request.ImageRequest
+import coil3.request.SuccessResult
 import coil3.request.transitionFactory
 import com.github.damontecres.wholphin.preferences.BackdropStyle
 import com.github.damontecres.wholphin.services.BackdropResult
@@ -61,9 +68,11 @@ import com.github.damontecres.wholphin.services.ExtractedColors
 import com.github.damontecres.wholphin.ui.CrossFadeFactory
 import com.github.damontecres.wholphin.ui.theme.FluidLayout
 import com.github.damontecres.wholphin.ui.theme.LocalFluidTheme
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlin.math.max
 import kotlin.math.roundToInt
 import kotlin.math.sqrt
@@ -792,6 +801,65 @@ fun Backdrop(
                         value = backdrop.imageUrl to result
                     }
                 }
+
+                // Text on a light backdrop turns almost black (see BackdropContrast). Each area is
+                // checked on the background being shown, and for the clock also on the top right
+                // corner of the sharp image. Tuning values, kept local so Live Edit picks them up.
+                // Areas are shares of the screen: left, top, right, bottom
+                val headerArea = listOf(0f, 0.08f, 0.5f, 0.55f)
+                val rowsArea = listOf(0f, 0.55f, 0.5f, 0.95f)
+                val clockArea = listOf(0.82f, 0f, 1f, 0.12f)
+                // Share of an area's pixels that may be lighter than the level it is judged by:
+                // 0.8f = judged by its lightest fifth, so a bright patch behind the text counts
+                val contrastPercentile = 0.8f
+                // Relative luminance (0 = black, 1 = white) above which text turns dark, and below
+                // which it turns white again. The gap keeps it from flipping back and forth
+                val darkTextAbove = 0.32f
+                val whiteTextBelow = 0.26f
+                val contrastBackground = shownBackground.value
+                val contrastImageUrl = shownImageUrl.value
+                LaunchedEffect(contrastBackground, contrastImageUrl) {
+                    if (contrastBackground == null) {
+                        BackdropContrast.reset()
+                        return@LaunchedEffect
+                    }
+                    withContext(Dispatchers.Default) {
+                        val background = contrastBackground.asAndroidBitmap()
+
+                        fun level(area: List<Float>) = areaLuminance(background, area[0], area[1], area[2], area[3], contrastPercentile)
+
+                        fun isLight(
+                            luminance: Float,
+                            wasLight: Boolean,
+                        ) = if (wasLight) luminance > whiteTextBelow else luminance > darkTextAbove
+                        val header = level(headerArea)
+                        val rows = level(rowsArea)
+                        // The image's own top right corner, where it reaches the top of the screen
+                        val imageCorner =
+                            contrastImageUrl?.let { url ->
+                                val request =
+                                    ImageRequest
+                                        .Builder(context)
+                                        .data(url)
+                                        .size(320, 180)
+                                        .allowHardware(false)
+                                        .bitmapConfig(Bitmap.Config.ARGB_8888)
+                                        .build()
+                                (context.imageLoader.execute(request) as? SuccessResult)
+                                    ?.image
+                                    ?.asDrawable(context.resources)
+                                    ?.toBitmap(config = Bitmap.Config.ARGB_8888)
+                                    ?.let { areaLuminance(it, 0.75f, 0f, 1f, 0.15f, contrastPercentile) }
+                            } ?: 0f
+                        val clock = max(level(clockArea), imageCorner)
+                        withContext(Dispatchers.Main) {
+                            BackdropContrast.headerIsLight = isLight(header, BackdropContrast.headerIsLight)
+                            BackdropContrast.rowsIsLight = isLight(rows, BackdropContrast.rowsIsLight)
+                            BackdropContrast.clockIsLight = isLight(clock, BackdropContrast.clockIsLight)
+                        }
+                    }
+                }
+                DisposableEffect(Unit) { onDispose { BackdropContrast.reset() } }
 
                 // Runs the change from one backdrop to the next. It restarts whenever the
                 // backdrop or its background changes, and picks up from however dark it is

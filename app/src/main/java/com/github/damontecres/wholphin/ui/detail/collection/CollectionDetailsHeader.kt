@@ -22,6 +22,7 @@ import com.github.damontecres.wholphin.ui.components.OverviewText
 import com.github.damontecres.wholphin.ui.components.QuickDetails
 import com.github.damontecres.wholphin.ui.components.TitleOrLogo
 import com.github.damontecres.wholphin.ui.letNotEmpty
+import com.github.damontecres.wholphin.ui.nav.OnBackdropHeader
 import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.util.ExceptionHandler
 import kotlinx.coroutines.launch
@@ -35,61 +36,63 @@ fun CollectionDetailsHeader(
     bringIntoViewRequester: BringIntoViewRequester,
     modifier: Modifier = Modifier,
 ) {
-    val dto = collection.data
-    val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    Column(
-        verticalArrangement = Arrangement.spacedBy(Spacing.xs),
-        modifier = modifier,
-    ) {
-        TitleOrLogo(
-            title = collection.name,
-            showLogo = showLogo,
-            logoImageUrl = logoImageUrl,
-            modifier =
-                Modifier
-                    .fillMaxWidth(.75f)
-                    .padding(start = HeaderUtils.startPadding),
-        )
-
+    OnBackdropHeader {
+        val dto = collection.data
+        val context = LocalContext.current
+        val scope = rememberCoroutineScope()
         Column(
             verticalArrangement = Arrangement.spacedBy(Spacing.xs),
-            modifier = Modifier.fillMaxWidth(.60f),
+            modifier = modifier,
         ) {
-            QuickDetails(
-                collection.ui.quickDetails,
-                collection.timeRemainingOrRuntime,
-                Modifier.padding(start = HeaderUtils.startPadding),
+            TitleOrLogo(
+                title = collection.name,
+                showLogo = showLogo,
+                logoImageUrl = logoImageUrl,
+                modifier =
+                    Modifier
+                        .fillMaxWidth(.75f)
+                        .padding(start = HeaderUtils.startPadding),
             )
 
-            dto.genres?.letNotEmpty {
-                GenreText(it, Modifier.padding(start = HeaderUtils.startPadding))
-            }
-            dto.taglines?.firstOrNull()?.let { tagline ->
-                Text(
-                    text = tagline,
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontStyle = FontStyle.Italic,
-                    modifier = Modifier.padding(start = HeaderUtils.startPadding),
+            Column(
+                verticalArrangement = Arrangement.spacedBy(Spacing.xs),
+                modifier = Modifier.fillMaxWidth(.60f),
+            ) {
+                QuickDetails(
+                    collection.ui.quickDetails,
+                    collection.timeRemainingOrRuntime,
+                    Modifier.padding(start = HeaderUtils.startPadding),
                 )
-            }
 
-            // Description
-            dto.overview?.let { overview ->
-                OverviewText(
-                    overview = overview,
-                    maxLines = 3,
-                    onClick = overviewOnClick,
-                    textBoxHeight = Dp.Unspecified,
-                    modifier =
-                        Modifier.onFocusChanged {
-                            if (it.isFocused) {
-                                scope.launch(ExceptionHandler()) {
-                                    bringIntoViewRequester.bringIntoView()
+                dto.genres?.letNotEmpty {
+                    GenreText(it, Modifier.padding(start = HeaderUtils.startPadding))
+                }
+                dto.taglines?.firstOrNull()?.let { tagline ->
+                    Text(
+                        text = tagline,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontStyle = FontStyle.Italic,
+                        modifier = Modifier.padding(start = HeaderUtils.startPadding),
+                    )
+                }
+
+                // Description
+                dto.overview?.let { overview ->
+                    OverviewText(
+                        overview = overview,
+                        maxLines = 3,
+                        onClick = overviewOnClick,
+                        textBoxHeight = Dp.Unspecified,
+                        modifier =
+                            Modifier.onFocusChanged {
+                                if (it.isFocused) {
+                                    scope.launch(ExceptionHandler()) {
+                                        bringIntoViewRequester.bringIntoView()
+                                    }
                                 }
-                            }
-                        },
-                )
+                            },
+                    )
+                }
             }
         }
     }

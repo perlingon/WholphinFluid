@@ -17,6 +17,7 @@ import com.github.damontecres.wholphin.ui.components.HeaderUtils
 import com.github.damontecres.wholphin.ui.components.OverviewText
 import com.github.damontecres.wholphin.ui.components.QuickDetails
 import com.github.damontecres.wholphin.ui.components.VideoStreamDetails
+import com.github.damontecres.wholphin.ui.nav.OnBackdropHeader
 import com.github.damontecres.wholphin.ui.theme.Spacing
 
 @Composable
@@ -28,38 +29,40 @@ fun FocusedEpisodeHeader(
     overviewOnFocus: (FocusState) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val context = LocalContext.current
-    val dto = ep?.data
-    Column(
-        verticalArrangement = Arrangement.spacedBy(Spacing.sm),
-        modifier = modifier,
-    ) {
-        EpisodeName(dto, modifier = Modifier.padding(start = HeaderUtils.startPadding))
+    OnBackdropHeader {
+        val context = LocalContext.current
+        val dto = ep?.data
+        Column(
+            verticalArrangement = Arrangement.spacedBy(Spacing.sm),
+            modifier = modifier,
+        ) {
+            EpisodeName(dto, modifier = Modifier.padding(start = HeaderUtils.startPadding))
 
-        ep?.ui?.quickDetails?.let {
-            QuickDetails(
-                it,
-                ep.timeRemainingOrRuntime,
-                Modifier.padding(start = HeaderUtils.startPadding),
+            ep?.ui?.quickDetails?.let {
+                QuickDetails(
+                    it,
+                    ep.timeRemainingOrRuntime,
+                    Modifier.padding(start = HeaderUtils.startPadding),
+                )
+            }
+
+            if (dto != null) {
+                VideoStreamDetails(
+                    chosenStreams = chosenStreams,
+                    numberOfVersions = dto.mediaSourceCount ?: 0,
+                    modifier = Modifier.padding(start = HeaderUtils.startPadding),
+                )
+            }
+            OverviewText(
+                overview = dto?.overview ?: "",
+                maxLines = 3,
+                onClick = overviewOnClick,
+                // The text (not its focus background) lines up with the title
+                modifier =
+                    Modifier
+                        .padding(start = HeaderUtils.startPadding - Spacing.sm)
+                        .onFocusChanged(overviewOnFocus),
             )
         }
-
-        if (dto != null) {
-            VideoStreamDetails(
-                chosenStreams = chosenStreams,
-                numberOfVersions = dto.mediaSourceCount ?: 0,
-                modifier = Modifier.padding(start = HeaderUtils.startPadding),
-            )
-        }
-        OverviewText(
-            overview = dto?.overview ?: "",
-            maxLines = 3,
-            onClick = overviewOnClick,
-            // The text (not its focus background) lines up with the title
-            modifier =
-                Modifier
-                    .padding(start = HeaderUtils.startPadding - Spacing.sm)
-                    .onFocusChanged(overviewOnFocus),
-        )
     }
 }
