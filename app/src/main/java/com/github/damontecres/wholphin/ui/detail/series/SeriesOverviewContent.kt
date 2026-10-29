@@ -59,6 +59,7 @@ import com.github.damontecres.wholphin.ui.components.TitleOrLogo
 import com.github.damontecres.wholphin.ui.formatSeasonNumber
 import com.github.damontecres.wholphin.ui.ifElse
 import com.github.damontecres.wholphin.ui.logTab
+import com.github.damontecres.wholphin.ui.nav.rememberDrawerSubmenu
 import com.github.damontecres.wholphin.ui.playback.isPlayKeyUp
 import com.github.damontecres.wholphin.ui.rememberInt
 import com.github.damontecres.wholphin.ui.theme.FluidLayout
@@ -130,20 +131,37 @@ fun SeriesOverviewContent(
     val tabFocusRequesters = remember(seasons) { List(seasons.size) { FocusRequester() } }
     val contentFocusRequesters = remember(seasons) { List(seasons.size) { FocusRequester() } }
     val tabs =
-        seasons.mapIndexed { index, season ->
-            TabDetails(
-                title =
-                    StringStringProvider(
-                        season?.name
-                            ?: season?.data?.indexNumber?.let { formatSeasonNumber(it) }
-                            ?: "",
-                    ),
-                tabFocusRequester = tabFocusRequesters[index],
-                contentFocusRequester = contentFocusRequesters[index],
-            )
+        remember(seasons) {
+            seasons.mapIndexed { index, season ->
+                TabDetails(
+                    title =
+                        StringStringProvider(
+                            season?.name
+                                ?: season?.data?.indexNumber?.let { formatSeasonNumber(it) }
+                                ?: "",
+                        ),
+                    tabFocusRequester = tabFocusRequesters[index],
+                    contentFocusRequester = contentFocusRequesters[index],
+                )
+            }
         }
 
     val currentOnChangeSeason by rememberUpdatedState(onChangeSeason)
+    val onClickSeason =
+        remember {
+            { index: Int ->
+                selectedTabIndex = index
+                currentOnChangeSeason(index)
+                requestFocusAfterSeason = true
+            }
+        }
+    // Beside the nav drawer, the seasons are a submenu in the drawer instead of a row on the page
+    val seasonsInDrawer =
+        rememberDrawerSubmenu(
+            tabs = tabs,
+            selectedIndex = selectedTabIndex,
+            onSelect = onClickSeason,
+        )
 
     Box(
         modifier =
@@ -176,24 +194,19 @@ fun SeriesOverviewContent(
                             PaddingValues(start = 0.dp, end = Spacing.md)
                         }
                     }
-                TabRow(
-                    selectedTabIndex = selectedTabIndex,
-                    tabs = tabs,
-                    onClick =
-                        remember {
-                            {
-                                selectedTabIndex = it
-                                currentOnChangeSeason(it)
-                                requestFocusAfterSeason = true
-                            }
-                        },
-                    modifier =
-                        Modifier
-                            .focusRequester(tabRowFocusRequester)
-                            .padding(paddingValues)
-                            .padding(bottom = Spacing.xs)
-                            .fillMaxWidth(),
-                )
+                if (!seasonsInDrawer) {
+                    TabRow(
+                        selectedTabIndex = selectedTabIndex,
+                        tabs = tabs,
+                        onClick = onClickSeason,
+                        modifier =
+                            Modifier
+                                .focusRequester(tabRowFocusRequester)
+                                .padding(paddingValues)
+                                .padding(bottom = Spacing.xs)
+                                .fillMaxWidth(),
+                    )
+                }
                 TitleOrLogo(
                     item = series,
                     showLogo = preferences.appPreferences.interfacePreferences.showLogos,
