@@ -17,14 +17,15 @@ import com.github.damontecres.wholphin.ui.components.TabDetails
  */
 @Stable
 class DrawerSubmenu(
+    val destination: Destination?,
     val tabs: List<TabDetails>,
     val selectedIndex: Int,
     val onSelect: (Int) -> Unit,
 )
 
 /**
- * Holds the submenu of the page shown beside a nav drawer. Each page (nav entry) has its own drawer,
- * so this only ever holds the tabs of that one page
+ * Holds the submenu of the page shown beside the nav drawer. While pages change, the previous page
+ * may still be shown (and registered) for a moment, so the drawer checks the submenu's destination
  */
 @Stable
 class DrawerSubmenuHost {
@@ -51,6 +52,11 @@ class DrawerSubmenuHost {
 val LocalDrawerSubmenuHost = staticCompositionLocalOf<DrawerSubmenuHost?> { null }
 
 /**
+ * The destination of the page (nav entry) being composed
+ */
+val LocalDestination = staticCompositionLocalOf<Destination?> { null }
+
+/**
  * Show [tabs] in the nav drawer's submenu while this is composed and [enabled]
  *
  * @return true when the tabs are shown in the nav drawer, so the page shouldn't show its own tab row.
@@ -64,13 +70,14 @@ fun rememberDrawerSubmenu(
     enabled: Boolean = true,
 ): Boolean {
     val host = LocalDrawerSubmenuHost.current ?: return false
+    val destination = LocalDestination.current
     val owner = remember { Any() }
     val currentOnSelect by rememberUpdatedState(onSelect)
     val select = remember { { index: Int -> currentOnSelect(index) } }
     val show = enabled && selectedIndex in tabs.indices
     LaunchedEffect(host, show, tabs, selectedIndex) {
         if (show) {
-            host.set(owner, DrawerSubmenu(tabs, selectedIndex, select))
+            host.set(owner, DrawerSubmenu(destination, tabs, selectedIndex, select))
         } else {
             host.clear(owner)
         }

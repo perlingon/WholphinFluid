@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -23,7 +24,6 @@ import com.github.damontecres.wholphin.data.model.JellyfinUser
 import com.github.damontecres.wholphin.preferences.UserPreferences
 import com.github.damontecres.wholphin.services.BackdropService
 import com.github.damontecres.wholphin.services.NavigationManager
-import com.github.damontecres.wholphin.ui.components.ErrorMessage
 import com.github.damontecres.wholphin.ui.launchIO
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
@@ -72,43 +72,51 @@ fun ApplicationContent(
             viewModel = viewModel,
         )
         val navDrawerListState = rememberLazyListState()
-        NavDisplay(
-            backStack = navigationManager.backStack,
-            onBack = { navigationManager.goBack() },
-            entryDecorators =
-                listOf(
-                    rememberSaveableStateHolderNavEntryDecorator(),
-                    rememberViewModelStoreNavEntryDecorator(),
-                ),
-            entryProvider = { key ->
-                key as Destination
-                val contentKey = "${key}_${server?.id}_${user?.id}"
-                NavEntry(key, contentKey = contentKey) {
-                    if (key.fullScreen) {
-                        DestinationContent(
-                            destination = key,
-                            preferences = preferences,
-                            onClearBackdrop = viewModel::clearBackdrop,
-                            modifier = Modifier.fillMaxSize(),
-                        )
-                    } else if (user != null && server != null) {
-                        NavDrawer(
-                            destination = key,
-                            preferences = preferences,
-                            user = user,
-                            server = server,
-                            drawerState = drawerState,
-                            navDrawerListState = navDrawerListState,
-                            onClearBackdrop = viewModel::clearBackdrop,
-                            modifier = Modifier.fillMaxSize(),
-                            openOnStart = drawerOpenOnStart,
-                            onOpenedOnStart = { drawerOpenOnStart = false },
-                        )
-                    } else {
-                        ErrorMessage("Trying to go to $key without a user logged in", null)
+        // The nav drawer stays in place around the pages, so changing pages only animates the page.
+        // Full screen pages hide it
+        val current = navigationManager.backStack.lastOrNull() ?: Destination.Home()
+        NavDrawer(
+            destination = current,
+            preferences = preferences,
+            user = user,
+            server = server,
+            drawerState = drawerState,
+            navDrawerListState = navDrawerListState,
+            onClearBackdrop = viewModel::clearBackdrop,
+            modifier = Modifier.fillMaxSize(),
+            openOnStart = drawerOpenOnStart,
+            onOpenedOnStart = { drawerOpenOnStart = false },
+            hidden = current.fullScreen,
+        ) { contentModifier ->
+            val submenuHost = LocalDrawerSubmenuHost.current
+            NavDisplay(
+                backStack = navigationManager.backStack,
+                onBack = { navigationManager.goBack() },
+                modifier = contentModifier,
+                entryDecorators =
+                    listOf(
+                        rememberSaveableStateHolderNavEntryDecorator(),
+                        rememberViewModelStoreNavEntryDecorator(),
+                    ),
+                entryProvider = { key ->
+                    key as Destination
+                    val contentKey = "${key}_${server.id}_${user.id}"
+                    NavEntry(key, contentKey = contentKey) {
+                        CompositionLocalProvider(
+                            LocalDestination provides key,
+                            // Full screen pages keep their own tab rows
+                            LocalDrawerSubmenuHost provides if (key.fullScreen) null else submenuHost,
+                        ) {
+                            DestinationContent(
+                                destination = key,
+                                preferences = preferences,
+                                onClearBackdrop = viewModel::clearBackdrop,
+                                modifier = Modifier.fillMaxSize(),
+                            )
+                        }
                     }
-                }
-            },
-        )
+                },
+            )
+        }
     }
 }

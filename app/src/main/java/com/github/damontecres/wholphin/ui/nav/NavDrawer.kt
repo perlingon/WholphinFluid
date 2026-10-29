@@ -17,11 +17,13 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
@@ -57,6 +59,7 @@ import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -70,6 +73,7 @@ import androidx.lifecycle.findViewTreeViewModelStoreOwner
 import androidx.lifecycle.viewModelScope
 import androidx.tv.material3.DrawerState
 import androidx.tv.material3.DrawerValue
+import androidx.tv.material3.Icon
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.NavigationDrawerScope
 import androidx.tv.material3.ProvideTextStyle
@@ -275,7 +279,10 @@ private const val SEARCH_INDEX = -2
 private const val NOW_PLAYING_INDEX = -3
 
 /**
- * Display the left side navigation drawer with [DestinationContent] on the right
+ * Display the left side navigation drawer with [content] (the pages) on the right
+ *
+ * The drawer stays in place while pages change beneath it. [hidden] is for full screen pages, which
+ * get the whole screen and no drawer
  */
 @Composable
 fun NavDrawer(
@@ -289,13 +296,14 @@ fun NavDrawer(
     modifier: Modifier = Modifier,
     openOnStart: Boolean = false,
     onOpenedOnStart: () -> Unit = {},
+    hidden: Boolean = false,
     viewModel: NavDrawerViewModel =
         hiltViewModel(
             LocalView.current.findViewTreeViewModelStoreOwner()!!,
             key = "${server.id}_${user.id}", // Keyed to the server & user to ensure its reset when switching either
         ),
+    content: @Composable (Modifier) -> Unit,
 ) {
-    LaunchedEffect(Unit) { viewModel.updateSelectedIndex() }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
     val density = LocalDensity.current
@@ -305,7 +313,7 @@ fun NavDrawer(
 
     // The current page's tabs, shown as a second level of the drawer (see DrawerSubmenu)
     val submenuHost = remember { DrawerSubmenuHost() }
-    val submenu = submenuHost.submenu
+    val submenu = submenuHost.submenu?.takeIf { !hidden && it.destination == destination }
     val selectedTabFocusRequester = submenu?.let { it.tabs.getOrNull(it.selectedIndex)?.tabFocusRequester }
     var topHasFocus by remember { mutableStateOf(false) }
     var submenuHasFocus by remember { mutableStateOf(false) }
@@ -318,6 +326,7 @@ fun NavDrawer(
 
     fun focusSubmenu() {
         enteringSubmenu = true
+        releaseToContent = false
         scope.launch {
             // The submenu's items may not be laid out yet, so keep trying for a few frames
             var frames = 0
@@ -332,23 +341,27 @@ fun NavDrawer(
         }
     }
 
-    // Opening a drawer item that has a submenu (a page with tabs) moves on to the submenu
-    val openedFromDrawer = remember { drawerState.isOpen && !openOnStart }
-    var submenuShownOnArrival by remember { mutableStateOf(false) }
-    LaunchedEffect(submenu != null) {
-        if (openedFromDrawer && submenu != null && !submenuShownOnArrival) {
-            submenuShownOnArrival = true
-            focusSubmenu()
+    // On a new page, opened from the drawer: if it has a submenu (it's a page with tabs) move on to
+    // it, otherwise let the page take focus as usual
+    LaunchedEffect(destination) {
+        viewModel.updateSelectedIndex()
+        val fromDrawer = drawerHasFocus
+        releaseToContent = true
+        if (fromDrawer) {
+            var frames = 0
+            while (submenuHost.submenu?.destination != destination && frames++ < 10) {
+                withFrameNanos { }
+            }
+            if (submenuHost.submenu?.destination == destination) focusSubmenu()
         }
     }
-    // When focus moves from the previous page's drawer to this one, the previous one may close the
-    // shared drawer state after this one opened it
+    // Full screen pages have no drawer
+    LaunchedEffect(hidden) {
+        if (hidden) drawerState.setValue(DrawerValue.Closed)
+    }
     LaunchedEffect(drawerHasFocus, drawerState.currentValue) {
         if (drawerHasFocus && !drawerState.isOpen) drawerState.setValue(DrawerValue.Open)
         if (!drawerHasFocus) releaseToContent = false
-    }
-    BackHandler(enabled = submenuHasFocus) {
-        focusRequester.tryRequestFocus()
     }
 
     // When the app starts, the drawer opens with focus on the current page's item. Its items may
@@ -365,11 +378,6 @@ fun NavDrawer(
         }
     }
 
-    // If the user presses back while on the home page, open the nav drawer, another back press will quit the app
-    BackHandler(enabled = (drawerState.currentValue == DrawerValue.Closed && destination is Destination.Home)) {
-        drawerState.setValue(DrawerValue.Open)
-        focusRequester.requestFocus()
-    }
     val serviceState by viewModel.serviceState.collectAsState()
     val state by viewModel.state.collectAsState()
     // A negative index is a built-in page, >=0 is a library
@@ -409,6 +417,7 @@ fun NavDrawer(
         modifier = modifier,
         drawerState = drawerState,
         drawerContent = { drawerValue ->
+            if (hidden) return@ModalNavigationDrawer
             val isOpen = drawerValue.isOpen
             val spacedBy = 4.dp
             val firstItemFocusRequester = remember { FocusRequester() }
@@ -448,19 +457,7 @@ fun NavDrawer(
                                 .width(ExpandedDrawerItemWidth)
                                 .fillMaxHeight()
                                 .padding(top = DrawerTopPadding)
-                                .onFocusChanged { topHasFocus = it.hasFocus }
-                                .onPreviewKeyEvent {
-                                    // Right from the top level goes to the submenu, the page is beyond it
-                                    if (submenu != null &&
-                                        it.type == KeyEventType.KeyDown &&
-                                        it.key == Key.DirectionRight
-                                    ) {
-                                        focusSubmenu()
-                                        true
-                                    } else {
-                                        false
-                                    }
-                                },
+                                .onFocusChanged { topHasFocus = it.hasFocus },
                     ) {
                         AnimatedVisibility(
                             visible = serviceState.nowPlayingEnabled,
@@ -539,6 +536,20 @@ fun NavDrawer(
                                     onClick = {
                                         viewModel.onClickDrawerItem(index, it)
                                     },
+                                    // Right on an item with a submenu goes into its submenu, opening
+                                    // its page first if it isn't the current one
+                                    onRight =
+                                        if (it.hasSubmenu) {
+                                            {
+                                                if (selectedIndex == index && submenu != null) {
+                                                    focusSubmenu()
+                                                } else {
+                                                    viewModel.onClickDrawerItem(index, it)
+                                                }
+                                            }
+                                        } else {
+                                            null
+                                        },
                                     modifier =
                                         Modifier
                                             .ifElse(
@@ -622,34 +633,42 @@ fun NavDrawer(
                 LocalNavDrawerOpen provides drawerState.isOpen,
                 LocalDrawerSubmenuHost provides submenuHost,
             ) {
-                DestinationContent(
-                    destination = destination,
-                    preferences = preferences,
-                    onClearBackdrop = onClearBackdrop,
-                    modifier =
-                        Modifier
-                            .fillMaxSize()
-                            .offset {
-                                offset
-                            }.padding(start = closedDrawerWidth + Spacing.sm, end = Spacing.md)
-                            .focusProperties {
-                                onEnter = {
-                                    // While the drawer has focus, the page can't take focus for
-                                    // itself (eg when its content finishes loading), only by the
-                                    // user moving out of the drawer
-                                    if (requestedFocusDirection == FocusDirection.Enter &&
-                                        drawerHasFocus &&
-                                        !releaseToContent
-                                    ) {
-                                        cancelFocusChange()
-                                    }
+                content(
+                    Modifier
+                        .fillMaxSize()
+                        .offset {
+                            offset
+                        }.ifElse(
+                            !hidden,
+                            Modifier.padding(start = closedDrawerWidth + Spacing.sm, end = Spacing.md),
+                        ).focusProperties {
+                            onEnter = {
+                                // While the drawer has focus, the page can't take focus for
+                                // itself (eg when its content finishes loading), only by the
+                                // user moving out of the drawer
+                                if (requestedFocusDirection == FocusDirection.Enter &&
+                                    drawerHasFocus &&
+                                    !releaseToContent
+                                ) {
+                                    cancelFocusChange()
                                 }
-                            }.focusGroup(),
+                            }
+                        }.focusGroup(),
                 )
+            }
+            // After the pages, so these take priority over going back a page
+            // If the user presses back while on the home page, open the nav drawer, another back press will quit the app
+            BackHandler(enabled = !hidden && drawerState.currentValue == DrawerValue.Closed && destination is Destination.Home) {
+                drawerState.setValue(DrawerValue.Open)
+                focusRequester.tryRequestFocus()
+            }
+            // Back from the submenu goes up to the top level
+            BackHandler(enabled = submenuHasFocus) {
+                focusRequester.tryRequestFocus()
             }
             // Search isn't in the drawer: it's in the top menu, which shows on pressing up at the
             // top of a page
-            if (destination !is Destination.Search) {
+            if (!hidden && destination !is Destination.Search) {
                 TopMenu(
                     onSearch = {
                         viewModel.setIndex(SEARCH_INDEX)
@@ -658,7 +677,7 @@ fun NavDrawer(
                     modifier = Modifier.align(Alignment.TopCenter),
                 )
             }
-            if (preferences.appPreferences.interfacePreferences.showClock) {
+            if (!hidden && preferences.appPreferences.interfacePreferences.showClock) {
                 TimeDisplay()
             }
         }
@@ -706,17 +725,30 @@ fun NavigationDrawerScope.NavItem(
     modifier: Modifier = Modifier,
     interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
     containerColor: Color = Color.Transparent,
+    onRight: (() -> Unit)? = null,
 ) {
     val context = LocalContext.current
     val focused by interactionSource.collectIsFocusedAsState()
     NavigationDrawerItem(
-        modifier = modifier,
+        modifier =
+            modifier.onPreviewKeyEvent {
+                if (onRight != null && it.type == KeyEventType.KeyDown && it.key == Key.DirectionRight) {
+                    onRight()
+                    true
+                } else {
+                    false
+                }
+            },
         selected = false,
         onClick = onClick,
         colors = navDrawerItemColors(containerColor),
         interactionSource = interactionSource,
     ) {
-        NavItemText(library.name(context), navItemColor(selected, focused, drawerOpen))
+        NavItemText(
+            library.name(context),
+            navItemColor(selected, focused, drawerOpen),
+            showChevron = library.hasSubmenu,
+        )
     }
 }
 
@@ -731,18 +763,51 @@ internal val NavItemLetterSpacing = 1.sp
 internal fun NavItemText(
     text: String,
     color: Color,
+    showChevron: Boolean = false,
 ) {
-    Text(
-        text = text.uppercase(),
-        color = color,
-        style = MaterialTheme.typography.titleLarge,
-        fontWeight = NavItemFontWeight,
-        letterSpacing = NavItemLetterSpacing,
-        maxLines = 1,
-        textAlign = TextAlign.End,
+    // A chevron after the name shows that the item opens a submenu
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(Spacing.xs, Alignment.End),
         modifier = Modifier.fillMaxWidth(),
-    )
+    ) {
+        Text(
+            text = text.uppercase(),
+            color = color,
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = NavItemFontWeight,
+            letterSpacing = NavItemLetterSpacing,
+            maxLines = 1,
+            textAlign = TextAlign.End,
+            modifier = Modifier.weight(1f, fill = false),
+        )
+        if (showChevron) {
+            Icon(
+                painter = painterResource(R.drawable.ic_chevron_right),
+                contentDescription = null,
+                tint = color,
+                modifier = Modifier.size(NavItemChevronSize),
+            )
+        }
+    }
 }
+
+internal val NavItemChevronSize = 20.dp
+
+/**
+ * Whether this item's page has tabs, which show as a submenu in the drawer
+ */
+val NavDrawerItem.hasSubmenu: Boolean
+    get() =
+        when (this) {
+            NavDrawerItem.Favorites, NavDrawerItem.Discover -> true
+            is ServerNavDrawerItem ->
+                type == CollectionType.MOVIES ||
+                    type == CollectionType.TVSHOWS ||
+                    type == CollectionType.MUSIC ||
+                    type == CollectionType.LIVETV
+            else -> false
+        }
 
 /**
  * Whether the nav drawer is open, for pages that should hold back from taking focus while it is
