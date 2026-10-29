@@ -72,6 +72,7 @@ import com.github.damontecres.wholphin.ui.detail.CardGridItem
 import com.github.damontecres.wholphin.ui.detail.GridItemDetails
 import com.github.damontecres.wholphin.ui.detail.livetv.ProgramDialog
 import com.github.damontecres.wholphin.ui.nav.Destination
+import com.github.damontecres.wholphin.ui.nav.rememberDrawerSubmenu
 import com.github.damontecres.wholphin.ui.onMain
 import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.ui.titleStringRes
@@ -256,6 +257,23 @@ fun SearchPage(
             }
         }
 
+    // Beside the nav drawer, the tabs are a submenu in the drawer instead of a row on the page
+    val tabsInDrawer =
+        rememberDrawerSubmenu(
+            tabs = tabs,
+            selectedIndex = selectedTab,
+            onSelect = {
+                selectedTab = it
+                val row =
+                    when (it) {
+                        0 -> COMBINED_ROW
+                        else -> SEERR_ROW
+                    }
+                setPosition(RowColumn(row, 0))
+            },
+            enabled = seerrActive && state.discoverEnabled && query.isNotBlank() && combinedMode,
+        )
+
     Column(
         modifier = modifier.fillMaxSize(),
         verticalArrangement = Arrangement.spacedBy(Spacing.md),
@@ -342,7 +360,7 @@ fun SearchPage(
             }
         }
         AnimatedVisibility(
-            visible = showTabs,
+            visible = showTabs && !tabsInDrawer,
             enter = expandVertically(),
             exit = shrinkVertically(),
         ) {

@@ -4,6 +4,8 @@ import android.content.Context
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.VisibilityThreshold
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.animateIntOffsetAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.expandVertically
@@ -15,15 +17,20 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.KeyboardArrowLeft
@@ -47,13 +54,22 @@ import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.findViewTreeViewModelStoreOwner
@@ -61,7 +77,6 @@ import androidx.lifecycle.viewModelScope
 import androidx.tv.material3.DrawerState
 import androidx.tv.material3.DrawerValue
 import androidx.tv.material3.Icon
-import androidx.tv.material3.LocalContentColor
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.NavigationDrawerItemDefaults
 import androidx.tv.material3.NavigationDrawerScope
@@ -92,6 +107,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.client.extensions.imageApi
 import org.jellyfin.sdk.model.api.CollectionType
@@ -296,6 +312,54 @@ fun NavDrawer(
     val focusRequester = remember { FocusRequester() }
     var drawerHasFocus by remember { mutableStateOf(false) }
 
+    // The current page's tabs, shown as a second level of the drawer (see DrawerSubmenu)
+    val submenuHost = remember { DrawerSubmenuHost() }
+    val submenu = submenuHost.submenu
+    val selectedTabFocusRequester = submenu?.let { it.tabs.getOrNull(it.selectedIndex)?.tabFocusRequester }
+    var topHasFocus by remember { mutableStateOf(false) }
+    var submenuHasFocus by remember { mutableStateOf(false) }
+    // Submenu items can't take focus while the top level has it, so pressing right on the top level
+    // doesn't land on them. This lets them while focus is being moved there on purpose
+    var enteringSubmenu by remember { mutableStateOf(false) }
+    // After a submenu item is clicked, the page may take focus even though the drawer still has it
+    var releaseToContent by remember { mutableStateOf(false) }
+    val showSubmenu = drawerState.isOpen && submenu != null && submenuHasFocus
+
+    fun focusSubmenu() {
+        enteringSubmenu = true
+        scope.launch {
+            // The submenu's items may not be laid out yet, so keep trying for a few frames
+            var frames = 0
+            while (!submenuHasFocus && frames++ < 30) {
+                submenuHost.submenu
+                    ?.let { it.tabs.getOrNull(it.selectedIndex) }
+                    ?.tabFocusRequester
+                    ?.tryRequestFocus()
+                withFrameNanos { }
+            }
+            enteringSubmenu = false
+        }
+    }
+
+    // Opening a drawer item that has a submenu (a page with tabs) moves on to the submenu
+    val openedFromDrawer = remember { drawerState.isOpen && !openOnStart }
+    var submenuShownOnArrival by remember { mutableStateOf(false) }
+    LaunchedEffect(submenu != null) {
+        if (openedFromDrawer && submenu != null && !submenuShownOnArrival) {
+            submenuShownOnArrival = true
+            focusSubmenu()
+        }
+    }
+    // When focus moves from the previous page's drawer to this one, the previous one may close the
+    // shared drawer state after this one opened it
+    LaunchedEffect(drawerHasFocus, drawerState.currentValue) {
+        if (drawerHasFocus && !drawerState.isOpen) drawerState.setValue(DrawerValue.Open)
+        if (!drawerHasFocus) releaseToContent = false
+    }
+    BackHandler(enabled = submenuHasFocus) {
+        focusRequester.tryRequestFocus()
+    }
+
     // When the app starts, the drawer opens with focus on the current page's item. Its items may
     // not be laid out on the first frame, so keep trying for a few frames
     LaunchedEffect(Unit) {
@@ -326,7 +390,19 @@ fun NavDrawer(
     }
 
     val closedDrawerWidth = CollapsedDrawerItemWidth
-    val openDrawerWidth = ExpandedDrawerItemWidth
+    // With the submenu showing, the top level slides left (out of view, apart from SubmenuParentPeek)
+    val openDrawerWidth =
+        if (showSubmenu) SubmenuParentPeek + SubmenuDrawerWidth else ExpandedDrawerItemWidth
+    val submenuShift by animateDpAsState(
+        targetValue = if (showSubmenu) ExpandedDrawerItemWidth - SubmenuParentPeek else 0.dp,
+        animationSpec = spring(stiffness = DrawerAnimationStiffness),
+        label = "submenuShift",
+    )
+    val submenuAlpha by animateFloatAsState(
+        targetValue = if (showSubmenu) 1f else 0f,
+        animationSpec = spring(stiffness = DrawerAnimationStiffness),
+        label = "submenuAlpha",
+    )
     val offset by animateIntOffsetAsState(
         targetValue =
             IntOffset(
@@ -352,147 +428,157 @@ fun NavDrawer(
             val searchFocusRequester = remember { FocusRequester() }
 
             ProvideTextStyle(MaterialTheme.typography.titleLarge) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(spacedBy),
+                Box(
                     modifier =
                         Modifier
+                            .width(ExpandedDrawerItemWidth + if (submenu != null) SubmenuDrawerWidth else 0.dp)
                             .fillMaxHeight()
-                            .onFocusChanged { drawerHasFocus = it.hasFocus },
+                            .onFocusChanged { drawerHasFocus = it.hasFocus }
+                            .focusProperties {
+                                onEnter = {
+                                    // Pressing left from the page opens the submenu if there is one,
+                                    // otherwise the current page's item
+                                    if (requestedFocusDirection == FocusDirection.Left) {
+                                        (selectedTabFocusRequester ?: focusRequester).tryRequestFocus()
+                                    }
+                                }
+                            }.focusGroup(),
                 ) {
-                    // Even though some must be clicked, focusing on it should clear other focused items
-                    val interactionSource = remember { MutableInteractionSource() }
-                    val userImageUrl = remember(user) { viewModel.getUserImage(user) }
-                    ProfileIcon(
-                        user = user,
-                        imageUrl = userImageUrl,
-                        serverName = server.name ?: server.url,
-                        drawerOpen = isOpen,
-                        interactionSource = interactionSource,
-                        onClick = {
-                            viewModel.navigateToSetup(
-                                SetupDestination.UserList(server),
-                            )
-                        },
-                        modifier = Modifier,
-                    )
-                    AnimatedVisibility(
-                        visible = serviceState.nowPlayingEnabled,
-                        enter = expandVertically(expandFrom = Alignment.Top),
-                        exit = shrinkVertically(shrinkTowards = Alignment.Top),
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(spacedBy),
+                        modifier =
+                            Modifier
+                                .offset { IntOffset(-submenuShift.roundToPx(), 0) }
+                                .graphicsLayer { alpha = 1f - (1f - SubmenuParentAlpha) * submenuAlpha }
+                                .width(ExpandedDrawerItemWidth)
+                                .fillMaxHeight()
+                                .onFocusChanged { topHasFocus = it.hasFocus }
+                                .onPreviewKeyEvent {
+                                    // Right from the top level goes to the submenu, the page is beyond it
+                                    if (submenu != null &&
+                                        it.type == KeyEventType.KeyDown &&
+                                        it.key == Key.DirectionRight
+                                    ) {
+                                        focusSubmenu()
+                                        true
+                                    } else {
+                                        false
+                                    }
+                                },
                     ) {
+                        // Even though some must be clicked, focusing on it should clear other focused items
                         val interactionSource = remember { MutableInteractionSource() }
-                        IconNavItem(
-                            text = stringResource(R.string.now_playing),
-                            subtext = serviceState.nowPlayingTitle,
-                            selected = selectedIndex == NOW_PLAYING_INDEX,
+                        val userImageUrl = remember(user) { viewModel.getUserImage(user) }
+                        ProfileIcon(
+                            user = user,
+                            imageUrl = userImageUrl,
+                            serverName = server.name ?: server.url,
                             drawerOpen = isOpen,
                             interactionSource = interactionSource,
                             onClick = {
-                                viewModel.setIndex(NOW_PLAYING_INDEX)
-                                viewModel.navigationManager.navigateTo(Destination.NowPlaying)
+                                viewModel.navigateToSetup(
+                                    SetupDestination.UserList(server),
+                                )
                             },
+                            modifier = Modifier,
+                        )
+                        AnimatedVisibility(
+                            visible = serviceState.nowPlayingEnabled,
+                            enter = expandVertically(expandFrom = Alignment.Top),
+                            exit = shrinkVertically(shrinkTowards = Alignment.Top),
+                        ) {
+                            val interactionSource = remember { MutableInteractionSource() }
+                            IconNavItem(
+                                text = stringResource(R.string.now_playing),
+                                subtext = serviceState.nowPlayingTitle,
+                                selected = selectedIndex == NOW_PLAYING_INDEX,
+                                drawerOpen = isOpen,
+                                interactionSource = interactionSource,
+                                onClick = {
+                                    viewModel.setIndex(NOW_PLAYING_INDEX)
+                                    viewModel.navigationManager.navigateTo(Destination.NowPlaying)
+                                },
+                                modifier =
+                                    Modifier
+                                        .ifElse(
+                                            selectedIndex == NOW_PLAYING_INDEX,
+                                            Modifier.focusRequester(focusRequester),
+                                        ),
+                            )
+                        }
+                        LazyColumn(
+                            state = navDrawerListState,
+                            contentPadding = PaddingValues(0.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedByWithFooter(spacedBy),
                             modifier =
                                 Modifier
-                                    .ifElse(
-                                        selectedIndex == NOW_PLAYING_INDEX,
-                                        Modifier.focusRequester(focusRequester),
-                                    ),
-                        )
-                    }
-                    LazyColumn(
-                        state = navDrawerListState,
-                        contentPadding = PaddingValues(0.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedByWithFooter(spacedBy),
-                        modifier =
-                            Modifier
-                                .focusGroup()
-                                .focusProperties {
-                                    onEnter = {
-                                        if (requestedFocusDirection == FocusDirection.Down) {
-                                            searchFocusRequester.tryRequestFocus()
-                                        } else {
-                                            focusRequester.tryRequestFocus()
+                                    .focusGroup()
+                                    .focusProperties {
+                                        onEnter = {
+                                            if (requestedFocusDirection == FocusDirection.Down) {
+                                                searchFocusRequester.tryRequestFocus()
+                                            } else {
+                                                focusRequester.tryRequestFocus()
+                                            }
                                         }
-                                    }
-                                }.fillMaxHeight(),
-                    ) {
-                        item {
-                            val interactionSource = remember { MutableInteractionSource() }
-                            IconNavItem(
-                                text = stringResource(R.string.search),
-                                selected = selectedIndex == SEARCH_INDEX,
-                                drawerOpen = isOpen,
-                                interactionSource = interactionSource,
-                                onClick = {
-                                    viewModel.setIndex(SEARCH_INDEX)
-                                    viewModel.navigationManager.navigateToFromDrawer(Destination.Search())
-                                },
-                                modifier =
-                                    Modifier
-                                        .focusRequester(searchFocusRequester)
-                                        .ifElse(
-                                            selectedIndex == SEARCH_INDEX,
-                                            Modifier.focusRequester(focusRequester),
-                                        ),
-                            )
-                        }
-                        item {
-                            val interactionSource = remember { MutableInteractionSource() }
-                            IconNavItem(
-                                text = stringResource(R.string.home),
-                                selected = selectedIndex == HOME_INDEX,
-                                drawerOpen = isOpen,
-                                interactionSource = interactionSource,
-                                onClick = {
-                                    viewModel.setIndex(HOME_INDEX)
-                                    if (destination is Destination.Home) {
-                                        viewModel.navigationManager.reloadHome()
-                                        onClearBackdrop.invoke()
-                                    } else {
-                                        viewModel.navigationManager.goToHome()
-                                    }
-                                },
-                                modifier =
-                                    Modifier
-                                        .ifElse(
-                                            selectedIndex == HOME_INDEX,
-                                            Modifier.focusRequester(focusRequester),
-                                        ),
-                            )
-                        }
-                        itemsIndexed(serviceState.items) { index, it ->
-                            val interactionSource = remember { MutableInteractionSource() }
-                            NavItem(
-                                library = it,
-                                selected = selectedIndex == index,
-                                moreExpanded = moreExpanded,
-                                drawerOpen = isOpen,
-                                interactionSource = interactionSource,
-                                onClick = {
-                                    viewModel.onClickDrawerItem(index, it)
-                                },
-                                modifier =
-                                    Modifier
-                                        .ifElse(
-                                            selectedIndex == index,
-                                            Modifier.focusRequester(focusRequester),
-                                        ),
-                            )
-                        }
-                        if (serviceState.moreItems.isNotEmpty()) {
+                                    }.fillMaxHeight(),
+                        ) {
                             item {
-                                val index = serviceState.items.size
+                                val interactionSource = remember { MutableInteractionSource() }
+                                IconNavItem(
+                                    text = stringResource(R.string.search),
+                                    selected = selectedIndex == SEARCH_INDEX,
+                                    drawerOpen = isOpen,
+                                    interactionSource = interactionSource,
+                                    onClick = {
+                                        viewModel.setIndex(SEARCH_INDEX)
+                                        viewModel.navigationManager.navigateToFromDrawer(Destination.Search())
+                                    },
+                                    modifier =
+                                        Modifier
+                                            .focusRequester(searchFocusRequester)
+                                            .ifElse(
+                                                selectedIndex == SEARCH_INDEX,
+                                                Modifier.focusRequester(focusRequester),
+                                            ),
+                                )
+                            }
+                            item {
+                                val interactionSource = remember { MutableInteractionSource() }
+                                IconNavItem(
+                                    text = stringResource(R.string.home),
+                                    selected = selectedIndex == HOME_INDEX,
+                                    drawerOpen = isOpen,
+                                    interactionSource = interactionSource,
+                                    onClick = {
+                                        viewModel.setIndex(HOME_INDEX)
+                                        if (destination is Destination.Home) {
+                                            viewModel.navigationManager.reloadHome()
+                                            onClearBackdrop.invoke()
+                                        } else {
+                                            viewModel.navigationManager.goToHome()
+                                        }
+                                    },
+                                    modifier =
+                                        Modifier
+                                            .ifElse(
+                                                selectedIndex == HOME_INDEX,
+                                                Modifier.focusRequester(focusRequester),
+                                            ),
+                                )
+                            }
+                            itemsIndexed(serviceState.items) { index, it ->
                                 val interactionSource = remember { MutableInteractionSource() }
                                 NavItem(
-                                    library = NavDrawerItem.More,
-                                    selected = false,
+                                    library = it,
+                                    selected = selectedIndex == index,
                                     moreExpanded = moreExpanded,
                                     drawerOpen = isOpen,
                                     interactionSource = interactionSource,
                                     onClick = {
-                                        viewModel.onClickDrawerItem(index, NavDrawerItem.More)
+                                        viewModel.onClickDrawerItem(index, it)
                                     },
                                     modifier =
                                         Modifier
@@ -502,56 +588,107 @@ fun NavDrawer(
                                             ),
                                 )
                             }
-                        }
-                        if (moreExpanded) {
-                            itemsIndexed(serviceState.moreItems) { index, it ->
-                                val adjustedIndex =
-                                    remember(serviceState) { (index + serviceState.items.size) }
+                            if (serviceState.moreItems.isNotEmpty()) {
+                                item {
+                                    val index = serviceState.items.size
+                                    val interactionSource = remember { MutableInteractionSource() }
+                                    NavItem(
+                                        library = NavDrawerItem.More,
+                                        selected = false,
+                                        moreExpanded = moreExpanded,
+                                        drawerOpen = isOpen,
+                                        interactionSource = interactionSource,
+                                        onClick = {
+                                            viewModel.onClickDrawerItem(index, NavDrawerItem.More)
+                                        },
+                                        modifier =
+                                            Modifier
+                                                .ifElse(
+                                                    selectedIndex == index,
+                                                    Modifier.focusRequester(focusRequester),
+                                                ),
+                                    )
+                                }
+                            }
+                            if (moreExpanded) {
+                                itemsIndexed(serviceState.moreItems) { index, it ->
+                                    val adjustedIndex =
+                                        remember(serviceState) { (index + serviceState.items.size) }
+                                    val interactionSource = remember { MutableInteractionSource() }
+                                    NavItem(
+                                        library = it,
+                                        selected = selectedIndex == adjustedIndex,
+                                        moreExpanded = moreExpanded,
+                                        drawerOpen = isOpen,
+                                        onClick = {
+                                            viewModel.onClickDrawerItem(
+                                                adjustedIndex,
+                                                it,
+                                            )
+                                        },
+                                        containerColor =
+                                            if (isOpen) {
+                                                MaterialTheme.colorScheme.surface.copy(alpha = .5f)
+                                            } else {
+                                                Color.Transparent
+                                            },
+                                        interactionSource = interactionSource,
+                                        modifier =
+                                            Modifier
+                                                .ifElse(
+                                                    selectedIndex == adjustedIndex,
+                                                    Modifier.focusRequester(focusRequester),
+                                                ),
+                                    )
+                                }
+                            }
+                            item {
                                 val interactionSource = remember { MutableInteractionSource() }
-                                NavItem(
-                                    library = it,
-                                    selected = selectedIndex == adjustedIndex,
-                                    moreExpanded = moreExpanded,
+                                IconNavItem(
+                                    text = stringResource(R.string.settings),
+                                    selected = false,
                                     drawerOpen = isOpen,
+                                    interactionSource = interactionSource,
                                     onClick = {
-                                        viewModel.onClickDrawerItem(
-                                            adjustedIndex,
-                                            it,
+                                        viewModel.navigationManager.navigateTo(
+                                            Destination.Settings(
+                                                PreferenceScreenOption.BASIC,
+                                            ),
                                         )
                                     },
-                                    containerColor =
-                                        if (isOpen) {
-                                            MaterialTheme.colorScheme.surface.copy(alpha = .5f)
-                                        } else {
-                                            Color.Unspecified
-                                        },
-                                    interactionSource = interactionSource,
-                                    modifier =
-                                        Modifier
-                                            .ifElse(
-                                                selectedIndex == adjustedIndex,
-                                                Modifier.focusRequester(focusRequester),
-                                            ),
+                                    modifier = Modifier,
                                 )
                             }
                         }
-                        item {
-                            val interactionSource = remember { MutableInteractionSource() }
-                            IconNavItem(
-                                text = stringResource(R.string.settings),
-                                selected = false,
-                                drawerOpen = isOpen,
-                                interactionSource = interactionSource,
-                                onClick = {
-                                    viewModel.navigationManager.navigateTo(
-                                        Destination.Settings(
-                                            PreferenceScreenOption.BASIC,
-                                        ),
-                                    )
-                                },
-                                modifier = Modifier,
-                            )
-                        }
+                    }
+                    if (submenu != null) {
+                        DrawerSubmenuColumn(
+                            submenu = submenu,
+                            drawerOpen = isOpen,
+                            focusable = !topHasFocus || enteringSubmenu,
+                            spacedBy = spacedBy,
+                            onClick = { index ->
+                                submenu.onSelect(index)
+                                // Move on into the page, once the tab's content can take focus
+                                releaseToContent = true
+                                scope.launch {
+                                    repeat(60) {
+                                        if (!drawerHasFocus) return@launch
+                                        submenu.tabs
+                                            .getOrNull(index)
+                                            ?.contentFocusRequester
+                                            ?.tryRequestFocus()
+                                        withFrameNanos { }
+                                    }
+                                }
+                            },
+                            onLeft = { focusRequester.tryRequestFocus() },
+                            modifier =
+                                Modifier
+                                    .offset { IntOffset((ExpandedDrawerItemWidth - submenuShift).roundToPx(), 0) }
+                                    .graphicsLayer { alpha = submenuAlpha }
+                                    .onFocusChanged { submenuHasFocus = it.hasFocus },
+                        )
                     }
                 }
             }
@@ -561,7 +698,10 @@ fun NavDrawer(
             modifier = Modifier.fillMaxSize(),
         ) {
             // Drawer content
-            CompositionLocalProvider(LocalNavDrawerOpen provides drawerState.isOpen) {
+            CompositionLocalProvider(
+                LocalNavDrawerOpen provides drawerState.isOpen,
+                LocalDrawerSubmenuHost provides submenuHost,
+            ) {
                 DestinationContent(
                     destination = destination,
                     preferences = preferences,
@@ -571,7 +711,20 @@ fun NavDrawer(
                             .fillMaxSize()
                             .offset {
                                 offset
-                            }.padding(start = closedDrawerWidth + Spacing.sm, end = Spacing.md),
+                            }.padding(start = closedDrawerWidth + Spacing.sm, end = Spacing.md)
+                            .focusProperties {
+                                onEnter = {
+                                    // While the drawer has focus, the page can't take focus for
+                                    // itself (eg when its content finishes loading), only by the
+                                    // user moving out of the drawer
+                                    if (requestedFocusDirection == FocusDirection.Enter &&
+                                        drawerHasFocus &&
+                                        !releaseToContent
+                                    ) {
+                                        cancelFocusChange()
+                                    }
+                                }
+                            }.focusGroup(),
                 )
             }
             if (preferences.appPreferences.interfacePreferences.showClock) {
@@ -616,8 +769,10 @@ fun NavigationDrawerScope.ProfileIcon(
         interactionSource = interactionSource,
     ) {
         Text(
-            text = user.name ?: user.id.toString(),
+            text = (user.name ?: user.id.toString()).uppercase(),
             style = MaterialTheme.typography.titleLarge,
+            fontWeight = NavItemFontWeight,
+            letterSpacing = NavItemLetterSpacing,
             maxLines = 1,
             textAlign = TextAlign.End,
             modifier = Modifier.fillMaxWidth(),
@@ -666,7 +821,7 @@ fun NavigationDrawerScope.NavItem(
     drawerOpen: Boolean,
     modifier: Modifier = Modifier,
     interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
-    containerColor: Color = Color.Unspecified,
+    containerColor: Color = Color.Transparent,
 ) {
     val context = LocalContext.current
     val focused by interactionSource.collectIsFocusedAsState()
@@ -674,10 +829,7 @@ fun NavigationDrawerScope.NavItem(
         modifier = modifier,
         selected = false,
         onClick = onClick,
-        colors =
-            NavigationDrawerItemDefaults.colors(
-                containerColor = containerColor,
-            ),
+        colors = navDrawerItemColors(containerColor),
         trailingContent =
             if (library is NavDrawerItem.More) {
                 {
@@ -695,18 +847,24 @@ fun NavigationDrawerScope.NavItem(
     }
 }
 
+// Nav drawer item names are upper case, in a heavier weight
+internal val NavItemFontWeight = FontWeight.SemiBold
+internal val NavItemLetterSpacing = 1.sp
+
 /**
- * A nav drawer item's name: right-aligned, coloured to show whether it is the current page
+ * A nav drawer item's name: right-aligned, coloured to show whether it is focused or the current page
  */
 @Composable
-private fun NavItemText(
+internal fun NavItemText(
     text: String,
     color: Color,
 ) {
     Text(
-        text = text,
+        text = text.uppercase(),
         color = color,
         style = MaterialTheme.typography.titleLarge,
+        fontWeight = NavItemFontWeight,
+        letterSpacing = NavItemLetterSpacing,
         maxLines = 1,
         textAlign = TextAlign.End,
         modifier = Modifier.fillMaxWidth(),
@@ -718,6 +876,10 @@ private fun NavItemText(
  */
 val LocalNavDrawerOpen = compositionLocalOf { false }
 
+/**
+ * The text colour of a nav drawer item. Items have no background, so this is all that shows focus:
+ * the focused item takes the theme's focus colour, the current page's item is brighter than the rest
+ */
 @Composable
 @ReadOnlyComposable
 fun navItemColor(
@@ -725,59 +887,91 @@ fun navItemColor(
     focused: Boolean,
     drawerOpen: Boolean,
 ): Color {
-    val theme = LocalTheme.current
-    if (theme == AppThemeColors.OLED_BLACK) {
-        return when {
-            selected && focused -> Color.Black
-            selected && !drawerOpen -> Color.White.copy(alpha = .5f)
-            selected && drawerOpen -> Color.White.copy(alpha = .85f)
-            focused -> Color.Black.copy(alpha = .5f)
-            drawerOpen -> Color(0xFF707070)
-            else -> Color(0xFF505050).copy(alpha = .66f)
-        }
-    } else {
-        val alpha =
-            when {
-                drawerOpen -> .85f
-                selected && !drawerOpen -> .5f
-                else -> .2f
-            }
-        return when {
-            selected && focused -> {
-                when (theme) {
-                    AppThemeColors.UNRECOGNIZED,
-                    AppThemeColors.PURPLE,
-                    AppThemeColors.BLUE,
-                    AppThemeColors.GREEN,
-                    AppThemeColors.ORANGE,
-                    AppThemeColors.RED,
-                    AppThemeColors.BROWN,
-                    AppThemeColors.VIVID,
-                    AppThemeColors.MUTED,
-                    AppThemeColors.DARK,
-                    AppThemeColors.DARKEST,
-                    -> MaterialTheme.colorScheme.border
-
+    val color =
+        when {
+            focused -> {
+                when (LocalTheme.current) {
                     AppThemeColors.BOLD_BLUE,
                     AppThemeColors.OLED_BLACK,
                     -> MaterialTheme.colorScheme.primary
+
+                    else -> MaterialTheme.colorScheme.border
                 }
             }
 
-            selected -> {
-                MaterialTheme.colorScheme.border
-            }
+            selected -> MaterialTheme.colorScheme.onSurface
 
-            focused -> {
-                LocalContentColor.current
-            }
+            else -> MaterialTheme.colorScheme.onSurface.copy(alpha = NavItemUnselectedAlpha)
+        }
+    return if (drawerOpen) color else color.copy(alpha = color.alpha * .5f)
+}
 
-            else -> {
-                MaterialTheme.colorScheme.onSurface
+// How bright the items that aren't the current page are
+internal const val NavItemUnselectedAlpha = .6f
+
+/**
+ * The second level of the nav drawer: the current page's tabs, laid out like the top level
+ */
+@Composable
+private fun NavigationDrawerScope.DrawerSubmenuColumn(
+    submenu: DrawerSubmenu,
+    drawerOpen: Boolean,
+    focusable: Boolean,
+    spacedBy: Dp,
+    onClick: (Int) -> Unit,
+    onLeft: () -> Boolean,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(spacedBy),
+        modifier =
+            modifier
+                .width(SubmenuDrawerWidth)
+                .fillMaxHeight()
+                .onPreviewKeyEvent {
+                    // Left goes back up to the top level, at the current page's item
+                    it.type == KeyEventType.KeyDown && it.key == Key.DirectionLeft && onLeft()
+                }.focusProperties {
+                    onExit = {
+                        // Keep up and down within the submenu
+                        if (requestedFocusDirection == FocusDirection.Up ||
+                            requestedFocusDirection == FocusDirection.Down
+                        ) {
+                            cancelFocusChange()
+                        }
+                    }
+                }.focusGroup()
+                .verticalScroll(rememberScrollState()),
+    ) {
+        // Leave room for the profile item at the top of the top level
+        Spacer(Modifier.height(NavigationDrawerItemDefaults.ContainerHeightTwoLine))
+        submenu.tabs.forEachIndexed { index, tab ->
+            val interactionSource = remember { MutableInteractionSource() }
+            val focused by interactionSource.collectIsFocusedAsState()
+            NavigationDrawerItem(
+                selected = false,
+                onClick = { onClick(index) },
+                interactionSource = interactionSource,
+                modifier =
+                    Modifier
+                        .focusRequester(tab.tabFocusRequester)
+                        .focusProperties { canFocus = focusable },
+            ) {
+                NavItemText(
+                    tab.title.getString(),
+                    navItemColor(index == submenu.selectedIndex, focused, drawerOpen),
+                )
             }
-        }.copy(alpha = alpha)
+        }
     }
 }
+
+// The submenu's width, and how much of the top level still shows to its left while it's open
+// (dimmed to SubmenuParentAlpha). With no peek, the top level slides fully out of view
+internal val SubmenuDrawerWidth = ExpandedDrawerItemWidth
+internal val SubmenuParentPeek = 0.dp
+internal const val SubmenuParentAlpha = .4f
 
 val DrawerState.isOpen: Boolean get() = this.currentValue.isOpen
 
