@@ -105,32 +105,38 @@ fun DetailRowsGroup(
     ) {
         // The backdrop's background, darker: the theme background and the three colour glows,
         // placed as on the screen (see glowPainter in Backdrop)
+        // Everything the drawing needs is worked out here, outside the drawing itself, so a
+        // change to the tuning values above shows up straight away with Live Edit
+        val factor = 1f - darken
+
+        fun Color.darker() = copy(red = red * factor, green = green * factor, blue = blue * factor)
+        val panelBase = baseColor.darker()
+        val glows =
+            listOf(
+                BackdropGlows.secondary.darker() to Offset(0f, 0f),
+                BackdropGlows.primary.darker() to Offset(1f, 1f),
+                BackdropGlows.tertiary.darker() to Offset(1f, 0f),
+            ).filter { it.first.alpha > 0f }
+        val panelAlpha = 1f - seeThrough
         Spacer(
             modifier =
                 Modifier
                     .matchParentSize()
-                    .graphicsLayer { alpha = 1f - seeThrough }
+                    .graphicsLayer(alpha = panelAlpha)
                     .drawBehind {
-                        val screenWidth = (size.width).coerceAtLeast(1f)
+                        val screenWidth = size.width.coerceAtLeast(1f)
                         val screenHeightPx = screenHeight.toPx()
                         val origin = -positionOnScreen
-                        fun Color.darker() = copy(red = red * (1f - darken), green = green * (1f - darken), blue = blue * (1f - darken))
-                        drawRect(baseColor.darker())
-                        listOf(
-                            BackdropGlows.secondary to Offset(0f, 0f),
-                            BackdropGlows.primary to Offset(screenWidth, screenHeightPx),
-                            BackdropGlows.tertiary to Offset(screenWidth, 0f),
-                        ).forEach { (color, corner) ->
-                            if (color.alpha > 0f) {
-                                drawRect(
-                                    brush =
-                                        Brush.radialGradient(
-                                            colors = listOf(color.darker(), Color.Transparent),
-                                            center = origin + corner,
-                                            radius = screenWidth * 0.8f,
-                                        ),
-                                )
-                            }
+                        drawRect(panelBase)
+                        glows.forEach { (color, corner) ->
+                            drawRect(
+                                brush =
+                                    Brush.radialGradient(
+                                        colors = listOf(color, Color.Transparent),
+                                        center = origin + Offset(corner.x * screenWidth, corner.y * screenHeightPx),
+                                        radius = screenWidth * 0.8f,
+                                    ),
+                            )
                         }
                     },
         )
