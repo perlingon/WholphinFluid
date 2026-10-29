@@ -39,6 +39,7 @@ import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -61,6 +62,7 @@ import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
@@ -358,6 +360,20 @@ fun NavDrawer(
     var releaseToContent by remember { mutableStateOf(false) }
     val showSubmenu = drawerState.isOpen && submenu != null && submenuHasFocus
 
+    // While the top menu (search bar) has focus, the rest of the UI moves down out of its way and fades
+    var topMenuHasFocus by remember { mutableStateOf(false) }
+    var topMenuHeight by remember { mutableIntStateOf(0) }
+    val topMenuReveal by animateFloatAsState(
+        targetValue = if (topMenuHasFocus) 1f else 0f,
+        animationSpec = spring(stiffness = DrawerAnimationStiffness),
+        label = "topMenuReveal",
+    )
+    val belowTopMenu =
+        Modifier.graphicsLayer {
+            translationY = topMenuReveal * topMenuHeight
+            alpha = 1f - topMenuReveal * (1f - TopMenuFadedAlpha)
+        }
+
     fun focusSubmenu() {
         enteringSubmenu = true
         releaseToContent = false
@@ -488,6 +504,7 @@ fun NavDrawer(
                 Box(
                     modifier =
                         Modifier
+                            .then(belowTopMenu)
                             .width(ExpandedDrawerItemWidth + if (submenu != null) SubmenuDrawerWidth else 0.dp)
                             .fillMaxHeight()
                             // The submenu slides in from the right edge of the drawer, not over the page
@@ -695,6 +712,7 @@ fun NavDrawer(
                 content(
                     Modifier
                         .fillMaxSize()
+                        .then(belowTopMenu)
                         .offset {
                             offset
                         }.ifElse(
@@ -729,11 +747,17 @@ fun NavDrawer(
             // top of a page
             if (!hidden && destination !is Destination.Search) {
                 TopMenu(
-                    onSearch = {
+                    reveal = topMenuReveal,
+                    preferences = preferences,
+                    onSearch = { query ->
                         viewModel.setIndex(SEARCH_INDEX)
-                        viewModel.navigationManager.navigateToFromDrawer(Destination.Search())
+                        viewModel.navigationManager.navigateToFromDrawer(Destination.Search(query))
                     },
-                    modifier = Modifier.align(Alignment.TopCenter),
+                    onFocusChange = { topMenuHasFocus = it },
+                    modifier =
+                        Modifier
+                            .align(Alignment.TopCenter)
+                            .onSizeChanged { topMenuHeight = it.height },
                 )
             }
             if (!hidden && preferences.appPreferences.interfacePreferences.showClock) {
@@ -964,6 +988,9 @@ private fun NavigationDrawerScope.DrawerSubmenuColumn(
         }
     }
 }
+
+// How visible the rest of the UI stays while the top menu is shown
+private const val TopMenuFadedAlpha = .25f
 
 // The submenu's width, and how much of the top level still shows to its left while it's open
 // (dimmed to SubmenuParentAlpha). With no peek, the top level slides fully out of view
