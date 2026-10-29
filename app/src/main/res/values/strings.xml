@@ -1051,4 +1051,5 @@
     </plurals>
     <string name="adjust_video">Adjust video</string>
     <string name="subtitles_off">Off</string>
+    <string name="in_collection">In collection</string>
 </resources>

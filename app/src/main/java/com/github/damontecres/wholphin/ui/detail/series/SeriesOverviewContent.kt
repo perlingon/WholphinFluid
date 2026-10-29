@@ -53,6 +53,7 @@ import com.github.damontecres.wholphin.ui.cards.ExtrasRow
 import com.github.damontecres.wholphin.ui.cards.PersonRow
 import com.github.damontecres.wholphin.ui.components.ErrorMessage
 import com.github.damontecres.wholphin.ui.components.HeaderUtils
+import com.github.damontecres.wholphin.ui.components.InCollectionsRow
 import com.github.damontecres.wholphin.ui.components.LoadingPage
 import com.github.damontecres.wholphin.ui.components.TabDetails
 import com.github.damontecres.wholphin.ui.components.TabRow
@@ -425,6 +426,8 @@ fun SeriesOverviewContent(
                             .focusRequester(extrasRowFocusRequester),
                 )
             }
+            // The collections the series is in, last on the page
+            InCollectionsRow(series.id, Modifier.fillMaxWidth())
         }
     }
 }

@@ -68,6 +68,7 @@ import com.github.damontecres.wholphin.ui.components.ExpandableFaButton
 import com.github.damontecres.wholphin.ui.components.ExpandablePlayButton
 import com.github.damontecres.wholphin.ui.components.GenreText
 import com.github.damontecres.wholphin.ui.components.HeaderUtils
+import com.github.damontecres.wholphin.ui.components.InCollectionsRow
 import com.github.damontecres.wholphin.ui.components.LoadingPage
 import com.github.damontecres.wholphin.ui.components.Optional
 import com.github.damontecres.wholphin.ui.components.OverviewText
@@ -686,6 +687,10 @@ fun SeriesDetailsContent(
                             focusRequester = focusRequesters[DISCOVER_ROW],
                         )
                     }
+                }
+                // The collections it's in, last on the page
+                item {
+                    InCollectionsRow(series.id, Modifier.fillMaxWidth())
                 }
             }
         }

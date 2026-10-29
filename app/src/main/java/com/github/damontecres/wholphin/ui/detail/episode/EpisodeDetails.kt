@@ -36,6 +36,7 @@ import com.github.damontecres.wholphin.ui.components.ContextMenuDialog
 import com.github.damontecres.wholphin.ui.components.ErrorMessage
 import com.github.damontecres.wholphin.ui.components.ExpandablePlayButtons
 import com.github.damontecres.wholphin.ui.components.HeaderUtils
+import com.github.damontecres.wholphin.ui.components.InCollectionsRow
 import com.github.damontecres.wholphin.ui.components.LoadingPage
 import com.github.damontecres.wholphin.ui.components.Optional
 import com.github.damontecres.wholphin.ui.data.AddPlaylistViewModel
@@ -303,6 +304,10 @@ fun EpisodeDetailsContent(
                                 .padding(bottom = Spacing.md)
                                 .focusRequester(focusRequesters[HEADER_ROW]),
                     )
+                }
+                // The collections the series is in, last on the page
+                item {
+                    InCollectionsRow(ep.data.seriesId ?: ep.id, Modifier.fillMaxWidth())
                 }
             }
         }

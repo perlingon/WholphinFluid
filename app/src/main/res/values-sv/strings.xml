@@ -723,4 +723,5 @@
     </plurals>
     <string name="adjust_video">Justera video</string>
     <string name="subtitles_off">Av</string>
+    <string name="in_collection">Finns i samling</string>
 </resources>

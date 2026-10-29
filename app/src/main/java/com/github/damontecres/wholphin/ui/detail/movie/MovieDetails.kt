@@ -48,6 +48,7 @@ import com.github.damontecres.wholphin.ui.components.ContextMenuDialog
 import com.github.damontecres.wholphin.ui.components.ErrorMessage
 import com.github.damontecres.wholphin.ui.components.ExpandablePlayButtons
 import com.github.damontecres.wholphin.ui.components.HeaderUtils
+import com.github.damontecres.wholphin.ui.components.InCollectionsRow
 import com.github.damontecres.wholphin.ui.components.LoadingPage
 import com.github.damontecres.wholphin.ui.components.Optional
 import com.github.damontecres.wholphin.ui.components.PersonContextActions
@@ -496,6 +497,10 @@ fun MovieDetailsContent(
                         focusRequester = focusRequesters[DISCOVER_ROW],
                     )
                 }
+            }
+            // The collections it's in, last on the page
+            item {
+                InCollectionsRow(movie.id, Modifier.fillMaxWidth())
             }
         }
     }
