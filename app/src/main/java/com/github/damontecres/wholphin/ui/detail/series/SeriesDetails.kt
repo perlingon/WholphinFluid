@@ -20,7 +20,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -49,8 +48,10 @@ import com.github.damontecres.wholphin.data.model.Trailer
 import com.github.damontecres.wholphin.data.model.studioNames
 import com.github.damontecres.wholphin.preferences.UserPreferences
 import com.github.damontecres.wholphin.services.TrailerService
+import com.github.damontecres.wholphin.ui.AspectRatios
 import com.github.damontecres.wholphin.ui.Cards
 import com.github.damontecres.wholphin.ui.RequestOrRestoreFocus
+import com.github.damontecres.wholphin.ui.cards.BannerCard
 import com.github.damontecres.wholphin.ui.cards.ExtrasRow
 import com.github.damontecres.wholphin.ui.cards.ItemRow
 import com.github.damontecres.wholphin.ui.cards.PersonRow
@@ -177,22 +178,6 @@ fun SeriesDetails(
             LoadingPage(modifier)
         }
 
-        // A series with only one season has no page of its own: it opens straight into that season
-        is DataLoadingState.Success<BaseItem> if state.seasons.size == 1 -> {
-            val series = st.data
-            val season = state.seasons.firstOrNull()
-            LaunchedEffect(series.id) {
-                viewModel.replaceWith(
-                    Destination.SeriesOverview(
-                        series.id,
-                        BaseItemKind.SERIES,
-                        season?.let { SeasonEpisodeIds(it.id, it.indexNumber, null, null) },
-                    ),
-                )
-            }
-            LoadingPage(modifier)
-        }
-
         is DataLoadingState.Success<BaseItem> -> {
             LifecycleResumeEffect(destination.itemId) {
                 viewModel.onResumePage()
@@ -205,6 +190,7 @@ fun SeriesDetails(
                 preferences = preferences,
                 series = series,
                 seasons = state.seasons,
+                episodes = state.episodes,
                 trailers = state.trailers,
                 extras = state.extras,
                 people = state.people,
@@ -343,6 +329,8 @@ fun SeriesDetailsContent(
     preferences: UserPreferences,
     series: BaseItem,
     seasons: List<BaseItem?>,
+    // With only one season, its episodes, which are listed in place of the season
+    episodes: EpisodeList,
     similar: List<BaseItem>,
     trailers: List<Trailer>,
     extras: List<ExtrasItem>,
@@ -524,34 +512,73 @@ fun SeriesDetailsContent(
                         }
                     }
                 }
-                item {
-                    ItemRow(
-                        title = stringResource(R.string.tv_seasons) + " (${seasons.size})",
-                        items = seasons,
-                        onClickItem = { index, item ->
-                            position = SEASONS_ROW
-                            onClickItem.invoke(index, item)
-                        },
-                        onLongClickItem = { index, item ->
-                            position = SEASONS_ROW
-                            onLongClickItem.invoke(index, item)
-                        },
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .focusRequester(focusRequesters[SEASONS_ROW]),
-                        cardContent = @Composable { index, item, mod, onClick, onLongClick ->
-                            SeasonCard(
-                                item = item,
-                                onClick = onClick,
-                                onLongClick = onLongClick,
-                                imageHeight = Cards.height2x3,
-                                imageWidth = Dp.Unspecified,
-                                showImageOverlay = true,
-                                modifier = mod,
-                            )
-                        },
-                    )
+                val singleSeasonEpisodes = (episodes as? EpisodeList.Success)?.episodes?.takeIf { seasons.size == 1 }
+                if (singleSeasonEpisodes != null) {
+                    item {
+                        ItemRow(
+                            title = stringResource(R.string.episodes) + " (${singleSeasonEpisodes.size})",
+                            items = singleSeasonEpisodes,
+                            onClickItem = { index, item ->
+                                position = SEASONS_ROW
+                                onClickItem.invoke(index, item)
+                            },
+                            onLongClickItem = { index, item ->
+                                position = SEASONS_ROW
+                                onLongClickItem.invoke(index, item)
+                            },
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .focusRequester(focusRequesters[SEASONS_ROW]),
+                            cardContent = @Composable { index, episode, mod, onClick, onLongClick ->
+                                BannerCard(
+                                    name = episode?.name,
+                                    item = episode,
+                                    aspectRatio =
+                                        episode
+                                            ?.aspectRatio
+                                            ?.coerceAtLeast(AspectRatios.FOUR_THREE)
+                                            ?: AspectRatios.WIDE,
+                                    cornerText = episode?.ui?.episodeCornerText,
+                                    played = episode?.data?.userData?.played ?: false,
+                                    playPercent = episode?.data?.userData?.playedPercentage ?: 0.0,
+                                    onClick = onClick,
+                                    onLongClick = onLongClick,
+                                    modifier = mod,
+                                )
+                            },
+                        )
+                    }
+                } else {
+                    item {
+                        ItemRow(
+                            title = stringResource(R.string.tv_seasons) + " (${seasons.size})",
+                            items = seasons,
+                            onClickItem = { index, item ->
+                                position = SEASONS_ROW
+                                onClickItem.invoke(index, item)
+                            },
+                            onLongClickItem = { index, item ->
+                                position = SEASONS_ROW
+                                onLongClickItem.invoke(index, item)
+                            },
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .focusRequester(focusRequesters[SEASONS_ROW]),
+                            cardContent = @Composable { index, item, mod, onClick, onLongClick ->
+                                SeasonCard(
+                                    item = item,
+                                    onClick = onClick,
+                                    onLongClick = onLongClick,
+                                    imageHeight = Cards.height2x3,
+                                    imageWidth = Dp.Unspecified,
+                                    showImageOverlay = true,
+                                    modifier = mod,
+                                )
+                            },
+                        )
+                    }
                 }
                 if (people.isNotEmpty()) {
                     item {

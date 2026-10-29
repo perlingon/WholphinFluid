@@ -167,7 +167,16 @@ class SeriesViewModel
                             }
                         }
                     } else {
-                        CompletableDeferred(value = EpisodeList.Loading)
+                        // A series with only one season lists that season's episodes on its page
+                        // instead of the season
+                        viewModelScope.async(WholphinDispatchers.IO) {
+                            seasonsDeferred
+                                .await()
+                                .takeIf { it.size == 1 }
+                                ?.firstOrNull()
+                                ?.let { loadEpisodesInternal(it.id, it.indexNumber, null, null) }
+                                ?: EpisodeList.Loading
+                        }
                     }
                 val (seasons, episodes) =
                     try {
@@ -529,13 +538,6 @@ class SeriesViewModel
                     )
                 }
             }
-        }
-
-        /**
-         * Show [destination] in place of this page
-         */
-        fun replaceWith(destination: Destination) {
-            navigationManager.replaceCurrent(destination)
         }
 
         fun navigateTo(destination: Destination) {
