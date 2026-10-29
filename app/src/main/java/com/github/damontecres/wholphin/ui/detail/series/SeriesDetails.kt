@@ -12,7 +12,10 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
@@ -45,7 +48,6 @@ import com.github.damontecres.wholphin.data.model.BaseItem
 import com.github.damontecres.wholphin.data.model.DiscoverItem
 import com.github.damontecres.wholphin.data.model.Person
 import com.github.damontecres.wholphin.data.model.Trailer
-import com.github.damontecres.wholphin.data.model.studioNames
 import com.github.damontecres.wholphin.preferences.UserPreferences
 import com.github.damontecres.wholphin.services.TrailerService
 import com.github.damontecres.wholphin.ui.AspectRatios
@@ -66,7 +68,6 @@ import com.github.damontecres.wholphin.ui.components.DialogParams
 import com.github.damontecres.wholphin.ui.components.ErrorMessage
 import com.github.damontecres.wholphin.ui.components.ExpandableFaButton
 import com.github.damontecres.wholphin.ui.components.ExpandablePlayButton
-import com.github.damontecres.wholphin.ui.components.GenreText
 import com.github.damontecres.wholphin.ui.components.HeaderUtils
 import com.github.damontecres.wholphin.ui.components.InCollectionsRow
 import com.github.damontecres.wholphin.ui.components.LoadingPage
@@ -82,10 +83,10 @@ import com.github.damontecres.wholphin.ui.data.ItemDetailsDialogInfo
 import com.github.damontecres.wholphin.ui.detail.PlaylistDialog
 import com.github.damontecres.wholphin.ui.discover.DiscoverRow
 import com.github.damontecres.wholphin.ui.discover.DiscoverRowData
-import com.github.damontecres.wholphin.ui.letNotEmpty
 import com.github.damontecres.wholphin.ui.nav.Destination
 import com.github.damontecres.wholphin.ui.nav.OnBackdropHeader
 import com.github.damontecres.wholphin.ui.rememberInt
+import com.github.damontecres.wholphin.ui.theme.FluidLayout
 import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.ui.util.ResStringProvider
 import com.github.damontecres.wholphin.util.DataLoadingState
@@ -698,8 +699,10 @@ fun SeriesDetailsHeader(
     OnBackdropHeader {
         val scope = rememberCoroutineScope()
         val dto = series.data
+        // Laid out like the header above the rows on the home page: the title, then the quick
+        // details and the overview, at the same gaps and width
         Column(
-            verticalArrangement = Arrangement.spacedBy(Spacing.xs),
+            verticalArrangement = Arrangement.spacedBy(Spacing.block),
             modifier = modifier,
         ) {
             TitleOrLogo(
@@ -707,39 +710,29 @@ fun SeriesDetailsHeader(
                 showLogo = showLogo,
                 modifier =
                     Modifier
-                        .fillMaxWidth(.75f)
-                        .padding(start = HeaderUtils.startPadding),
+                        .padding(start = HeaderUtils.startPadding)
+                        .width(FluidLayout.headlineWidth()),
             )
             Column(
-                verticalArrangement = Arrangement.spacedBy(Spacing.xs),
-                modifier = Modifier.fillMaxWidth(.60f),
+                verticalArrangement = Arrangement.spacedBy(Spacing.sm),
+                modifier =
+                    Modifier
+                        .padding(start = HeaderUtils.startPadding)
+                        .width(FluidLayout.headlineWidth()),
             ) {
-                QuickDetails(
-                    series.ui.quickDetails,
-                    null,
-                    Modifier.padding(start = HeaderUtils.startPadding),
-                )
-                dto.studios?.let {
-                    val studios = remember { series.studioNames }
-                    GenreText(
-                        studios,
-                        textStyle = MaterialTheme.typography.bodyLarge,
-                        modifier = Modifier.padding(start = HeaderUtils.startPadding),
-                    )
-                }
-                dto.genres?.letNotEmpty {
-                    GenreText(it, Modifier.padding(start = HeaderUtils.startPadding, bottom = Spacing.xs))
-                }
+                QuickDetails(series.ui.quickDetails, null)
                 dto.overview?.let { overview ->
                     OverviewText(
                         overview = overview,
                         maxLines = 3,
                         onClick = overviewOnClick,
                         textBoxHeight = Dp.Unspecified,
-                        // The text (not its focus background) lines up with the title
+                        // The text (not its focus background) lines up with the title, and stops
+                        // at the same line length as on the home page
                         modifier =
                             Modifier
-                                .padding(start = HeaderUtils.startPadding - Spacing.sm)
+                                .offset(x = -Spacing.sm)
+                                .widthIn(max = 550.dp)
                                 .onFocusChanged {
                                     if (it.isFocused) {
                                         scope.launch(ExceptionHandler()) {
