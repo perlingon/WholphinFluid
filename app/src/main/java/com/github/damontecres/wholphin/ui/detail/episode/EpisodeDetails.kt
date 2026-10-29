@@ -329,6 +329,10 @@ fun EpisodeDetailsContent(
                     )
                 }
             }
+            // The collections the series is in, above similar titles
+            item {
+                InCollectionsRow(ep.data.seriesId ?: ep.id, Modifier.fillMaxWidth())
+            }
             // The series' similar titles, as on the series page
             if (similar.isNotEmpty()) {
                 item {
@@ -351,10 +355,6 @@ fun EpisodeDetailsContent(
                         modifier = Modifier.fillMaxWidth(),
                     )
                 }
-            }
-            // The collections the series is in, last on the page
-            item {
-                InCollectionsRow(ep.data.seriesId ?: ep.id, Modifier.fillMaxWidth())
             }
         }
     }

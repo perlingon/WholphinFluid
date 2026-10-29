@@ -440,6 +440,10 @@ fun MovieDetailsContent(
                     )
                 }
             }
+            // The collections it's in, below the cast and above similar titles
+            item {
+                InCollectionsRow(movie.id, Modifier.fillMaxWidth())
+            }
             state.similar.letNotEmpty { similar ->
                 item {
                     val imageHeight =
@@ -497,10 +501,6 @@ fun MovieDetailsContent(
                         focusRequester = focusRequesters[DISCOVER_ROW],
                     )
                 }
-            }
-            // The collections it's in, last on the page
-            item {
-                InCollectionsRow(movie.id, Modifier.fillMaxWidth())
             }
         }
     }

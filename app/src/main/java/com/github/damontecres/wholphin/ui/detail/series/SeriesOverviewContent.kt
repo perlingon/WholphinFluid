@@ -433,6 +433,8 @@ fun SeriesOverviewContent(
                             .focusRequester(extrasRowFocusRequester),
                 )
             }
+            // The collections the series is in, below the cast and above similar titles
+            InCollectionsRow(series.id, Modifier.fillMaxWidth())
             if (similar.isNotEmpty()) {
                 ItemRow(
                     title = stringResource(R.string.more_like_this),
@@ -453,8 +455,6 @@ fun SeriesOverviewContent(
                     modifier = Modifier.fillMaxWidth(),
                 )
             }
-            // The collections the series is in, last on the page
-            InCollectionsRow(series.id, Modifier.fillMaxWidth())
         }
     }
 }

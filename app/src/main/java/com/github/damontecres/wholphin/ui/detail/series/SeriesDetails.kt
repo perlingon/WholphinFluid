@@ -617,6 +617,10 @@ fun SeriesDetailsContent(
                         )
                     }
                 }
+                // The collections it's in, below the cast and above similar titles
+                item {
+                    InCollectionsRow(series.id, Modifier.fillMaxWidth())
+                }
                 if (similar.isNotEmpty()) {
                     item {
                         ItemRow(
@@ -678,10 +682,6 @@ fun SeriesDetailsContent(
                             focusRequester = focusRequesters[DISCOVER_ROW],
                         )
                     }
-                }
-                // The collections it's in, last on the page
-                item {
-                    InCollectionsRow(series.id, Modifier.fillMaxWidth())
                 }
             }
         }
