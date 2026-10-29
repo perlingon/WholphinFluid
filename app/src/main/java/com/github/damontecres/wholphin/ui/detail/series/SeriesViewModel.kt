@@ -119,6 +119,10 @@ class SeriesViewModel
 
         val position = MutableStateFlow(SeriesOverviewPosition(0, 0))
 
+        // The season shown on the season overview, which has its own backdrop
+        @Volatile
+        private var currentSeasonNumber: Int? = null
+
         init {
             viewModelScope.launchIO {
                 Timber.v("Start")
@@ -141,7 +145,8 @@ class SeriesViewModel
                         _state.update { it.copy(canDeleteSeries = canDelete) }
                     }
                 }
-                backdropService.submit(series)
+                currentSeasonNumber = seasonEpisodeIds?.seasonNumber
+                submitBackdrop(series)
 
                 val seasonsDeferred = getSeasons(series, seasonEpisodeIds?.seasonNumber)
 
@@ -157,6 +162,10 @@ class SeriesViewModel
                                 )
                             } else {
                                 seasonsDeferred.await().firstOrNull()?.let {
+                                    if (currentSeasonNumber != it.indexNumber) {
+                                        currentSeasonNumber = it.indexNumber
+                                        submitBackdrop(series)
+                                    }
                                     loadEpisodesInternal(
                                         it.id,
                                         it.indexNumber,
@@ -301,9 +310,17 @@ class SeriesViewModel
             }
         }
 
+        private suspend fun submitBackdrop(series: BaseItem) {
+            if (seriesPageType == SeriesPageType.OVERVIEW) {
+                backdropService.submitSeason(series, currentSeasonNumber)
+            } else {
+                backdropService.submit(series)
+            }
+        }
+
         fun onResumePage() {
             state.value.series.successValue?.let { item ->
-                viewModelScope.launchDefault { backdropService.submit(item) }
+                viewModelScope.launchDefault { submitBackdrop(item) }
                 viewModelScope.launchDefault {
                     themeSongPlayer.playThemeFor(seriesId)
                 }
@@ -412,6 +429,12 @@ class SeriesViewModel
             seasonId: UUID,
             seasonNum: Int?,
         ) {
+            if (currentSeasonNumber != seasonNum) {
+                currentSeasonNumber = seasonNum
+                state.value.series.successValue?.let { series ->
+                    viewModelScope.launchDefault { submitBackdrop(series) }
+                }
+            }
             val currentEpisodes = (state.value.episodes as? EpisodeList.Success)
             if (currentEpisodes == null || currentEpisodes.seasonId != seasonId) {
                 _state.update {
@@ -511,7 +534,7 @@ class SeriesViewModel
             }
             // Kind of hack to ensure the backdrop is reloaded if needed
             state.value.series.successValue
-                ?.let { backdropService.submit(it) }
+                ?.let { submitBackdrop(it) }
         }
 
         /**

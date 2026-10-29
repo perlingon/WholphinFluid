@@ -62,6 +62,16 @@ class BackdropService
             }
 
         /**
+         * Update the backdrop to the one for a season of [series]
+         */
+        suspend fun submitSeason(
+            series: BaseItem,
+            seasonNumber: Int?,
+        ) = withContext(WholphinDispatchers.IO) {
+            submit("${series.id}_season_$seasonNumber", imageUrlService.getSeasonPageBackdropUrl(series, seasonNumber))
+        }
+
+        /**
          * Update the backdrop to use the specified discovered item
          */
         suspend fun submit(item: DiscoverItem) = submit("discover_${item.id}", item.backDropUrl)
