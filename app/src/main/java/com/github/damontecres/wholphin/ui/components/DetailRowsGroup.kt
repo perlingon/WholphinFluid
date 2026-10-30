@@ -87,9 +87,9 @@ fun DetailRowsGroup(
 ) {
     // Tuning values, kept local so Live Edit picks them up
     // How much of the backdrop shows through the panel: 0 = none (solid), 1 = all of it
-    val seeThrough = 0.35f
+    val seeThrough = 1f
     // How much darker than the backdrop's colours the panel is: 0 = as bright, 1 = black
-    val darken = 0.6f
+    val darken = 0f
     val screenHeight = LocalConfiguration.current.screenHeightDp.dp
     val baseColor = MaterialTheme.colorScheme.background
     // Where the panel is on the screen, so its glows line up with the backdrop's

@@ -429,7 +429,7 @@ fun Backdrop(
                             Tile(
                                 reflects = ImageEdge.BOTTOM,
                                 left = 0.22f,
-                                top = 0.6f,
+                                top = 0.45f,
                                 width = 0.58f,
                                 height = 0.42f,
                                 flip = false,
@@ -1008,14 +1008,14 @@ fun Backdrop(
             )
             // How the sharp image gets out of the way of the rows below a details page's buttons
             // (see DetailRowsGroup). Tuning values, kept local so Live Edit picks them up
-            val imageAwayDuration = 500 // ms
-            val imageAwayLift = 0.3f // how far it moves up, as a share of its height
+            val imageAwayDuration = 320 // ms
+            val imageAwayLift = 0.05f // how far it moves up, as a share of its height
             // Read through a state when drawing, so a new value from Live Edit is used straight away
             val imageAwayLiftShare = rememberUpdatedState(imageAwayLift)
             val imageAway =
                 animateFloatAsState(
                     if (BackdropImageAway.away) 1f else 0f,
-                    animationSpec = tween(imageAwayDuration),
+                    animationSpec = tween(imageAwayDuration, easing = androidx.compose.animation.core.EaseOut),
                     label = "backdrop_image_away",
                 )
             AsyncImage(
@@ -1095,7 +1095,7 @@ fun Backdrop(
                                 listOf(
                                     0f to 1f,
                                     0.75f to 1f,
-                                    0.96f to 0.7f,
+                                    1f to 0.7f,
                                     1f to 0f,
                                 )
 
@@ -1108,15 +1108,6 @@ fun Backdrop(
                                         colorStops = horizontalFade.asMask(),
                                         startX = start,
                                         endX = size.width - start,
-                                    ),
-                                blendMode = BlendMode.DstIn,
-                            )
-                            drawRect(
-                                brush =
-                                    Brush.verticalGradient(
-                                        colorStops = verticalFade.asMask(),
-                                        startY = 0f,
-                                        endY = size.height,
                                     ),
                                 blendMode = BlendMode.DstIn,
                             )
