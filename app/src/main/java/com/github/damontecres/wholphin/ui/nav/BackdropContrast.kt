@@ -3,6 +3,7 @@ package com.github.damontecres.wholphin.ui.nav
 import android.graphics.Bitmap
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -49,6 +50,15 @@ object BackdropContrast {
     @Composable
     @ReadOnlyComposable
     fun clockText(default: Color = MaterialTheme.colorScheme.onSurface): Color = if (clockIsLight) DarkText else default
+}
+
+/**
+ * Puts [BackdropContrast] back to white text when the backdrop leaves the screen. Lives here rather
+ * than in Backdrop.kt, because the object onDispose makes would stop Live Edit working in that file
+ */
+@Composable
+internal fun ResetBackdropContrastOnLeave() {
+    DisposableEffect(Unit) { onDispose { BackdropContrast.reset() } }
 }
 
 /**

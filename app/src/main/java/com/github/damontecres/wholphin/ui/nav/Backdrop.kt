@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
@@ -872,7 +871,8 @@ fun Backdrop(
                         }
                     }
                 }
-                DisposableEffect(Unit) { onDispose { BackdropContrast.reset() } }
+                // Kept in its own file: an onDispose here breaks Live Edit for all of Backdrop.kt
+                ResetBackdropContrastOnLeave()
 
                 // Runs the change from one backdrop to the next. It restarts whenever the
                 // backdrop or its background changes, and picks up from however dark it is
