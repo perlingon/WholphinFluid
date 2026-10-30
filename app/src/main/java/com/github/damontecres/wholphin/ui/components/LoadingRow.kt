@@ -20,6 +20,7 @@ import com.github.damontecres.wholphin.ui.cards.ItemRow
 import com.github.damontecres.wholphin.ui.cards.SeasonCard
 import com.github.damontecres.wholphin.ui.data.RowColumn
 import com.github.damontecres.wholphin.ui.ifElse
+import com.github.damontecres.wholphin.ui.nav.BackdropContrast
 import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.ui.theme.rowHeadline
 import com.github.damontecres.wholphin.util.RowLoadingState
@@ -116,7 +117,7 @@ fun LoadingRowPlaceholder(
         Text(
             text = title,
             style = MaterialTheme.typography.rowHeadline,
-            color = MaterialTheme.colorScheme.onBackground,
+            color = BackdropContrast.rowText(),
         )
         Text(
             text = message,

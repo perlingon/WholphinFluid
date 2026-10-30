@@ -814,6 +814,13 @@ sealed interface AppPreference<Pref, T> {
                 summary = R.string.customize_home_summary,
             )
 
+        val SwitchAccount =
+            AppClickablePreference<AppPreferences>(
+                title = R.string.switch_account,
+                getter = { },
+                setter = { prefs, _ -> prefs },
+            )
+
         val UserInterfaceLanguage =
             AppClickablePreference<AppPreferences>(
                 title = R.string.user_interface_language,
@@ -1218,6 +1225,18 @@ sealed interface AppPreference<Pref, T> {
 val basicPreferences =
     listOf(
         PreferenceGroup(
+            title = R.string.profile_specific_settings,
+            preferences =
+                listOf(
+                    AppPreference.SwitchAccount,
+                    AppPreference.ProtectProfilePreference,
+                    AppPreference.CustomizeHome,
+                    AppPreference.UserPinnedNavDrawerItems,
+                    AppPreference.UserInterfaceLanguage,
+                    AppPreference.UserProfileSettings,
+                ),
+        ),
+        PreferenceGroup(
             title = R.string.ui_interface,
             preferences =
                 listOf(
@@ -1247,17 +1266,6 @@ val basicPreferences =
                     AppPreference.AutoPlayNextUp,
                     AppPreference.AutoPlayNextDelay,
                     AppPreference.PassOutProtection,
-                ),
-        ),
-        PreferenceGroup(
-            title = R.string.profile_specific_settings,
-            preferences =
-                listOf(
-                    AppPreference.ProtectProfilePreference,
-                    AppPreference.CustomizeHome,
-                    AppPreference.UserPinnedNavDrawerItems,
-                    AppPreference.UserInterfaceLanguage,
-                    AppPreference.UserProfileSettings,
                 ),
         ),
         PreferenceGroup(

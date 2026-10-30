@@ -33,6 +33,7 @@ import com.github.damontecres.wholphin.ui.formatDuration
 import com.github.damontecres.wholphin.ui.isNotNullOrBlank
 import com.github.damontecres.wholphin.ui.letNotEmpty
 import com.github.damontecres.wholphin.ui.listToDotString
+import com.github.damontecres.wholphin.ui.nav.OnBackdropHeader
 import com.github.damontecres.wholphin.ui.roundMinutes
 import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.util.ExceptionHandler
@@ -51,120 +52,122 @@ fun DiscoverMovieDetailsHeader(
     showLogo: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    val imageUrlService = LocalImageUrlService.current
-    val logoImageUrl =
-        remember(movie) {
-            movie.mediaInfo?.jellyfinId?.let {
-                imageUrlService.getItemImageUrl(it, ImageType.LOGO)
+    OnBackdropHeader {
+        val imageUrlService = LocalImageUrlService.current
+        val logoImageUrl =
+            remember(movie) {
+                movie.mediaInfo?.jellyfinId?.let {
+                    imageUrlService.getItemImageUrl(it, ImageType.LOGO)
+                }
             }
-        }
-    val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    Column(
-        verticalArrangement = Arrangement.spacedBy(Spacing.xs),
-        modifier = modifier,
-    ) {
-        TitleOrLogo(
-            title = movie.title,
-            logoImageUrl = logoImageUrl,
-            showLogo = showLogo,
-            modifier =
-                Modifier
-                    .fillMaxWidth(.75f)
-                    .padding(start = HeaderUtils.startPadding),
-        )
-
+        val context = LocalContext.current
+        val scope = rememberCoroutineScope()
         Column(
             verticalArrangement = Arrangement.spacedBy(Spacing.xs),
-            modifier = Modifier.fillMaxWidth(.60f),
+            modifier = modifier,
         ) {
-            val resources = LocalResources.current
-            val details =
-                remember(movie, rating, resources) {
-                    buildList {
-                        movie.releaseDate?.let(::add)
-                        movie.runtime
-                            ?.toDouble()
-                            ?.minutes
-                            ?.roundMinutes
-                            ?.let { add(resources.formatDuration(it)) }
-                        val release =
-                            movie.releases
-                                ?.results
-                                ?.firstOrNull { it.iso31661 == Locale.getDefault().country }
-                                ?: movie.releases
-                                    ?.results
-                                    ?.firstOrNull { it.iso31661 == Locale.US.country }
-                                ?: movie.releases
-                                    ?.results
-                                    ?.firstOrNull()
+            TitleOrLogo(
+                title = movie.title,
+                logoImageUrl = logoImageUrl,
+                showLogo = showLogo,
+                modifier =
+                    Modifier
+                        .fillMaxWidth(.75f)
+                        .padding(start = HeaderUtils.startPadding),
+            )
 
-                        release
-                            ?.releaseDates
-                            ?.firstOrNull()
-                            ?.certification
-                            ?.takeIf { it.isNotNullOrBlank() }
-                            ?.let(::add)
-                    }.let {
-                        listToDotString(
-                            it,
-                            rating?.audienceRating,
-                            rating?.criticRating?.toFloat(),
-                        )
+            Column(
+                verticalArrangement = Arrangement.spacedBy(Spacing.xs),
+                modifier = Modifier.fillMaxWidth(.60f),
+            ) {
+                val resources = LocalResources.current
+                val details =
+                    remember(movie, rating, resources) {
+                        buildList {
+                            movie.releaseDate?.let(::add)
+                            movie.runtime
+                                ?.toDouble()
+                                ?.minutes
+                                ?.roundMinutes
+                                ?.let { add(resources.formatDuration(it)) }
+                            val release =
+                                movie.releases
+                                    ?.results
+                                    ?.firstOrNull { it.iso31661 == Locale.getDefault().country }
+                                    ?: movie.releases
+                                        ?.results
+                                        ?.firstOrNull { it.iso31661 == Locale.US.country }
+                                    ?: movie.releases
+                                        ?.results
+                                        ?.firstOrNull()
+
+                            release
+                                ?.releaseDates
+                                ?.firstOrNull()
+                                ?.certification
+                                ?.takeIf { it.isNotNullOrBlank() }
+                                ?.let(::add)
+                        }.let {
+                            listToDotString(
+                                it,
+                                rating?.audienceRating,
+                                rating?.criticRating?.toFloat(),
+                            )
+                        }
                     }
+
+                QuickDetailsText(details, Modifier.padding(start = HeaderUtils.startPadding))
+                movie.genres?.mapNotNull { it.name }?.letNotEmpty {
+                    GenreText(it, Modifier.padding(start = HeaderUtils.startPadding))
                 }
 
-            QuickDetailsText(details, Modifier.padding(start = HeaderUtils.startPadding))
-            movie.genres?.mapNotNull { it.name }?.letNotEmpty {
-                GenreText(it, Modifier.padding(start = HeaderUtils.startPadding))
-            }
-
-            val tagline = remember { movie.tagline?.takeIf { it.isNotNullOrBlank() } }
-            tagline?.let {
-                Text(
-                    text = tagline,
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontStyle = FontStyle.Italic,
-                    modifier = Modifier.padding(start = HeaderUtils.startPadding),
-                )
-            }
-
-            // Description
-            movie.overview?.let { overview ->
-                OverviewText(
-                    overview = overview,
-                    maxLines = 3,
-                    onClick = overviewOnClick,
-                    textBoxHeight = Dp.Unspecified,
-                    modifier =
-                        Modifier.onFocusChanged {
-                            if (it.isFocused) {
-                                scope.launch(ExceptionHandler()) {
-                                    bringIntoViewRequester.bringIntoView()
-                                }
-                            }
-                        },
-                )
-            }
-
-            val directorName =
-                remember(movie.credits?.crew) {
-                    movie.credits
-                        ?.crew
-                        ?.filter { it.job == "Director" && it.name.isNotNullOrBlank() }
-                        ?.joinToString(", ") { it.name!! }
-                        ?.takeIf { it.isNotNullOrBlank() }
-                }
-
-            directorName
-                ?.let {
+                val tagline = remember { movie.tagline?.takeIf { it.isNotNullOrBlank() } }
+                tagline?.let {
                     Text(
-                        text = stringResource(R.string.directed_by, it),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface,
+                        text = tagline,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontStyle = FontStyle.Italic,
                         modifier = Modifier.padding(start = HeaderUtils.startPadding),
                     )
                 }
+
+                // Description
+                movie.overview?.let { overview ->
+                    OverviewText(
+                        overview = overview,
+                        maxLines = 3,
+                        onClick = overviewOnClick,
+                        textBoxHeight = Dp.Unspecified,
+                        modifier =
+                            Modifier.onFocusChanged {
+                                if (it.isFocused) {
+                                    scope.launch(ExceptionHandler()) {
+                                        bringIntoViewRequester.bringIntoView()
+                                    }
+                                }
+                            },
+                    )
+                }
+
+                val directorName =
+                    remember(movie.credits?.crew) {
+                        movie.credits
+                            ?.crew
+                            ?.filter { it.job == "Director" && it.name.isNotNullOrBlank() }
+                            ?.joinToString(", ") { it.name!! }
+                            ?.takeIf { it.isNotNullOrBlank() }
+                    }
+
+                directorName
+                    ?.let {
+                        Text(
+                            text = stringResource(R.string.directed_by, it),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.padding(start = HeaderUtils.startPadding),
+                        )
+                    }
+            }
         }
     }
 }

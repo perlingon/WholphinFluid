@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
+import com.github.damontecres.wholphin.ui.nav.BackdropContrast
 import com.github.damontecres.wholphin.ui.nav.BackdropDebug
 import com.github.damontecres.wholphin.ui.rememberInt
 import com.github.damontecres.wholphin.ui.theme.FluidLayout
@@ -149,7 +150,7 @@ fun ItemRowTitle(
 ) = Text(
     text = title,
     style = MaterialTheme.typography.rowHeadline,
-    color = MaterialTheme.colorScheme.onBackground,
+    color = BackdropContrast.rowText(),
     // Row titles line up with the page's title, at the left margin
     modifier = modifier.padding(start = FluidLayout.headlineInset()),
 )

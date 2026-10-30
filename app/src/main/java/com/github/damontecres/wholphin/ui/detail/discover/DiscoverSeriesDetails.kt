@@ -62,6 +62,7 @@ import com.github.damontecres.wholphin.ui.formatDuration
 import com.github.damontecres.wholphin.ui.letNotEmpty
 import com.github.damontecres.wholphin.ui.listToDotString
 import com.github.damontecres.wholphin.ui.nav.Destination
+import com.github.damontecres.wholphin.ui.nav.OnBackdropHeader
 import com.github.damontecres.wholphin.ui.rememberInt
 import com.github.damontecres.wholphin.ui.roundMinutes
 import com.github.damontecres.wholphin.ui.theme.Spacing
@@ -429,62 +430,64 @@ fun DiscoverSeriesDetailsHeader(
     showLogo: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    val imageUrlService = LocalImageUrlService.current
-    val logoImageUrl =
-        remember(series) {
-            series.mediaInfo?.jellyfinId?.let {
-                imageUrlService.getItemImageUrl(it, ImageType.LOGO)
+    OnBackdropHeader {
+        val imageUrlService = LocalImageUrlService.current
+        val logoImageUrl =
+            remember(series) {
+                series.mediaInfo?.jellyfinId?.let {
+                    imageUrlService.getItemImageUrl(it, ImageType.LOGO)
+                }
             }
-        }
-    Column(
-        verticalArrangement = Arrangement.spacedBy(Spacing.xs),
-        modifier = modifier,
-    ) {
-        TitleOrLogo(
-            title = series.name,
-            logoImageUrl = logoImageUrl,
-            showLogo = showLogo,
-            modifier =
-                Modifier
-                    .fillMaxWidth(.75f)
-                    .padding(start = HeaderUtils.startPadding),
-        )
         Column(
             verticalArrangement = Arrangement.spacedBy(Spacing.xs),
-            modifier = Modifier.fillMaxWidth(.60f),
+            modifier = modifier,
         ) {
-            val resources = LocalResources.current
-            val details =
-                remember(series, rating, resources) {
-                    buildList {
-                        series.firstAirDate?.let(::add)
-                        series.episodeRunTime
-                            ?.average()
-                            ?.takeIf { !it.isNaN() && it > 0 }
-                            ?.minutes
-                            ?.roundMinutes
-                            ?.let { add(resources.formatDuration(it)) }
-                        // TODO
-                    }.let {
-                        listToDotString(
-                            it,
-                            rating?.audienceRating,
-                            rating?.criticRating?.toFloat(),
-                        )
+            TitleOrLogo(
+                title = series.name,
+                logoImageUrl = logoImageUrl,
+                showLogo = showLogo,
+                modifier =
+                    Modifier
+                        .fillMaxWidth(.75f)
+                        .padding(start = HeaderUtils.startPadding),
+            )
+            Column(
+                verticalArrangement = Arrangement.spacedBy(Spacing.xs),
+                modifier = Modifier.fillMaxWidth(.60f),
+            ) {
+                val resources = LocalResources.current
+                val details =
+                    remember(series, rating, resources) {
+                        buildList {
+                            series.firstAirDate?.let(::add)
+                            series.episodeRunTime
+                                ?.average()
+                                ?.takeIf { !it.isNaN() && it > 0 }
+                                ?.minutes
+                                ?.roundMinutes
+                                ?.let { add(resources.formatDuration(it)) }
+                            // TODO
+                        }.let {
+                            listToDotString(
+                                it,
+                                rating?.audienceRating,
+                                rating?.criticRating?.toFloat(),
+                            )
+                        }
                     }
-                }
 
-            QuickDetailsText(details, Modifier.padding(start = HeaderUtils.startPadding))
-            series.genres?.mapNotNull { it.name }?.letNotEmpty {
-                GenreText(it, Modifier.padding(start = HeaderUtils.startPadding, bottom = Spacing.xs))
-            }
-            series.overview?.let { overview ->
-                OverviewText(
-                    overview = overview,
-                    maxLines = 3,
-                    onClick = overviewOnClick,
-                    textBoxHeight = Dp.Unspecified,
-                )
+                QuickDetailsText(details, Modifier.padding(start = HeaderUtils.startPadding))
+                series.genres?.mapNotNull { it.name }?.letNotEmpty {
+                    GenreText(it, Modifier.padding(start = HeaderUtils.startPadding, bottom = Spacing.xs))
+                }
+                series.overview?.let { overview ->
+                    OverviewText(
+                        overview = overview,
+                        maxLines = 3,
+                        onClick = overviewOnClick,
+                        textBoxHeight = Dp.Unspecified,
+                    )
+                }
             }
         }
     }
@@ -523,14 +526,6 @@ fun buildDialogForSeason(
                     Icons.Default.PlayArrow,
                 ) {
                     onClickPlay.invoke(false)
-                },
-            )
-            add(
-                DialogItem(
-                    resources.getString(R.string.shuffle),
-                    R.string.fa_shuffle,
-                ) {
-                    onClickPlay.invoke(true)
                 },
             )
         }

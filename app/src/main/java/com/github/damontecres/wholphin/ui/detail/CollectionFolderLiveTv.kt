@@ -13,7 +13,6 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.github.damontecres.wholphin.R
 import com.github.damontecres.wholphin.data.ServerRepository
 import com.github.damontecres.wholphin.data.model.BaseItem
 import com.github.damontecres.wholphin.data.model.CollectionFolderFilter
@@ -31,6 +30,7 @@ import com.github.damontecres.wholphin.ui.detail.livetv.DvrSchedule
 import com.github.damontecres.wholphin.ui.detail.livetv.TvGuideGrid
 import com.github.damontecres.wholphin.ui.launchIO
 import com.github.damontecres.wholphin.ui.nav.Destination
+import com.github.damontecres.wholphin.ui.nav.LiveTvTabs
 import com.github.damontecres.wholphin.ui.util.StringStringProvider
 import com.github.damontecres.wholphin.util.DataLoadingState
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -106,10 +106,7 @@ fun CollectionFolderLiveTv(
         is DataLoadingState.Success<List<TabId>> -> {
             val tabs =
                 remember {
-                    listOf(
-                        TabDetails(R.string.tv_guide),
-                        TabDetails(R.string.tv_dvr_schedule),
-                    ) +
+                    LiveTvTabs.map { TabDetails(it) } +
                         st.data.map {
                             TabDetails(StringStringProvider(it.title))
                         }

@@ -42,6 +42,7 @@ class ImageUrlService
             parentLogoTag: String? = null,
             parentThumbTag: String? = null,
             parentBackdropTags: List<String> = emptyList(),
+            seasonNumber: Int? = null,
         ): String? =
             when (imageType) {
                 ImageType.LOGO -> {
@@ -66,13 +67,36 @@ class ImageUrlService
 
                 ImageType.BACKDROP,
                 -> {
-                    if (seriesId != null && (itemType == BaseItemKind.EPISODE || itemType == BaseItemKind.SEASON)) {
+                    if (itemType == BaseItemKind.SEASON && backdropTags.isNotEmpty()) {
+                        // A season with a backdrop of its own
                         getItemImageUrl(
-                            itemId = seriesId,
+                            itemId = itemId,
                             imageType = imageType,
                             fillWidth = fillWidth,
                             fillHeight = fillHeight,
-                            tag = parentBackdropTags.firstOrNull().takeIf { parentBackdropId == seriesId },
+                            tag = backdropTags.first(),
+                        )
+                    } else if (itemType == BaseItemKind.EPISODE &&
+                        parentBackdropId != null &&
+                        parentBackdropId != seriesId &&
+                        parentBackdropTags.isNotEmpty()
+                    ) {
+                        // The episode's season has a backdrop of its own (Jellyfin points to the
+                        // closest parent with one)
+                        getItemImageUrl(
+                            itemId = parentBackdropId,
+                            imageType = imageType,
+                            fillWidth = fillWidth,
+                            fillHeight = fillHeight,
+                            tag = parentBackdropTags.first(),
+                        )
+                    } else if (seriesId != null && (itemType == BaseItemKind.EPISODE || itemType == BaseItemKind.SEASON)) {
+                        seriesBackdropUrl(
+                            seriesId = seriesId,
+                            seriesBackdropTags = parentBackdropTags.takeIf { parentBackdropId == seriesId }.orEmpty(),
+                            seasonNumber = seasonNumber,
+                            fillWidth = fillWidth,
+                            fillHeight = fillHeight,
                         )
                     } else if (backdropTags.isNotEmpty()) {
                         getItemImageUrl(
@@ -103,12 +127,12 @@ class ImageUrlService
                         (itemType == BaseItemKind.EPISODE || itemType == BaseItemKind.SEASON)
                     ) {
                         // No parent thumb, so use backdrop instead
-                        getItemImageUrl(
-                            itemId = parentBackdropId,
-                            imageType = ImageType.BACKDROP,
+                        seriesBackdropUrl(
+                            seriesId = parentBackdropId,
+                            seriesBackdropTags = parentBackdropTags,
+                            seasonNumber = seasonNumber,
                             fillWidth = fillWidth,
                             fillHeight = fillHeight,
-                            tag = parentBackdropTags.firstOrNull(),
                         )
                     } else if (parentThumbId != null && itemType == BaseItemKind.SEASON && imageType !in imageTags) {
                         getItemImageUrl(
@@ -219,10 +243,59 @@ class ImageUrlService
                     parentLogoTag = item.data.parentLogoImageTag,
                     parentThumbTag = item.data.parentThumbImageTag,
                     parentBackdropTags = item.data.parentBackdropImageTags.orEmpty(),
+                    seasonNumber =
+                        when (item.type) {
+                            BaseItemKind.EPISODE -> item.data.parentIndexNumber
+                            BaseItemKind.SEASON -> item.data.indexNumber
+                            else -> null
+                        },
                 )
             } else {
                 null
             }
+
+        /**
+         * One of a series' backdrops for one of its seasons: a series usually has several, so each
+         * season gets a different one where it can (season 1 the first, season 2 the second and so
+         * on, starting over when there are more seasons than backdrops)
+         */
+        fun seriesBackdropUrl(
+            seriesId: UUID,
+            seriesBackdropTags: List<String>,
+            seasonNumber: Int?,
+            fillWidth: Int? = null,
+            fillHeight: Int? = null,
+        ): String? {
+            val index =
+                if (seasonNumber == null || seriesBackdropTags.size < 2) {
+                    0
+                } else {
+                    // Specials (season 0) get the last one
+                    (seasonNumber - 1).mod(seriesBackdropTags.size)
+                }
+            return getItemImageUrl(
+                itemId = seriesId,
+                imageType = ImageType.BACKDROP,
+                fillWidth = fillWidth,
+                fillHeight = fillHeight,
+                tag = seriesBackdropTags.getOrNull(index),
+                imageIndex = index.takeIf { it > 0 },
+            )
+        }
+
+        /**
+         * The page backdrop for one season of [series], see [seriesBackdropUrl]
+         */
+        fun getSeasonPageBackdropUrl(
+            series: BaseItem,
+            seasonNumber: Int?,
+        ): String? =
+            seriesBackdropUrl(
+                seriesId = series.id,
+                seriesBackdropTags = series.data.backdropImageTags.orEmpty(),
+                seasonNumber = seasonNumber,
+                fillWidth = pageBackdropWidth,
+            )
 
         fun getItemImageUrl(
             itemId: UUID,

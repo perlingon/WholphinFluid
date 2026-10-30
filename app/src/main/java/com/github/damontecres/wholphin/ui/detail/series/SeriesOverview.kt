@@ -197,6 +197,23 @@ fun SeriesOverview(
                 preferences = preferences,
                 series = st.data,
                 seasons = state.seasons,
+                goToSeries = { viewModel.navigateTo(Destination.MediaItem(st.data)) },
+                similar = state.similar,
+                onClickSimilar = { viewModel.navigateTo(it.destination()) },
+                onLongClickSimilar = { item ->
+                    showContextMenu =
+                        ContextMenu.ForBaseItem(
+                            fromLongClick = true,
+                            item = item,
+                            chosenStreams = null,
+                            showGoTo = true,
+                            showStreamChoices = false,
+                            canDelete = false,
+                            canRemoveContinueWatching = false,
+                            canRemoveNextUp = false,
+                            actions = contextActions,
+                        )
+                },
                 episodes = state.episodes,
                 chosenStreams = chosenStreams,
                 peopleInEpisode = state.peopleInEpisode.people,

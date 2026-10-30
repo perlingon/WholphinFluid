@@ -17,6 +17,7 @@ import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
 import com.github.damontecres.wholphin.R
 import com.github.damontecres.wholphin.data.model.Chapter
+import com.github.damontecres.wholphin.ui.nav.BackdropContrast
 import com.github.damontecres.wholphin.ui.theme.FluidLayout
 import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.ui.theme.rowHeadline
@@ -35,8 +36,8 @@ fun ChapterRow(
         Text(
             text = stringResource(R.string.chapters),
             style = MaterialTheme.typography.rowHeadline,
-            color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.padding(start = Spacing.sm),
+            color = BackdropContrast.rowText(),
+            modifier = Modifier.padding(start = FluidLayout.headlineInset()),
         )
         LazyRow(
             state = rememberLazyListState(),

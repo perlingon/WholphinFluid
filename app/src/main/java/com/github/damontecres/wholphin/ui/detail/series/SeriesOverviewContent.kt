@@ -38,6 +38,8 @@ import androidx.compose.ui.focus.focusRestorer
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.CardDefaults
 import com.github.damontecres.wholphin.R
@@ -47,11 +49,15 @@ import com.github.damontecres.wholphin.data.model.BaseItem
 import com.github.damontecres.wholphin.data.model.Person
 import com.github.damontecres.wholphin.preferences.UserPreferences
 import com.github.damontecres.wholphin.ui.AspectRatios
+import com.github.damontecres.wholphin.ui.Cards
 import com.github.damontecres.wholphin.ui.cards.BannerCard
 import com.github.damontecres.wholphin.ui.cards.ExtrasRow
+import com.github.damontecres.wholphin.ui.cards.ItemRow
 import com.github.damontecres.wholphin.ui.cards.PersonRow
+import com.github.damontecres.wholphin.ui.cards.SeasonCard
 import com.github.damontecres.wholphin.ui.components.ErrorMessage
 import com.github.damontecres.wholphin.ui.components.HeaderUtils
+import com.github.damontecres.wholphin.ui.components.InCollectionsRow
 import com.github.damontecres.wholphin.ui.components.LoadingPage
 import com.github.damontecres.wholphin.ui.components.TabDetails
 import com.github.damontecres.wholphin.ui.components.TabRow
@@ -59,6 +65,8 @@ import com.github.damontecres.wholphin.ui.components.TitleOrLogo
 import com.github.damontecres.wholphin.ui.formatSeasonNumber
 import com.github.damontecres.wholphin.ui.ifElse
 import com.github.damontecres.wholphin.ui.logTab
+import com.github.damontecres.wholphin.ui.nav.DrawerSubmenuHeading
+import com.github.damontecres.wholphin.ui.nav.rememberDrawerSubmenu
 import com.github.damontecres.wholphin.ui.playback.isPlayKeyUp
 import com.github.damontecres.wholphin.ui.rememberInt
 import com.github.damontecres.wholphin.ui.theme.FluidLayout
@@ -100,6 +108,10 @@ fun SeriesOverviewContent(
     onConfirmDelete: (BaseItem) -> Unit,
     onClickExtra: (Int, ExtrasItem) -> Unit,
     onChooseVersion: (BaseItem, MediaSourceInfo) -> Unit,
+    goToSeries: () -> Unit,
+    similar: List<BaseItem>,
+    onClickSimilar: (BaseItem) -> Unit,
+    onLongClickSimilar: (BaseItem) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val scope = rememberCoroutineScope()
@@ -130,20 +142,42 @@ fun SeriesOverviewContent(
     val tabFocusRequesters = remember(seasons) { List(seasons.size) { FocusRequester() } }
     val contentFocusRequesters = remember(seasons) { List(seasons.size) { FocusRequester() } }
     val tabs =
-        seasons.mapIndexed { index, season ->
-            TabDetails(
-                title =
-                    StringStringProvider(
-                        season?.name
-                            ?: season?.data?.indexNumber?.let { formatSeasonNumber(it) }
-                            ?: "",
-                    ),
-                tabFocusRequester = tabFocusRequesters[index],
-                contentFocusRequester = contentFocusRequesters[index],
-            )
+        remember(seasons) {
+            seasons.mapIndexed { index, season ->
+                TabDetails(
+                    title =
+                        StringStringProvider(
+                            season?.name
+                                ?: season?.data?.indexNumber?.let { formatSeasonNumber(it) }
+                                ?: "",
+                        ),
+                    tabFocusRequester = tabFocusRequesters[index],
+                    contentFocusRequester = contentFocusRequesters[index],
+                )
+            }
         }
 
     val currentOnChangeSeason by rememberUpdatedState(onChangeSeason)
+    val onClickSeason =
+        remember {
+            { index: Int ->
+                selectedTabIndex = index
+                currentOnChangeSeason(index)
+                requestFocusAfterSeason = true
+            }
+        }
+    // Beside the nav drawer, the seasons are a submenu in the drawer instead of a row on the page
+    val seasonsInDrawer =
+        rememberDrawerSubmenu(
+            tabs = tabs,
+            selectedIndex = selectedTabIndex,
+            onSelect = onClickSeason,
+            // The series' logo or title already says whose seasons these are, so the heading is
+            // a way to the series' own page instead
+            heading = DrawerSubmenuHeading(stringResource(R.string.go_to_series), goToSeries),
+            // A series with only one season has no season menu, and no series page to go to
+            enabled = seasons.size > 1,
+        )
 
     Box(
         modifier =
@@ -176,28 +210,31 @@ fun SeriesOverviewContent(
                             PaddingValues(start = 0.dp, end = Spacing.md)
                         }
                     }
-                TabRow(
-                    selectedTabIndex = selectedTabIndex,
-                    tabs = tabs,
-                    onClick =
-                        remember {
-                            {
-                                selectedTabIndex = it
-                                currentOnChangeSeason(it)
-                                requestFocusAfterSeason = true
-                            }
-                        },
-                    modifier =
-                        Modifier
-                            .focusRequester(tabRowFocusRequester)
-                            .padding(paddingValues)
-                            .padding(bottom = Spacing.xs)
-                            .fillMaxWidth(),
-                )
+                if (!seasonsInDrawer) {
+                    TabRow(
+                        selectedTabIndex = selectedTabIndex,
+                        tabs = tabs,
+                        onClick = onClickSeason,
+                        modifier =
+                            Modifier
+                                .focusRequester(tabRowFocusRequester)
+                                .padding(paddingValues)
+                                .padding(bottom = Spacing.xs)
+                                .fillMaxWidth(),
+                    )
+                }
+                // Placed and sized like the title or logo on a movie's page. Without the season
+                // tabs above it, it needs the header's own top gap (the page already has Spacing.md)
                 TitleOrLogo(
                     item = series,
                     showLogo = preferences.appPreferences.interfacePreferences.showLogos,
-                    modifier = Modifier.padding(start = HeaderUtils.startPadding),
+                    modifier =
+                        Modifier
+                            .ifElse(
+                                seasonsInDrawer,
+                                Modifier.padding(top = HeaderUtils.topPadding - Spacing.md),
+                            ).fillMaxWidth(.75f)
+                            .padding(start = HeaderUtils.startPadding),
                 )
                 FocusedEpisodeHeader(
                     preferences = preferences,
@@ -394,6 +431,28 @@ fun SeriesOverviewContent(
                         Modifier
                             .fillMaxWidth()
                             .focusRequester(extrasRowFocusRequester),
+                )
+            }
+            // The collections the series is in, below the cast and above similar titles
+            InCollectionsRow(series.id, Modifier.fillMaxWidth())
+            if (similar.isNotEmpty()) {
+                ItemRow(
+                    title = stringResource(R.string.more_like_this),
+                    items = similar,
+                    onClickItem = { _, item -> onClickSimilar(item) },
+                    onLongClickItem = { _, item -> onLongClickSimilar(item) },
+                    cardContent = { _, item, mod, onClick, onLongClick ->
+                        SeasonCard(
+                            item = item,
+                            onClick = onClick,
+                            onLongClick = onLongClick,
+                            modifier = mod,
+                            showImageOverlay = true,
+                            imageHeight = Cards.height2x3,
+                            imageWidth = Dp.Unspecified,
+                        )
+                    },
+                    modifier = Modifier.fillMaxWidth(),
                 )
             }
         }

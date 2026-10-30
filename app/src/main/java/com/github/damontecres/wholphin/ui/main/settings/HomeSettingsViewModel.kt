@@ -45,6 +45,7 @@ import com.github.damontecres.wholphin.ui.util.ResArgStringProvider
 import com.github.damontecres.wholphin.ui.util.ResProviderStringProvider
 import com.github.damontecres.wholphin.ui.util.ResStringProvider
 import com.github.damontecres.wholphin.ui.util.StringStringProvider
+import com.github.damontecres.wholphin.ui.util.libraryRowTitle
 import com.github.damontecres.wholphin.util.HomeRowLoadingState
 import com.github.damontecres.wholphin.util.LoadingState
 import com.github.damontecres.wholphin.util.WholphinDispatchers
@@ -305,7 +306,7 @@ class HomeSettingsViewModel
                         LibraryRowType.RECENTLY_ADDED -> {
                             val title =
                                 library.name.let {
-                                    ResArgStringProvider(
+                                    libraryRowTitle(
                                         R.string.recently_added_in,
                                         it,
                                     )
@@ -320,7 +321,7 @@ class HomeSettingsViewModel
                         LibraryRowType.RECENTLY_RELEASED -> {
                             val title =
                                 library.name.let {
-                                    ResArgStringProvider(
+                                    libraryRowTitle(
                                         R.string.recently_released_in,
                                         it,
                                     )
@@ -334,7 +335,7 @@ class HomeSettingsViewModel
 
                         LibraryRowType.GENRES -> {
                             val title =
-                                library.name.let { ResArgStringProvider(R.string.genres_in, it) }
+                                library.name.let { libraryRowTitle(R.string.genres_in, it) }
                             HomeRowConfigDisplay(
                                 id = id,
                                 title = title,
@@ -344,7 +345,7 @@ class HomeSettingsViewModel
 
                         LibraryRowType.STUDIOS -> {
                             val title =
-                                library.name.let { ResArgStringProvider(R.string.studios_in, it) }
+                                library.name.let { libraryRowTitle(R.string.studios_in, it) }
                             HomeRowConfigDisplay(
                                 id = id,
                                 title = title,

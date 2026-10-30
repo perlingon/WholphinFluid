@@ -12,7 +12,11 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.relocation.BringIntoViewRequester
 import androidx.compose.foundation.relocation.bringIntoViewRequester
@@ -45,11 +49,12 @@ import com.github.damontecres.wholphin.data.model.BaseItem
 import com.github.damontecres.wholphin.data.model.DiscoverItem
 import com.github.damontecres.wholphin.data.model.Person
 import com.github.damontecres.wholphin.data.model.Trailer
-import com.github.damontecres.wholphin.data.model.studioNames
 import com.github.damontecres.wholphin.preferences.UserPreferences
 import com.github.damontecres.wholphin.services.TrailerService
+import com.github.damontecres.wholphin.ui.AspectRatios
 import com.github.damontecres.wholphin.ui.Cards
 import com.github.damontecres.wholphin.ui.RequestOrRestoreFocus
+import com.github.damontecres.wholphin.ui.cards.BannerCard
 import com.github.damontecres.wholphin.ui.cards.ExtrasRow
 import com.github.damontecres.wholphin.ui.cards.ItemRow
 import com.github.damontecres.wholphin.ui.cards.PersonRow
@@ -59,13 +64,14 @@ import com.github.damontecres.wholphin.ui.components.ContextMenu
 import com.github.damontecres.wholphin.ui.components.ContextMenuActions
 import com.github.damontecres.wholphin.ui.components.ContextMenuDialog
 import com.github.damontecres.wholphin.ui.components.DeleteButton
+import com.github.damontecres.wholphin.ui.components.DetailRowsGroup
 import com.github.damontecres.wholphin.ui.components.DialogItem
 import com.github.damontecres.wholphin.ui.components.DialogParams
 import com.github.damontecres.wholphin.ui.components.ErrorMessage
 import com.github.damontecres.wholphin.ui.components.ExpandableFaButton
 import com.github.damontecres.wholphin.ui.components.ExpandablePlayButton
-import com.github.damontecres.wholphin.ui.components.GenreText
 import com.github.damontecres.wholphin.ui.components.HeaderUtils
+import com.github.damontecres.wholphin.ui.components.InCollectionsRow
 import com.github.damontecres.wholphin.ui.components.LoadingPage
 import com.github.damontecres.wholphin.ui.components.Optional
 import com.github.damontecres.wholphin.ui.components.OverviewText
@@ -73,15 +79,18 @@ import com.github.damontecres.wholphin.ui.components.PersonContextActions
 import com.github.damontecres.wholphin.ui.components.QuickDetails
 import com.github.damontecres.wholphin.ui.components.TitleOrLogo
 import com.github.damontecres.wholphin.ui.components.TrailerButton
+import com.github.damontecres.wholphin.ui.components.bleedToScreenEdges
+import com.github.damontecres.wholphin.ui.components.pageSidePadding
 import com.github.damontecres.wholphin.ui.data.AddPlaylistViewModel
 import com.github.damontecres.wholphin.ui.data.ItemDetailsDialog
 import com.github.damontecres.wholphin.ui.data.ItemDetailsDialogInfo
 import com.github.damontecres.wholphin.ui.detail.PlaylistDialog
 import com.github.damontecres.wholphin.ui.discover.DiscoverRow
 import com.github.damontecres.wholphin.ui.discover.DiscoverRowData
-import com.github.damontecres.wholphin.ui.letNotEmpty
 import com.github.damontecres.wholphin.ui.nav.Destination
+import com.github.damontecres.wholphin.ui.nav.OnBackdropHeader
 import com.github.damontecres.wholphin.ui.rememberInt
+import com.github.damontecres.wholphin.ui.theme.FluidLayout
 import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.ui.util.ResStringProvider
 import com.github.damontecres.wholphin.util.DataLoadingState
@@ -188,6 +197,7 @@ fun SeriesDetails(
                 preferences = preferences,
                 series = series,
                 seasons = state.seasons,
+                episodes = state.episodes,
                 trailers = state.trailers,
                 extras = state.extras,
                 people = state.people,
@@ -326,6 +336,8 @@ fun SeriesDetailsContent(
     preferences: UserPreferences,
     series: BaseItem,
     seasons: List<BaseItem?>,
+    // With only one season, its episodes, which are listed in place of the season
+    episodes: EpisodeList,
     similar: List<BaseItem>,
     trailers: List<Trailer>,
     extras: List<ExtrasItem>,
@@ -368,115 +380,60 @@ fun SeriesDetailsContent(
                     .fillMaxSize(),
         ) {
             LazyColumn(
-                contentPadding = PaddingValues(bottom = 80.dp),
+                // The rows' dark background reaches the bottom of the screen
+                contentPadding = PaddingValues(bottom = 0.dp),
                 verticalArrangement = Arrangement.spacedBy(Spacing.md),
-                modifier = Modifier,
+                // Full width, so the row panel reaches the screen's edges
+                modifier = Modifier.bleedToScreenEdges(),
             ) {
                 item {
-                    SeriesDetailsHeader(
-                        series = series,
-                        showLogo = preferences.appPreferences.interfacePreferences.showLogos,
-                        overviewOnClick = overviewOnClick,
-                        bringIntoViewRequester = bringIntoViewRequester,
+                    // Logo, details and buttons are never taller than the sharp backdrop image
+                    Column(
                         modifier =
                             Modifier
                                 .fillMaxWidth()
-                                .bringIntoViewRequester(bringIntoViewRequester)
-                                .padding(top = HeaderUtils.topPadding, bottom = Spacing.md),
-                    )
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(Spacing.md),
-                        modifier =
-                            Modifier
-                                .padding(start = HeaderUtils.startPadding)
-                                .focusRequester(focusRequesters[HEADER_ROW])
-                                .focusRestorer(playFocusRequester)
-                                .focusGroup()
-                                .padding(bottom = Spacing.md),
+                                .pageSidePadding()
+                                .heightIn(max = FluidLayout.backdropImageHeight()),
                     ) {
-                        ExpandablePlayButton(
-                            title = R.string.play,
-                            resume = Duration.ZERO,
-                            icon = Icons.Default.PlayArrow,
-                            onClick = {
-                                position = HEADER_ROW
-                                playOnClick.invoke(false)
-                            },
+                        SeriesDetailsHeader(
+                            series = series,
+                            showLogo = preferences.appPreferences.interfacePreferences.showLogos,
+                            overviewOnClick = overviewOnClick,
+                            bringIntoViewRequester = bringIntoViewRequester,
                             modifier =
                                 Modifier
-                                    .focusRequester(playFocusRequester)
-                                    .onFocusChanged {
-                                        if (it.isFocused) {
-                                            scope.launch(ExceptionHandler()) {
-                                                bringIntoViewRequester.bringIntoView()
-                                            }
-                                        }
-                                    },
+                                    .fillMaxWidth()
+                                    // Gives way to the buttons when there isn't room for both
+                                    .weight(1f, fill = false)
+                                    .bringIntoViewRequester(bringIntoViewRequester)
+                                    .padding(top = HeaderUtils.topPadding, bottom = Spacing.md),
                         )
-                        ExpandableFaButton(
-                            title = R.string.shuffle,
-                            iconStringRes = R.string.fa_shuffle,
-                            onClick = {
-                                position = HEADER_ROW
-                                playOnClick.invoke(true)
-                            },
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(Spacing.md),
                             modifier =
-                                Modifier.onFocusChanged {
-                                    if (it.isFocused) {
-                                        scope.launch(ExceptionHandler()) {
-                                            bringIntoViewRequester.bringIntoView()
-                                        }
-                                    }
-                                },
-                        )
-                        ExpandableFaButton(
-                            title = if (played) R.string.mark_unwatched else R.string.mark_watched,
-                            iconStringRes = if (played) R.string.fa_eye else R.string.fa_eye_slash,
-                            onClick = watchOnClick,
-                            modifier =
-                                Modifier.onFocusChanged {
-                                    if (it.isFocused) {
-                                        scope.launch(ExceptionHandler()) {
-                                            bringIntoViewRequester.bringIntoView()
-                                        }
-                                    }
-                                },
-                        )
-                        ExpandableFaButton(
-                            title = if (favorite) R.string.remove_favorite else R.string.add_favorite,
-                            iconStringRes = R.string.fa_heart,
-                            onClick = favoriteOnClick,
-                            iconColor = if (favorite) Color.Red else Color.Unspecified,
-                            modifier =
-                                Modifier.onFocusChanged {
-                                    if (it.isFocused) {
-                                        scope.launch(ExceptionHandler()) {
-                                            bringIntoViewRequester.bringIntoView()
-                                        }
-                                    }
-                                },
-                        )
-                        TrailerButton(
-                            trailers = trailers,
-                            trailerOnClick = trailerOnClick,
-                            modifier =
-                                Modifier.onFocusChanged {
-                                    if (it.isFocused) {
-                                        scope.launch(ExceptionHandler()) {
-                                            bringIntoViewRequester.bringIntoView()
-                                        }
-                                    }
-                                },
-                        )
-                        if (canDelete) {
-                            DeleteButton(
-                                title = series.title ?: "",
-                                onConfirmDelete = {
+                                Modifier
+                                    .padding(start = HeaderUtils.startPadding)
+                                    .focusRequester(focusRequesters[HEADER_ROW])
+                                    .focusRestorer(playFocusRequester)
+                                    .focusGroup()
+                                    .padding(bottom = Spacing.md),
+                        ) {
+                            // Plays the next episode, so once some of the series is watched it reads "Resume"
+                            val started =
+                                series.data.userData?.let {
+                                    !it.played && ((it.playedPercentage ?: 0.0) > 0.0 || (it.playbackPositionTicks ?: 0L) > 0L)
+                                } == true
+                            ExpandablePlayButton(
+                                title = if (started) R.string.resume else R.string.play,
+                                resume = Duration.ZERO,
+                                icon = Icons.Default.PlayArrow,
+                                onClick = {
                                     position = HEADER_ROW
-                                    actions.onDeleteItem.invoke(series)
+                                    playOnClick.invoke(false)
                                 },
                                 modifier =
                                     Modifier
+                                        .focusRequester(playFocusRequester)
                                         .onFocusChanged {
                                             if (it.isFocused) {
                                                 scope.launch(ExceptionHandler()) {
@@ -485,16 +442,10 @@ fun SeriesDetailsContent(
                                             }
                                         },
                             )
-                        }
-                        AnimatedVisibility(
-                            visible = discoverSeries != null,
-                            enter = fadeIn(),
-                            exit = fadeOut(),
-                        ) {
                             ExpandableFaButton(
-                                title = R.string.discover,
-                                iconStringRes = R.string.fa_magnifying_glass_plus,
-                                onClick = onClickDiscoverSeries,
+                                title = if (played) R.string.mark_unwatched else R.string.mark_watched,
+                                iconStringRes = if (played) R.string.fa_eye else R.string.fa_eye_slash,
+                                onClick = watchOnClick,
                                 modifier =
                                     Modifier.onFocusChanged {
                                         if (it.isFocused) {
@@ -504,143 +455,240 @@ fun SeriesDetailsContent(
                                         }
                                     },
                             )
+                            ExpandableFaButton(
+                                title = if (favorite) R.string.remove_favorite else R.string.add_favorite,
+                                iconStringRes = R.string.fa_heart,
+                                onClick = favoriteOnClick,
+                                iconColor = if (favorite) Color.Red else Color.Unspecified,
+                                modifier =
+                                    Modifier.onFocusChanged {
+                                        if (it.isFocused) {
+                                            scope.launch(ExceptionHandler()) {
+                                                bringIntoViewRequester.bringIntoView()
+                                            }
+                                        }
+                                    },
+                            )
+                            TrailerButton(
+                                trailers = trailers,
+                                trailerOnClick = trailerOnClick,
+                                modifier =
+                                    Modifier.onFocusChanged {
+                                        if (it.isFocused) {
+                                            scope.launch(ExceptionHandler()) {
+                                                bringIntoViewRequester.bringIntoView()
+                                            }
+                                        }
+                                    },
+                            )
+                            if (canDelete) {
+                                DeleteButton(
+                                    title = series.title ?: "",
+                                    onConfirmDelete = {
+                                        position = HEADER_ROW
+                                        actions.onDeleteItem.invoke(series)
+                                    },
+                                    modifier =
+                                        Modifier
+                                            .onFocusChanged {
+                                                if (it.isFocused) {
+                                                    scope.launch(ExceptionHandler()) {
+                                                        bringIntoViewRequester.bringIntoView()
+                                                    }
+                                                }
+                                            },
+                                )
+                            }
+                            AnimatedVisibility(
+                                visible = discoverSeries != null,
+                                enter = fadeIn(),
+                                exit = fadeOut(),
+                            ) {
+                                ExpandableFaButton(
+                                    title = R.string.discover,
+                                    iconStringRes = R.string.fa_magnifying_glass_plus,
+                                    onClick = onClickDiscoverSeries,
+                                    modifier =
+                                        Modifier.onFocusChanged {
+                                            if (it.isFocused) {
+                                                scope.launch(ExceptionHandler()) {
+                                                    bringIntoViewRequester.bringIntoView()
+                                                }
+                                            }
+                                        },
+                                )
+                            }
                         }
                     }
                 }
+                // Everything below the buttons, together on a dark background
                 item {
-                    ItemRow(
-                        title = stringResource(R.string.tv_seasons) + " (${seasons.size})",
-                        items = seasons,
-                        onClickItem = { index, item ->
-                            position = SEASONS_ROW
-                            onClickItem.invoke(index, item)
-                        },
-                        onLongClickItem = { index, item ->
-                            position = SEASONS_ROW
-                            onLongClickItem.invoke(index, item)
-                        },
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .focusRequester(focusRequesters[SEASONS_ROW]),
-                        cardContent = @Composable { index, item, mod, onClick, onLongClick ->
-                            SeasonCard(
-                                item = item,
-                                onClick = onClick,
-                                onLongClick = onLongClick,
-                                imageHeight = Cards.height2x3,
-                                imageWidth = Dp.Unspecified,
-                                showImageOverlay = true,
-                                modifier = mod,
+                    DetailRowsGroup {
+                        val singleSeasonEpisodes = (episodes as? EpisodeList.Success)?.episodes?.takeIf { seasons.size == 1 }
+                        if (singleSeasonEpisodes != null) {
+                            ItemRow(
+                                title = stringResource(R.string.episodes) + " (${singleSeasonEpisodes.size})",
+                                items = singleSeasonEpisodes,
+                                onClickItem = { index, item ->
+                                    position = SEASONS_ROW
+                                    onClickItem.invoke(index, item)
+                                },
+                                onLongClickItem = { index, item ->
+                                    position = SEASONS_ROW
+                                    onLongClickItem.invoke(index, item)
+                                },
+                                modifier =
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .focusRequester(focusRequesters[SEASONS_ROW]),
+                                cardContent = @Composable { index, episode, mod, onClick, onLongClick ->
+                                    BannerCard(
+                                        name = episode?.name,
+                                        item = episode,
+                                        aspectRatio =
+                                            episode
+                                                ?.aspectRatio
+                                                ?.coerceAtLeast(AspectRatios.FOUR_THREE)
+                                                ?: AspectRatios.WIDE,
+                                        cornerText = episode?.ui?.episodeCornerText,
+                                        played = episode?.data?.userData?.played ?: false,
+                                        playPercent = episode?.data?.userData?.playedPercentage ?: 0.0,
+                                        onClick = onClick,
+                                        onLongClick = onLongClick,
+                                        modifier = mod,
+                                    )
+                                },
                             )
-                        },
-                    )
-                }
-                if (people.isNotEmpty()) {
-                    item {
-                        PersonRow(
-                            people = people,
-                            onClick = {
-                                position = PEOPLE_ROW
-                                onClickPerson.invoke(it)
-                            },
-                            onLongClick = { index, person ->
-                                position = PEOPLE_ROW
-                                onShowContextMenu.invoke(
-                                    ContextMenu.ForPerson(
-                                        fromLongClick = true,
-                                        person = person,
-                                        actions =
-                                            PersonContextActions(
-                                                navigateTo = actions.navigateTo,
-                                                onClickFavorite = actions.onClickFavorite,
-                                            ),
-                                    ),
-                                )
-                            },
-                            modifier =
-                                Modifier
-                                    .fillMaxWidth()
-                                    .focusRequester(focusRequesters[PEOPLE_ROW]),
-                        )
-                    }
-                }
-                if (extras.isNotEmpty()) {
-                    item {
-                        ExtrasRow(
-                            extras = extras,
-                            onClickItem = { index, item ->
-                                position = EXTRAS_ROW
-                                onClickExtra.invoke(index, item)
-                            },
-                            onLongClickItem = { _, _ -> },
-                            modifier =
-                                Modifier
-                                    .fillMaxWidth()
-                                    .focusRequester(focusRequesters[EXTRAS_ROW]),
-                        )
-                    }
-                }
-                if (similar.isNotEmpty()) {
-                    item {
-                        ItemRow(
-                            title = stringResource(R.string.more_like_this),
-                            items = similar,
-                            onClickItem = { index, item ->
-                                position = SIMILAR_ROW
-                                onClickItem.invoke(index, item)
-                            },
-                            onLongClickItem = { index, item ->
-                                position = SIMILAR_ROW
-                                onShowContextMenu.invoke(
-                                    ContextMenu.ForBaseItem(
-                                        fromLongClick = true,
+                        } else {
+                            ItemRow(
+                                title = stringResource(R.string.tv_seasons) + " (${seasons.size})",
+                                items = seasons,
+                                onClickItem = { index, item ->
+                                    position = SEASONS_ROW
+                                    onClickItem.invoke(index, item)
+                                },
+                                onLongClickItem = { index, item ->
+                                    position = SEASONS_ROW
+                                    onLongClickItem.invoke(index, item)
+                                },
+                                modifier =
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .focusRequester(focusRequesters[SEASONS_ROW]),
+                                cardContent = @Composable { index, item, mod, onClick, onLongClick ->
+                                    SeasonCard(
                                         item = item,
-                                        chosenStreams = null,
-                                        showGoTo = true,
-                                        showStreamChoices = false,
-                                        canDelete = false,
-                                        canRemoveContinueWatching = false,
-                                        canRemoveNextUp = false,
-                                        actions = actions,
+                                        onClick = onClick,
+                                        onLongClick = onLongClick,
+                                        imageHeight = Cards.height2x3,
+                                        imageWidth = Dp.Unspecified,
+                                        showImageOverlay = true,
+                                        modifier = mod,
+                                    )
+                                },
+                            )
+                        }
+                        if (people.isNotEmpty()) {
+                            PersonRow(
+                                people = people,
+                                onClick = {
+                                    position = PEOPLE_ROW
+                                    onClickPerson.invoke(it)
+                                },
+                                onLongClick = { index, person ->
+                                    position = PEOPLE_ROW
+                                    onShowContextMenu.invoke(
+                                        ContextMenu.ForPerson(
+                                            fromLongClick = true,
+                                            person = person,
+                                            actions =
+                                                PersonContextActions(
+                                                    navigateTo = actions.navigateTo,
+                                                    onClickFavorite = actions.onClickFavorite,
+                                                ),
+                                        ),
+                                    )
+                                },
+                                modifier =
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .focusRequester(focusRequesters[PEOPLE_ROW]),
+                            )
+                        }
+                        if (extras.isNotEmpty()) {
+                            ExtrasRow(
+                                extras = extras,
+                                onClickItem = { index, item ->
+                                    position = EXTRAS_ROW
+                                    onClickExtra.invoke(index, item)
+                                },
+                                onLongClickItem = { _, _ -> },
+                                modifier =
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .focusRequester(focusRequesters[EXTRAS_ROW]),
+                            )
+                        }
+                        // The collections it's in, below the cast and above similar titles
+                        InCollectionsRow(series.id, Modifier.fillMaxWidth())
+                        if (similar.isNotEmpty()) {
+                            ItemRow(
+                                title = stringResource(R.string.more_like_this),
+                                items = similar,
+                                onClickItem = { index, item ->
+                                    position = SIMILAR_ROW
+                                    onClickItem.invoke(index, item)
+                                },
+                                onLongClickItem = { index, item ->
+                                    position = SIMILAR_ROW
+                                    onShowContextMenu.invoke(
+                                        ContextMenu.ForBaseItem(
+                                            fromLongClick = true,
+                                            item = item,
+                                            chosenStreams = null,
+                                            showGoTo = true,
+                                            showStreamChoices = false,
+                                            canDelete = false,
+                                            canRemoveContinueWatching = false,
+                                            canRemoveNextUp = false,
+                                            actions = actions,
+                                        ),
+                                    )
+                                },
+                                cardContent = { index, item, mod, onClick, onLongClick ->
+                                    SeasonCard(
+                                        item = item,
+                                        onClick = onClick,
+                                        onLongClick = onLongClick,
+                                        modifier = mod,
+                                        showImageOverlay = true,
+                                        imageHeight = Cards.height2x3,
+                                        imageWidth = Dp.Unspecified,
+                                    )
+                                },
+                                modifier =
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .focusRequester(focusRequesters[SIMILAR_ROW]),
+                            )
+                        }
+                        if (discovered.isNotEmpty()) {
+                            DiscoverRow(
+                                row =
+                                    DiscoverRowData(
+                                        ResStringProvider(R.string.discover),
+                                        DataLoadingState.Success(discovered),
+                                        type = DiscoverRequestType.UNKNOWN,
                                     ),
-                                )
-                            },
-                            cardContent = { index, item, mod, onClick, onLongClick ->
-                                SeasonCard(
-                                    item = item,
-                                    onClick = onClick,
-                                    onLongClick = onLongClick,
-                                    modifier = mod,
-                                    showImageOverlay = true,
-                                    imageHeight = Cards.height2x3,
-                                    imageWidth = Dp.Unspecified,
-                                )
-                            },
-                            modifier =
-                                Modifier
-                                    .fillMaxWidth()
-                                    .focusRequester(focusRequesters[SIMILAR_ROW]),
-                        )
-                    }
-                }
-                if (discovered.isNotEmpty()) {
-                    item {
-                        DiscoverRow(
-                            row =
-                                DiscoverRowData(
-                                    ResStringProvider(R.string.discover),
-                                    DataLoadingState.Success(discovered),
-                                    type = DiscoverRequestType.UNKNOWN,
-                                ),
-                            onClickItem = { index: Int, item: DiscoverItem ->
-                                position = DISCOVER_ROW
-                                onClickDiscover.invoke(index, item)
-                            },
-                            onLongClickItem = { _, _ -> },
-                            onCardFocus = {},
-                            focusRequester = focusRequesters[DISCOVER_ROW],
-                        )
+                                onClickItem = { index: Int, item: DiscoverItem ->
+                                    position = DISCOVER_ROW
+                                    onClickDiscover.invoke(index, item)
+                                },
+                                onLongClickItem = { _, _ -> },
+                                onCardFocus = {},
+                                focusRequester = focusRequesters[DISCOVER_ROW],
+                            )
+                        }
                     }
                 }
             }
@@ -656,55 +704,52 @@ fun SeriesDetailsHeader(
     bringIntoViewRequester: BringIntoViewRequester,
     modifier: Modifier = Modifier,
 ) {
-    val scope = rememberCoroutineScope()
-    val dto = series.data
-    Column(
-        verticalArrangement = Arrangement.spacedBy(Spacing.xs),
-        modifier = modifier,
-    ) {
-        TitleOrLogo(
-            item = series,
-            showLogo = showLogo,
-            modifier =
-                Modifier
-                    .fillMaxWidth(.75f)
-                    .padding(start = HeaderUtils.startPadding),
-        )
+    OnBackdropHeader {
+        val scope = rememberCoroutineScope()
+        val dto = series.data
+        // Laid out like the header above the rows on the home page: the title, then the quick
+        // details and the overview, at the same gaps and width
         Column(
-            verticalArrangement = Arrangement.spacedBy(Spacing.xs),
-            modifier = Modifier.fillMaxWidth(.60f),
+            verticalArrangement = Arrangement.spacedBy(Spacing.block),
+            modifier = modifier,
         ) {
-            QuickDetails(
-                series.ui.quickDetails,
-                null,
-                Modifier.padding(start = HeaderUtils.startPadding),
+            TitleOrLogo(
+                item = series,
+                showLogo = showLogo,
+                modifier =
+                    Modifier
+                        .padding(start = HeaderUtils.startPadding)
+                        .width(FluidLayout.headlineWidth()),
             )
-            dto.studios?.let {
-                val studios = remember { series.studioNames }
-                GenreText(
-                    studios,
-                    textStyle = MaterialTheme.typography.bodyLarge,
-                    modifier = Modifier.padding(start = HeaderUtils.startPadding),
-                )
-            }
-            dto.genres?.letNotEmpty {
-                GenreText(it, Modifier.padding(start = HeaderUtils.startPadding, bottom = Spacing.xs))
-            }
-            dto.overview?.let { overview ->
-                OverviewText(
-                    overview = overview,
-                    maxLines = 3,
-                    onClick = overviewOnClick,
-                    textBoxHeight = Dp.Unspecified,
-                    modifier =
-                        Modifier.onFocusChanged {
-                            if (it.isFocused) {
-                                scope.launch(ExceptionHandler()) {
-                                    bringIntoViewRequester.bringIntoView()
-                                }
-                            }
-                        },
-                )
+            Column(
+                verticalArrangement = Arrangement.spacedBy(Spacing.sm),
+                modifier =
+                    Modifier
+                        .padding(start = HeaderUtils.startPadding)
+                        .width(FluidLayout.headlineWidth()),
+            ) {
+                QuickDetails(series.ui.quickDetails, null)
+                dto.overview?.let { overview ->
+                    OverviewText(
+                        overview = overview,
+                        maxLines = 3,
+                        onClick = overviewOnClick,
+                        textBoxHeight = Dp.Unspecified,
+                        // The text (not its focus background) lines up with the title, and stops
+                        // at the same line length as on the home page
+                        modifier =
+                            Modifier
+                                .offset(x = -Spacing.sm)
+                                .widthIn(max = 550.dp)
+                                .onFocusChanged {
+                                    if (it.isFocused) {
+                                        scope.launch(ExceptionHandler()) {
+                                            bringIntoViewRequester.bringIntoView()
+                                        }
+                                    }
+                                },
+                    )
+                }
             }
         }
     }
@@ -745,14 +790,6 @@ fun buildDialogForSeason(
                     Icons.Default.PlayArrow,
                 ) {
                     onClickPlay.invoke(false)
-                },
-            )
-            add(
-                DialogItem(
-                    resources.getString(R.string.shuffle),
-                    R.string.fa_shuffle,
-                ) {
-                    onClickPlay.invoke(true)
                 },
             )
             if (canDelete) {

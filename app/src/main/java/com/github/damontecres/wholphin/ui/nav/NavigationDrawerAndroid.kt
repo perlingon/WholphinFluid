@@ -35,6 +35,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -44,7 +45,9 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.FocusState
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.layout
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
@@ -103,8 +106,10 @@ private fun DrawerSheet(
     }
 
     // There is no collapsed "mini" drawer: when closed, the whole drawer slides out past the left
-    // edge of the screen. It stays laid out there, so pressing left from a page still reaches it
+    // edge of the screen. It stays laid out there, so pressing left from a page still reaches it.
+    // The drawer is wider than one column while it has a submenu, so slide it out by its full width
     val density = LocalDensity.current
+    var sheetWidth by remember { mutableIntStateOf(0) }
     val slide by animateIntOffsetAsState(
         targetValue =
             IntOffset(
@@ -112,7 +117,7 @@ private fun DrawerSheet(
                     if (drawerState.currentValue == DrawerValue.Open) {
                         0
                     } else {
-                        with(density) { -ExpandedDrawerItemWidth.roundToPx() }
+                        -maxOf(sheetWidth, with(density) { ExpandedDrawerItemWidth.roundToPx() })
                     },
                 y = 0,
             ),
@@ -126,6 +131,7 @@ private fun DrawerSheet(
     val internalModifier =
         Modifier
             .offset { slide }
+            .onSizeChanged { sheetWidth = it.width }
             .focusRequester(focusRequester)
             .fillMaxHeight()
             .then(modifier)
@@ -151,6 +157,9 @@ internal class NavigationDrawerScopeImpl(
 // Space a closed drawer takes up beside the page: none, since a closed drawer is hidden
 internal val CollapsedDrawerItemWidth = 0.dp
 internal val ExpandedDrawerItemWidth = 224.dp
+
+// The menus' height, as a part of the screen's height; they're centred vertically
+internal const val DrawerHeightFraction = .75f
 internal val DrawerIconSize = 24.dp
 internal val DrawerIconPadding = (ListItemDefaults.IconSize - DrawerIconSize) / 2
 internal val DrawerAnimationStiffness = Spring.StiffnessMedium
@@ -166,7 +175,7 @@ internal fun NavigationDrawerScope.NavigationDrawerItem(
     supportingContent: (@Composable () -> Unit)? = null,
     trailingContent: (@Composable () -> Unit)? = null,
     tonalElevation: Dp = NavigationDrawerItemDefaults.NavigationDrawerItemElevation,
-    colors: NavigationDrawerItemColors = NavigationDrawerItemDefaults.colors(),
+    colors: NavigationDrawerItemColors = navDrawerItemColors(),
     interactionSource: MutableInteractionSource? = null,
     content: @Composable () -> Unit,
 ) {
@@ -219,6 +228,21 @@ internal fun NavigationDrawerScope.NavigationDrawerItem(
         interactionSource = interactionSource,
     )
 }
+
+/**
+ * Nav drawer items have no background of their own, not even when focused: the focused and
+ * current items only change their text colour (see [navItemColor])
+ */
+@Composable
+internal fun navDrawerItemColors(containerColor: Color = Color.Transparent) =
+    NavigationDrawerItemDefaults.colors(
+        containerColor = containerColor,
+        focusedContainerColor = containerColor,
+        pressedContainerColor = containerColor,
+        selectedContainerColor = containerColor,
+        focusedSelectedContainerColor = containerColor,
+        pressedSelectedContainerColor = containerColor,
+    )
 
 @Composable
 private fun NavigationDrawerItemColors.toToggleableListItemColors(doesNavigationDrawerHaveFocus: Boolean) =

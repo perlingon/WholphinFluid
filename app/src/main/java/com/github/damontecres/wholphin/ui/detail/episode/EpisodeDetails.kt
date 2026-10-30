@@ -22,6 +22,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.LifecycleResumeEffect
@@ -29,13 +30,17 @@ import com.github.damontecres.wholphin.R
 import com.github.damontecres.wholphin.data.ChosenStreams
 import com.github.damontecres.wholphin.data.model.BaseItem
 import com.github.damontecres.wholphin.preferences.UserPreferences
+import com.github.damontecres.wholphin.ui.Cards
 import com.github.damontecres.wholphin.ui.RequestOrRestoreFocus
+import com.github.damontecres.wholphin.ui.cards.ItemRow
+import com.github.damontecres.wholphin.ui.cards.SeasonCard
 import com.github.damontecres.wholphin.ui.components.ContextMenu
 import com.github.damontecres.wholphin.ui.components.ContextMenuActions
 import com.github.damontecres.wholphin.ui.components.ContextMenuDialog
 import com.github.damontecres.wholphin.ui.components.ErrorMessage
 import com.github.damontecres.wholphin.ui.components.ExpandablePlayButtons
 import com.github.damontecres.wholphin.ui.components.HeaderUtils
+import com.github.damontecres.wholphin.ui.components.InCollectionsRow
 import com.github.damontecres.wholphin.ui.components.LoadingPage
 import com.github.damontecres.wholphin.ui.components.Optional
 import com.github.damontecres.wholphin.ui.data.AddPlaylistViewModel
@@ -172,6 +177,22 @@ fun EpisodeDetails(
                 canDelete = canDelete,
                 onConfirmDelete = { viewModel.deleteItem(ep) },
                 onChooseVersion = { contextActions.onChooseVersion.invoke(ep, it) },
+                similar = state.similar,
+                onClickSimilar = { viewModel.navigateTo(it.destination()) },
+                onLongClickSimilar = { item ->
+                    showContextMenu =
+                        ContextMenu.ForBaseItem(
+                            fromLongClick = true,
+                            item = item,
+                            chosenStreams = null,
+                            showGoTo = true,
+                            showStreamChoices = false,
+                            canDelete = false,
+                            canRemoveContinueWatching = false,
+                            canRemoveNextUp = false,
+                            actions = contextActions,
+                        )
+                },
                 modifier = modifier,
             )
         }
@@ -229,6 +250,9 @@ fun EpisodeDetailsContent(
     canDelete: Boolean,
     onConfirmDelete: () -> Unit,
     onChooseVersion: (MediaSourceInfo) -> Unit,
+    similar: List<BaseItem>,
+    onClickSimilar: (BaseItem) -> Unit,
+    onLongClickSimilar: (BaseItem) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -302,6 +326,33 @@ fun EpisodeDetailsContent(
                                 .fillMaxWidth()
                                 .padding(bottom = Spacing.md)
                                 .focusRequester(focusRequesters[HEADER_ROW]),
+                    )
+                }
+            }
+            // The collections the series is in, above similar titles
+            item {
+                InCollectionsRow(ep.data.seriesId ?: ep.id, Modifier.fillMaxWidth())
+            }
+            // The series' similar titles, as on the series page
+            if (similar.isNotEmpty()) {
+                item {
+                    ItemRow(
+                        title = stringResource(R.string.more_like_this),
+                        items = similar,
+                        onClickItem = { _, item -> onClickSimilar(item) },
+                        onLongClickItem = { _, item -> onLongClickSimilar(item) },
+                        cardContent = { _, item, mod, onClick, onLongClick ->
+                            SeasonCard(
+                                item = item,
+                                onClick = onClick,
+                                onLongClick = onLongClick,
+                                modifier = mod,
+                                showImageOverlay = true,
+                                imageHeight = Cards.height2x3,
+                                imageWidth = Dp.Unspecified,
+                            )
+                        },
+                        modifier = Modifier.fillMaxWidth(),
                     )
                 }
             }

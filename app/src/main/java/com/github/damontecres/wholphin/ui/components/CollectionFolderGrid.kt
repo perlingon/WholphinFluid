@@ -311,6 +311,8 @@ fun CollectionFolderHeader(
     onShowFilterDropdown: ((Boolean) -> Unit)? = null,
     filterButtonFocusRequester: FocusRequester = remember { FocusRequester() },
     randomButtonFocusRequester: FocusRequester = remember { FocusRequester() },
+    // Random and shuffle, only for music and playlists
+    showShuffle: Boolean = false,
 ) {
     AnimatedVisibility(
         showHeader,
@@ -385,13 +387,15 @@ fun CollectionFolderHeader(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier,
                 ) {
-                    ExpandableFaButton(
-                        title = R.string.sort_by_random,
-                        iconStringRes = R.string.fa_dice,
-                        onClick = onClickRandom,
-                        modifier = Modifier.focusRequester(randomButtonFocusRequester),
-                        enabled = listIsNotEmpty,
-                    )
+                    if (showShuffle) {
+                        ExpandableFaButton(
+                            title = R.string.sort_by_random,
+                            iconStringRes = R.string.fa_dice,
+                            onClick = onClickRandom,
+                            modifier = Modifier.focusRequester(randomButtonFocusRequester),
+                            enabled = listIsNotEmpty,
+                        )
+                    }
 
                     if (playEnabled) {
                         ExpandablePlayButton(
@@ -401,12 +405,14 @@ fun CollectionFolderHeader(
                             onClick = { onClickPlayAll.invoke(false) },
                             enabled = listIsNotEmpty,
                         )
-                        ExpandableFaButton(
-                            title = R.string.shuffle,
-                            iconStringRes = R.string.fa_shuffle,
-                            onClick = { onClickPlayAll.invoke(true) },
-                            enabled = listIsNotEmpty,
-                        )
+                        if (showShuffle) {
+                            ExpandableFaButton(
+                                title = R.string.shuffle,
+                                iconStringRes = R.string.fa_shuffle,
+                                onClick = { onClickPlayAll.invoke(true) },
+                                enabled = listIsNotEmpty,
+                            )
+                        }
                     }
                 }
             }

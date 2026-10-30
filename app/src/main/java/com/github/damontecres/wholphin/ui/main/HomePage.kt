@@ -84,6 +84,7 @@ import com.github.damontecres.wholphin.ui.isNotNullOrBlank
 import com.github.damontecres.wholphin.ui.nav.BackdropDebug
 import com.github.damontecres.wholphin.ui.nav.Destination
 import com.github.damontecres.wholphin.ui.nav.LocalNavDrawerOpen
+import com.github.damontecres.wholphin.ui.nav.OnBackdropHeader
 import com.github.damontecres.wholphin.ui.playback.isPlayKeyUp
 import com.github.damontecres.wholphin.ui.playback.playable
 import com.github.damontecres.wholphin.ui.playback.scale
@@ -306,11 +307,18 @@ fun HomePageContent(
     },
     onClickViewMore: (RowColumn, HomeRowLoadingState.Success) -> Unit = { _, _ -> },
 ) {
+    // Before anything on the page has had focus (the nav drawer has it when the app starts), the
+    // header and backdrop show the first item of the first row that has loaded
     val focusedItem =
         remember(homeRows, position) {
-            (homeRows.getOrNull(position.row) as? HomeRowLoadingState.Success)?.items?.getOrNull(
-                position.column,
-            )
+            if (position.row >= 0) {
+                (homeRows.getOrNull(position.row) as? HomeRowLoadingState.Success)?.items?.getOrNull(
+                    position.column,
+                )
+            } else {
+                homeRows
+                    .firstNotNullOfOrNull { (it as? HomeRowLoadingState.Success)?.items?.firstOrNull() }
+            }
         }
 
     val rowFocusRequesters = remember(homeRows.size) { List(homeRows.size) { FocusRequester() } }
@@ -605,49 +613,51 @@ fun HomePageHeader(
     logoImageUrl: String?,
     modifier: Modifier = Modifier,
 ) {
-    // Gap between the logo (or title) and the lines below it
-    val titleGap = Spacing.block
-    // The whole block is as wide as the space left of the backdrop image (see FluidLayout)
-    Column(
-        verticalArrangement = Arrangement.spacedBy(titleGap),
-        modifier = modifier.width(FluidLayout.headlineWidth()),
-    ) {
-        TitleOrLogo(
-            title = title,
-            logoImageUrl = logoImageUrl,
-            showLogo = showLogo,
-            modifier = Modifier.fillMaxWidth(),
-        )
+    OnBackdropHeader {
+        // Gap between the logo (or title) and the lines below it
+        val titleGap = Spacing.block
+        // The whole block is as wide as the space left of the backdrop image (see FluidLayout)
         Column(
-            verticalArrangement = Arrangement.spacedBy(Spacing.sm),
-            modifier =
-                Modifier
-                    .fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(titleGap),
+            modifier = modifier.width(FluidLayout.headlineWidth()),
         ) {
-            if (subtitle != null) {
-                EpisodeName(subtitle)
-            }
-            QuickDetails(quickDetails, timeRemaining, endsAt = endsAt)
-            // The description fills the block, but stops at a comfortable line length for
-            // reading (around 80 characters) however wide the block gets
-            val overviewMaxWidth = 550.dp
-            val overviewModifier =
-                Modifier
-                    .padding(0.dp)
-                    .height(48.dp + if (!overviewTwoLines) 12.dp else 0.dp)
-                    .fillMaxWidth()
-                    .widthIn(max = overviewMaxWidth)
-            if (overview.isNotNullOrBlank()) {
-                Text(
-                    text = overview,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = if (overviewTwoLines) 2 else 3,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = overviewModifier,
-                )
-            } else {
-                Spacer(overviewModifier)
+            TitleOrLogo(
+                title = title,
+                logoImageUrl = logoImageUrl,
+                showLogo = showLogo,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Column(
+                verticalArrangement = Arrangement.spacedBy(Spacing.sm),
+                modifier =
+                    Modifier
+                        .fillMaxWidth(),
+            ) {
+                if (subtitle != null) {
+                    EpisodeName(subtitle)
+                }
+                QuickDetails(quickDetails, timeRemaining, endsAt = endsAt)
+                // The description fills the block, but stops at a comfortable line length for
+                // reading (around 80 characters) however wide the block gets
+                val overviewMaxWidth = 550.dp
+                val overviewModifier =
+                    Modifier
+                        .padding(0.dp)
+                        .height(48.dp + if (!overviewTwoLines) 12.dp else 0.dp)
+                        .fillMaxWidth()
+                        .widthIn(max = overviewMaxWidth)
+                if (overview.isNotNullOrBlank()) {
+                    Text(
+                        text = overview,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = if (overviewTwoLines) 2 else 3,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = overviewModifier,
+                    )
+                } else {
+                    Spacer(overviewModifier)
+                }
             }
         }
     }

@@ -29,6 +29,7 @@ import com.github.damontecres.wholphin.ui.components.TitleOrLogo
 import com.github.damontecres.wholphin.ui.components.VideoStreamDetails
 import com.github.damontecres.wholphin.ui.isNotNullOrBlank
 import com.github.damontecres.wholphin.ui.letNotEmpty
+import com.github.damontecres.wholphin.ui.nav.OnBackdropHeader
 import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.util.ExceptionHandler
 import kotlinx.coroutines.launch
@@ -43,91 +44,96 @@ fun MovieDetailsHeader(
     overviewOnClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val dto = movie.data
-    val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    Column(
-        verticalArrangement = Arrangement.spacedBy(Spacing.xs),
-        modifier = modifier,
-    ) {
-        // Title
-        TitleOrLogo(
-            item = movie,
-            showLogo = preferences.appPreferences.interfacePreferences.showLogos,
-            modifier =
-                Modifier
-                    .fillMaxWidth(.75f)
-                    .padding(start = HeaderUtils.startPadding),
-        )
-
+    OnBackdropHeader {
+        val dto = movie.data
+        val context = LocalContext.current
+        val scope = rememberCoroutineScope()
         Column(
             verticalArrangement = Arrangement.spacedBy(Spacing.xs),
-            modifier = Modifier.fillMaxWidth(.60f),
+            modifier = modifier,
         ) {
-            QuickDetails(
-                movie.ui.quickDetails,
-                movie.timeRemainingOrRuntime,
-                Modifier.padding(start = HeaderUtils.startPadding),
-            )
-
-            dto.genres?.letNotEmpty {
-                GenreText(it, Modifier.padding(start = HeaderUtils.startPadding))
-            }
-
-            VideoStreamDetails(
-                chosenStreams = chosenStreams,
-                numberOfVersions = movie.data.mediaSourceCount ?: 0,
+            // Title
+            TitleOrLogo(
+                item = movie,
+                showLogo = preferences.appPreferences.interfacePreferences.showLogos,
                 modifier =
-                    Modifier.padding(
-                        start = HeaderUtils.startPadding,
-                        top = Spacing.xs,
-                        bottom = Spacing.md,
-                    ),
+                    Modifier
+                        .fillMaxWidth(.75f)
+                        .padding(start = HeaderUtils.startPadding),
             )
-            dto.taglines?.firstOrNull()?.let { tagline ->
-                Text(
-                    text = tagline,
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontStyle = FontStyle.Italic,
-                    modifier = Modifier.padding(start = HeaderUtils.startPadding),
-                )
-            }
 
-            // Description
-            dto.overview?.let { overview ->
-                OverviewText(
-                    overview = overview,
-                    maxLines = 3,
-                    onClick = overviewOnClick,
-                    textBoxHeight = Dp.Unspecified,
-                    modifier =
-                        Modifier.onFocusChanged {
-                            if (it.isFocused) {
-                                scope.launch(ExceptionHandler()) {
-                                    bringIntoViewRequester.bringIntoView()
-                                }
-                            }
-                        },
+            Column(
+                verticalArrangement = Arrangement.spacedBy(Spacing.xs),
+                modifier = Modifier.fillMaxWidth(.60f),
+            ) {
+                QuickDetails(
+                    movie.ui.quickDetails,
+                    movie.timeRemainingOrRuntime,
+                    Modifier.padding(start = HeaderUtils.startPadding),
                 )
-            }
 
-            val directorName =
-                remember(movie.data.people) {
-                    movie.data.people
-                        ?.filter { it.type == PersonKind.DIRECTOR && it.name.isNotNullOrBlank() }
-                        ?.joinToString(", ") { it.name!! }
-                        ?.takeIf { it.isNotNullOrBlank() }
+                dto.genres?.letNotEmpty {
+                    GenreText(it, Modifier.padding(start = HeaderUtils.startPadding))
                 }
 
-            directorName
-                ?.let {
+                VideoStreamDetails(
+                    chosenStreams = chosenStreams,
+                    numberOfVersions = movie.data.mediaSourceCount ?: 0,
+                    modifier =
+                        Modifier.padding(
+                            start = HeaderUtils.startPadding,
+                            top = Spacing.xs,
+                            bottom = Spacing.md,
+                        ),
+                )
+                dto.taglines?.firstOrNull()?.let { tagline ->
                     Text(
-                        text = stringResource(R.string.directed_by, it),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface,
+                        text = tagline,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontStyle = FontStyle.Italic,
                         modifier = Modifier.padding(start = HeaderUtils.startPadding),
                     )
                 }
+
+                // Description
+                dto.overview?.let { overview ->
+                    OverviewText(
+                        overview = overview,
+                        maxLines = 3,
+                        onClick = overviewOnClick,
+                        textBoxHeight = Dp.Unspecified,
+                        // The text (not its focus background) lines up with the title
+                        modifier =
+                            Modifier
+                                .padding(start = HeaderUtils.startPadding - Spacing.sm)
+                                .onFocusChanged {
+                                    if (it.isFocused) {
+                                        scope.launch(ExceptionHandler()) {
+                                            bringIntoViewRequester.bringIntoView()
+                                        }
+                                    }
+                                },
+                    )
+                }
+
+                val directorName =
+                    remember(movie.data.people) {
+                        movie.data.people
+                            ?.filter { it.type == PersonKind.DIRECTOR && it.name.isNotNullOrBlank() }
+                            ?.joinToString(", ") { it.name!! }
+                            ?.takeIf { it.isNotNullOrBlank() }
+                    }
+
+                directorName
+                    ?.let {
+                        Text(
+                            text = stringResource(R.string.directed_by, it),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.padding(start = HeaderUtils.startPadding),
+                        )
+                    }
+            }
         }
     }
 }

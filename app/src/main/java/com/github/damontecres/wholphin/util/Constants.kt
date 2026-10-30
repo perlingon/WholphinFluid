@@ -53,9 +53,7 @@ val supportedPlayableTypes =
     )
 
 val supportedShufflableTypes =
+    // Shuffle is only offered for music and playlists
     setOf(
-        BaseItemKind.SEASON,
-        BaseItemKind.SERIES,
-        BaseItemKind.BOX_SET,
         BaseItemKind.PLAYLIST,
     )
