@@ -96,7 +96,8 @@ fun UserList(
             }
             LazyRow(
                 horizontalArrangement = Arrangement.spacedBy(Spacing.lg), // Spacing to accommodate 20% scale
-                contentPadding = PaddingValues(horizontal = Spacing.xxl, vertical = Spacing.md), // Increased padding to accommodate 20% scale
+                // Increased padding to accommodate 20% scale
+                contentPadding = PaddingValues(horizontal = Spacing.xxl, vertical = Spacing.md),
                 modifier =
                     Modifier
                         .wrapContentWidth()
