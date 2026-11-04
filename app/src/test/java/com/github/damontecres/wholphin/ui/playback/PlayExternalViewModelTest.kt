@@ -50,6 +50,7 @@ import org.jellyfin.sdk.api.operations.SubtitleApi
 import org.jellyfin.sdk.api.operations.UserLibraryApi
 import org.jellyfin.sdk.api.operations.VideosApi
 import org.jellyfin.sdk.model.api.BaseItemDto
+import org.jellyfin.sdk.model.api.MediaSourceInfo
 import org.jellyfin.sdk.model.extensions.inWholeTicks
 import org.junit.After
 import org.junit.Assert.assertArrayEquals
@@ -116,7 +117,7 @@ class PlayExternalViewModelTest {
         every { serverRepository.currentUser } returns null
         coEvery { userLibraryApi.getItem(movie.id) } returns successResponse(movie)
         coEvery { streamChoiceService.chooseSource(any(), any()) } returns mediaSource
-        coEvery { streamChoiceService.chooseSubtitleStream(any(), any(), any(), any(), any(), any()) } returns
+        coEvery { streamChoiceService.chooseSubtitleStream(any<BaseItemDto>(), any<MediaSourceInfo>(), any(), any(), any(), any()) } returns
             StreamChoiceResult(subtitle, StreamChoiceReason.Unknown)
         coEvery { streamChoiceService.getSeriesTrackChoices(any<BaseItemDto>(), SeriesTrackChoiceType.SUBTITLE) } returns emptyList()
         every {
@@ -238,7 +239,9 @@ class PlayExternalViewModelTest {
         runTest(testDispatcher) {
             coEvery { streamChoiceService.chooseSource(any(), any()) } returns
                 mediaSource.copy(mediaStreams = emptyList(), runTimeTicks = null)
-            coEvery { streamChoiceService.chooseSubtitleStream(any(), any(), any(), any(), any(), any()) } returns null
+            coEvery {
+                streamChoiceService.chooseSubtitleStream(any<BaseItemDto>(), any<MediaSourceInfo>(), any(), any(), any(), any())
+            } returns null
 
             val intent = createIntent(Destination.Playback(movie.id, 0L))
             assertStartFromBeginning(intent)
