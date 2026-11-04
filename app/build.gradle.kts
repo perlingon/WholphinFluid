@@ -55,7 +55,11 @@ val gitTags =
 
 val gitDescribe =
     providers
-        .exec { commandLine("git", "describe", "--tags", "--long", "--match=v*") }
+        .exec {
+            commandLine("git", "describe", "--tags", "--long", "--match=v*")
+            // No v* tags (e.g. a CI checkout of the fork) makes git exit 128; fall back to 0.0.0
+            isIgnoreExitValue = true
+        }
         .standardOutput.asText
         .getOrElse("v0.0.0")
 
