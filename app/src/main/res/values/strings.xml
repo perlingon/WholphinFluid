@@ -59,6 +59,7 @@
     <string name="hide_debug_info">Hide debug info</string>
     <string name="hide">Hide</string>
     <string name="home">Home</string>
+    <string name="spotlight">Spotlight</string>
     <string name="immediate">Immediate</string>
     <string name="intro">Intro</string>
     <string name="jump_letters">#ABCDEFGHIJKLMNOPQRSTUVWXYZ</string>
@@ -153,6 +154,7 @@
     <string name="suggestions">Suggestions</string>
     <string name="switch_servers">Switch servers</string>
     <string name="switch_user">Switch</string>
+    <string name="switch_account">Switch account</string>
     <string name="time_left">%1$s left</string>
     <string name="top_unwatched">Top Rated Unwatched</string>
     <string name="trailers_title">Trailers</string>
@@ -1049,4 +1051,20 @@
     </plurals>
     <string name="adjust_video">Adjust video</string>
     <string name="subtitles_off">Off</string>
+    <string name="in_collection">In collection</string>
+    <string name="library_movies">Movies</string>
+    <string name="library_shows">Shows</string>
+    <string name="library_music">Music</string>
+    <string name="recently_added_movies">Recently added movies</string>
+    <string name="recently_added_shows">Recently added shows</string>
+    <string name="recently_added_music">Recently added music</string>
+    <string name="recently_released_movies">Recently released movies</string>
+    <string name="recently_released_shows">Recently released shows</string>
+    <string name="recently_released_music">Recently released music</string>
+    <string name="genres_movies">Movie genres</string>
+    <string name="genres_shows">TV genres</string>
+    <string name="genres_music">Music genres</string>
+    <string name="studios_movies">Movie studios</string>
+    <string name="studios_shows">TV networks</string>
+    <string name="studios_music">Record labels</string>
 </resources>

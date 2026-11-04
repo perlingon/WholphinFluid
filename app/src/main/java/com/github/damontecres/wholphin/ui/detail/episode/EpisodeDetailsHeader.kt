@@ -29,6 +29,7 @@ import com.github.damontecres.wholphin.ui.components.QuickDetails
 import com.github.damontecres.wholphin.ui.components.SeriesName
 import com.github.damontecres.wholphin.ui.components.VideoStreamDetails
 import com.github.damontecres.wholphin.ui.isNotNullOrBlank
+import com.github.damontecres.wholphin.ui.nav.OnBackdropHeader
 import com.github.damontecres.wholphin.ui.theme.Spacing
 import org.jellyfin.sdk.model.api.PersonKind
 
@@ -41,62 +42,64 @@ fun EpisodeDetailsHeader(
     overviewOnClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val dto = ep.data
-    val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    Column(
-        verticalArrangement = Arrangement.spacedBy(Spacing.sm),
-        modifier = modifier,
-    ) {
-        SeriesName(dto.seriesName, Modifier.fillMaxWidth(.75f))
-        EpisodeName(dto, Modifier.fillMaxWidth(.75f))
-
+    OnBackdropHeader {
+        val dto = ep.data
+        val context = LocalContext.current
+        val scope = rememberCoroutineScope()
         Column(
-            verticalArrangement = Arrangement.spacedBy(Spacing.xs),
-            modifier = Modifier.fillMaxWidth(.60f),
+            verticalArrangement = Arrangement.spacedBy(Spacing.sm),
+            modifier = modifier,
         ) {
-            val padding = 8.dp
-            QuickDetails(ep.ui.quickDetails, ep.timeRemainingOrRuntime)
+            SeriesName(dto.seriesName, Modifier.fillMaxWidth(.75f))
+            EpisodeName(dto, Modifier.fillMaxWidth(.75f))
 
-            VideoStreamDetails(
-                chosenStreams = chosenStreams,
-                numberOfVersions = dto.mediaSourceCount ?: 0,
-                modifier = Modifier.padding(bottom = padding),
-            )
-            dto.taglines?.firstOrNull()?.let { tagline ->
-                Text(
-                    text = tagline,
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontStyle = FontStyle.Italic,
-                    modifier = Modifier,
-                )
-            }
+            Column(
+                verticalArrangement = Arrangement.spacedBy(Spacing.xs),
+                modifier = Modifier.fillMaxWidth(.60f),
+            ) {
+                val padding = 8.dp
+                QuickDetails(ep.ui.quickDetails, ep.timeRemainingOrRuntime)
 
-            // Description
-            dto.overview?.let { overview ->
-                val interactionSource = remember { MutableInteractionSource() }
-                val focused = interactionSource.collectIsFocusedAsState().value
-                LaunchedEffect(focused) {
-                    if (focused) bringIntoViewRequester.bringIntoView()
-                }
-                OverviewText(
-                    overview = overview,
-                    maxLines = 3,
-                    onClick = overviewOnClick,
-                    textBoxHeight = Dp.Unspecified,
-                    interactionSource = interactionSource,
+                VideoStreamDetails(
+                    chosenStreams = chosenStreams,
+                    numberOfVersions = dto.mediaSourceCount ?: 0,
+                    modifier = Modifier.padding(bottom = padding),
                 )
-            }
-            ep.data.people
-                ?.filter { it.type == PersonKind.DIRECTOR && it.name.isNotNullOrBlank() }
-                ?.joinToString(", ") { it.name!! }
-                ?.let {
+                dto.taglines?.firstOrNull()?.let { tagline ->
                     Text(
-                        text = stringResource(R.string.directed_by, it),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface,
+                        text = tagline,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontStyle = FontStyle.Italic,
+                        modifier = Modifier,
                     )
                 }
+
+                // Description
+                dto.overview?.let { overview ->
+                    val interactionSource = remember { MutableInteractionSource() }
+                    val focused = interactionSource.collectIsFocusedAsState().value
+                    LaunchedEffect(focused) {
+                        if (focused) bringIntoViewRequester.bringIntoView()
+                    }
+                    OverviewText(
+                        overview = overview,
+                        maxLines = 3,
+                        onClick = overviewOnClick,
+                        textBoxHeight = Dp.Unspecified,
+                        interactionSource = interactionSource,
+                    )
+                }
+                ep.data.people
+                    ?.filter { it.type == PersonKind.DIRECTOR && it.name.isNotNullOrBlank() }
+                    ?.joinToString(", ") { it.name!! }
+                    ?.let {
+                        Text(
+                            text = stringResource(R.string.directed_by, it),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                    }
+            }
         }
     }
 }

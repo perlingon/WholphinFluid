@@ -18,6 +18,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
+import com.github.damontecres.wholphin.ui.nav.BackdropContrast
 import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.ui.theme.rowHeadline
 
@@ -36,7 +37,7 @@ fun FocusableItemRow(
         Text(
             text = title,
             style = MaterialTheme.typography.rowHeadline,
-            color = MaterialTheme.colorScheme.onBackground,
+            color = BackdropContrast.rowText(),
         )
     },
     subtitleContent = {

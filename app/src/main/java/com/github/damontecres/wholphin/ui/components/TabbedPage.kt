@@ -16,6 +16,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.unit.dp
@@ -26,6 +27,7 @@ import com.github.damontecres.wholphin.services.BackdropService
 import com.github.damontecres.wholphin.services.RememberedTabService
 import com.github.damontecres.wholphin.services.UserPreferencesService
 import com.github.damontecres.wholphin.ui.launchIO
+import com.github.damontecres.wholphin.ui.nav.rememberDrawerSubmenu
 import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.ui.util.ResStringProvider
 import com.github.damontecres.wholphin.ui.util.StringProvider
@@ -162,11 +164,18 @@ fun TabbedPage(
                 0.dp
             }
         }
+    // Beside the nav drawer, the tabs are a submenu in the drawer instead of a row on the page
+    val tabsInDrawer =
+        rememberDrawerSubmenu(
+            tabs = tabs,
+            selectedIndex = selectedTabIndex,
+            onSelect = updateSelectedTabIndex,
+        )
     Column(
         modifier = modifier,
     ) {
         AnimatedVisibility(
-            showTabs,
+            showTabs && !tabsInDrawer,
             enter = expandVertically(),
             exit = shrinkVertically(),
         ) {
@@ -207,11 +216,20 @@ fun <T> KeyedTabbedPage(
                 0.dp
             }
         }
+    val tabKeys = remember(tabs) { tabs.keys.toList() }
+    val tabList = remember(tabs) { tabs.values.toList() }
+    val currentUpdateSelectedTabKey by rememberUpdatedState(updateSelectedTabKey)
+    val tabsInDrawer =
+        rememberDrawerSubmenu(
+            tabs = tabList,
+            selectedIndex = tabKeys.indexOf(selectedTabKey),
+            onSelect = { index -> tabKeys.getOrNull(index)?.let { currentUpdateSelectedTabKey(it) } },
+        )
     Column(
         modifier = modifier,
     ) {
         AnimatedVisibility(
-            showTabs,
+            showTabs && !tabsInDrawer,
             enter = expandVertically(),
             exit = shrinkVertically(),
         ) {

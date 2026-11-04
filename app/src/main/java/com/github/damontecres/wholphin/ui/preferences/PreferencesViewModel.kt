@@ -18,12 +18,16 @@ import com.github.damontecres.wholphin.preferences.AppPreferences
 import com.github.damontecres.wholphin.preferences.resetSubtitles
 import com.github.damontecres.wholphin.preferences.updateSubtitlePreferences
 import com.github.damontecres.wholphin.services.BackdropService
+import com.github.damontecres.wholphin.services.MusicService
 import com.github.damontecres.wholphin.services.NavigationManager
 import com.github.damontecres.wholphin.services.Release
 import com.github.damontecres.wholphin.services.ScreensaverService
 import com.github.damontecres.wholphin.services.SeerrServerRepository
 import com.github.damontecres.wholphin.services.ServerReportService
+import com.github.damontecres.wholphin.services.SetupDestination
+import com.github.damontecres.wholphin.services.SetupNavigationManager
 import com.github.damontecres.wholphin.services.UpdateChecker
+import com.github.damontecres.wholphin.ui.launchDefault
 import com.github.damontecres.wholphin.ui.launchIO
 import com.github.damontecres.wholphin.util.DataLoadingState
 import com.github.damontecres.wholphin.util.ExceptionHandler
@@ -53,7 +57,21 @@ class PreferencesViewModel
         private val seerrServerRepository: SeerrServerRepository,
         private val updateChecker: UpdateChecker,
         private val serverReportService: ServerReportService,
+        private val setupNavigationManager: SetupNavigationManager,
+        private val musicService: MusicService,
     ) : ViewModel() {
+        /**
+         * Go to the list of users of the current server, to switch to another account
+         */
+        fun switchAccount() {
+            viewModelScope.launchDefault {
+                musicService.stop()
+                serverRepository.currentServer?.let {
+                    setupNavigationManager.navigateTo(SetupDestination.UserList(it))
+                }
+            }
+        }
+
         val currentUser =
             serverRepository.currentUserFlow.stateIn(
                 viewModelScope,

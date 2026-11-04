@@ -42,7 +42,6 @@ private fun getRecommendedRows(
         request =
             GetNextUpRequest(
                 fields = SlimItemFields,
-                imageTypeLimit = 1,
                 parentId = parentId,
                 enableResumable = false,
                 enableUserData = true,

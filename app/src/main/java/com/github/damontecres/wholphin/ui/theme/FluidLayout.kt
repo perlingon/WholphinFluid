@@ -112,6 +112,15 @@ object FluidLayout {
     }
 
     /**
+     * Height of the sharp backdrop image: its width at 16:9, as drawn in Backdrop
+     */
+    @Composable
+    fun backdropImageHeight(): Dp {
+        val vh = LocalConfiguration.current.screenHeightDp.dp
+        return (backdropImageWidth() / (16f / 9f)).coerceAtMost(vh * 1.8f)
+    }
+
+    /**
      * Width of the headline block (title, details and description on the home screen). It runs
      * from the left margin to where the backdrop image starts, reaching a little way into the
      * image because the image's left side is faded out. Kept within a min and max so the text
