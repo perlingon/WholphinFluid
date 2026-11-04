@@ -67,17 +67,18 @@ fun <T> ItemRow(
                 // Development switch, see BackdropDebug
                 .alpha(if (BackdropDebug.hideRows) 0f else 1f)
                 .focusProperties {
-                onEnter = {
-                    focusRequester.tryRequestFocus()
-                }
-            },
+                    onEnter = {
+                        focusRequester.tryRequestFocus()
+                    }
+                },
     ) {
         ItemRowTitle(title)
 
         LazyRow(
             state = state,
             horizontalArrangement = Arrangement.spacedBy(horizontalPadding),
-            contentPadding = PaddingValues(
+            contentPadding =
+                PaddingValues(
                     // The first card lines up with the headlines; the rest scroll full width
                     start = FluidLayout.rowStart(horizontalPadding),
                     end = horizontalPadding,

@@ -23,9 +23,11 @@ val DiscoverTabs =
 val NavDrawerItem.knownTabs: List<Int>?
     get() =
         when (this) {
-            NavDrawerItem.Discover -> DiscoverTabs
+            NavDrawerItem.Discover -> {
+                DiscoverTabs
+            }
 
-            is ServerNavDrawerItem ->
+            is ServerNavDrawerItem -> {
                 when (type) {
                     CollectionType.MOVIES -> MovieLibraryTabs
                     CollectionType.TVSHOWS -> TvLibraryTabs
@@ -33,8 +35,11 @@ val NavDrawerItem.knownTabs: List<Int>?
                     CollectionType.LIVETV -> LiveTvTabs
                     else -> null
                 }
+            }
 
-            else -> null
+            else -> {
+                null
+            }
         }
 
 /**

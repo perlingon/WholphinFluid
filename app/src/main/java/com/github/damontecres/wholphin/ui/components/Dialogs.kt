@@ -451,12 +451,14 @@ fun ConfirmDialog(
     properties: DialogProperties = DialogProperties(),
     elevation: Dp = 1.dp,
     bodyColor: Color = MaterialTheme.colorScheme.onSurface,
+    @StringRes cancelStringRes: Int = R.string.cancel,
+    @StringRes confirmStringRes: Int = R.string.confirm,
 ) = BasicDialog(
     onDismissRequest = onCancel,
     properties = properties,
     elevation = elevation,
     content = {
-        ConfirmDialogContent(title, body, onCancel, onConfirm, Modifier, bodyColor)
+        ConfirmDialogContent(title, body, onCancel, onConfirm, Modifier, bodyColor, cancelStringRes, confirmStringRes)
     },
 )
 
@@ -471,6 +473,8 @@ fun ConfirmDialogContent(
     onConfirm: () -> Unit,
     modifier: Modifier = Modifier,
     bodyColor: Color = MaterialTheme.colorScheme.onSurface,
+    @StringRes cancelStringRes: Int = R.string.cancel,
+    @StringRes confirmStringRes: Int = R.string.confirm,
 ) {
     LazyColumn(
         verticalArrangement = Arrangement.spacedBy(Spacing.sm),
@@ -501,11 +505,11 @@ fun ConfirmDialogContent(
                 modifier = Modifier.fillMaxWidth(),
             ) {
                 TextButton(
-                    stringRes = R.string.cancel,
+                    stringRes = cancelStringRes,
                     onClick = onCancel,
                 )
                 TextButton(
-                    stringRes = R.string.confirm,
+                    stringRes = confirmStringRes,
                     onClick = onConfirm,
                 )
             }

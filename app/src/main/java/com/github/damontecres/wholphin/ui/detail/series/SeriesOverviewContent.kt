@@ -291,7 +291,10 @@ fun SeriesOverviewContent(
                                 }
                                 val highlighted =
                                     if (cardRowHasFocus) episodeFocused else episodeIndex == position.episodeRowIndex
-                                val sideGap by animateDpAsState(if (episodeFocused) focusedEpisodeGap else 0.dp, label = "focusedEpisodeGap")
+                                val sideGap by animateDpAsState(
+                                    if (episodeFocused) focusedEpisodeGap else 0.dp,
+                                    label = "focusedEpisodeGap",
+                                )
                                 BannerCard(
                                     name = episode?.name,
                                     item = episode,

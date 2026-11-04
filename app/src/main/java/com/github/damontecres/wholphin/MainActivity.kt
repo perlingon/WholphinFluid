@@ -47,7 +47,6 @@ import com.github.damontecres.wholphin.services.NavigationManager
 import com.github.damontecres.wholphin.services.PlaybackLifecycleObserver
 import com.github.damontecres.wholphin.services.RefreshRateService
 import com.github.damontecres.wholphin.services.ScreensaverService
-import com.github.damontecres.wholphin.services.WatchLaterService
 import com.github.damontecres.wholphin.services.ServerEventListener
 import com.github.damontecres.wholphin.services.SetupDestination
 import com.github.damontecres.wholphin.services.SetupNavigationManager
@@ -55,6 +54,7 @@ import com.github.damontecres.wholphin.services.SuggestionsSchedulerService
 import com.github.damontecres.wholphin.services.UpdateChecker
 import com.github.damontecres.wholphin.services.UserPreferencesService
 import com.github.damontecres.wholphin.services.UserSwitchListener
+import com.github.damontecres.wholphin.services.WatchLaterService
 import com.github.damontecres.wholphin.services.hilt.AuthOkHttpClient
 import com.github.damontecres.wholphin.services.tvprovider.TvProviderSchedulerService
 import com.github.damontecres.wholphin.ui.CoilConfig
@@ -66,8 +66,8 @@ import com.github.damontecres.wholphin.ui.nav.Destination
 import com.github.damontecres.wholphin.ui.playback.PlayExternalViewModel
 import com.github.damontecres.wholphin.ui.showToast
 import com.github.damontecres.wholphin.ui.theme.WholphinTheme
-import com.github.damontecres.wholphin.ui.theme.highlightFromPreference
 import com.github.damontecres.wholphin.ui.theme.colors.PurpleThemeColors
+import com.github.damontecres.wholphin.ui.theme.highlightFromPreference
 import com.github.damontecres.wholphin.ui.util.ProvideLocalClock
 import com.github.damontecres.wholphin.util.DebugLogTree
 import com.github.damontecres.wholphin.util.ExceptionHandler

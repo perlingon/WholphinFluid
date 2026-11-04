@@ -62,11 +62,17 @@ class WatchLaterService
         /** Episodes and seasons are saved as their series */
         private fun targetFor(item: BaseItem): Pair<UUID, String>? =
             when (item.type) {
-                BaseItemKind.EPISODE, BaseItemKind.SEASON ->
+                BaseItemKind.EPISODE, BaseItemKind.SEASON -> {
                     item.data.seriesId?.let { it to (item.data.seriesName ?: item.title ?: "") }
-                BaseItemKind.MOVIE, BaseItemKind.SERIES, BaseItemKind.VIDEO, BaseItemKind.MUSIC_VIDEO ->
+                }
+
+                BaseItemKind.MOVIE, BaseItemKind.SERIES, BaseItemKind.VIDEO, BaseItemKind.MUSIC_VIDEO -> {
                     item.id to (item.title ?: "")
-                else -> null
+                }
+
+                else -> {
+                    null
+                }
             }
 
         private suspend fun findPlaylist(): UUID? =
