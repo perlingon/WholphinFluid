@@ -365,6 +365,10 @@ fun PlaybackPageContent(
                     player.seekToPrevious()
                 }
             }
+
+            is PlaybackAction.ChangeBitrate -> {
+                viewModel.changeMaxBitrate(it.maxBitrate)
+            }
         }
     }
 
@@ -884,6 +888,7 @@ fun PlaybackPageContent(
                         subtitleStyleHdr =
                             preferences.appPreferences.interfacePreferences.subtitlesPreferences.useSeparateHdr &&
                                 state.currentMediaInfo.videoStream?.hdr == true,
+                        maxBitrate = state.maxBitrate,
                     ),
                 onDismissRequest = {
                     if (type == PlaybackDialogType.SUBTITLE_STYLE) {

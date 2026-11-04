@@ -28,6 +28,7 @@ data class PlaybackState(
     val seriesEnded: Boolean? = null,
     // Every episode of the playing episode's series, for the episode row in the player
     val seriesEpisodes: List<BaseItem> = emptyList(),
+    val maxBitrate: Long = -1L,
 ) {
     val hasNext: Boolean get() = (playlistIndex + 1) < playlist.items.size
     val hasPrevious: Boolean get() = playlistIndex > 0

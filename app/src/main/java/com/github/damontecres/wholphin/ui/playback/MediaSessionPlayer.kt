@@ -11,6 +11,7 @@ import androidx.media3.common.util.Util
 import androidx.media3.session.MediaSession
 import com.github.damontecres.wholphin.preferences.PlaybackPreferences
 import com.github.damontecres.wholphin.preferences.skipBackOnResume
+import com.github.damontecres.wholphin.services.TrustAllControllersCallback
 import com.github.damontecres.wholphin.ui.seekBack
 import com.google.common.util.concurrent.ListenableFuture
 import timber.log.Timber
@@ -37,6 +38,12 @@ class MediaSessionPlayer(
  */
 @OptIn(UnstableApi::class)
 object MediaButtonCallback : MediaSession.Callback {
+    // Also grant all player commands to untrusted controllers (upstream's TrustAllControllersCallback)
+    override fun onConnectAsync(
+        session: MediaSession,
+        controller: MediaSession.ControllerInfo,
+    ): ListenableFuture<MediaSession.ConnectionResult> = TrustAllControllersCallback.onConnectAsync(session, controller)
+
     override fun onMediaButtonEvent(
         session: MediaSession,
         controllerInfo: MediaSession.ControllerInfo,
