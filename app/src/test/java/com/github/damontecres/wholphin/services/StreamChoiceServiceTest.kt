@@ -927,6 +927,102 @@ class TestStreamChoiceServiceAppPreferences(
     }
 }
 
+@RunWith(Parameterized::class)
+class TestStreamChoiceServiceAlways(
+    val input: TestInput,
+) {
+    @Test
+    fun test() {
+        runTest(input)
+    }
+
+    companion object {
+        @JvmStatic
+        @Parameterized.Parameters(name = "{index}: {0}")
+        fun data(): Collection<TestInput> =
+            listOf(
+                // English SRT without SDH beats SDH, image subtitles and Swedish
+                TestInput(
+                    expectedIndex = 3,
+                    userSubtitleMode = SubtitlePlaybackMode.ALWAYS,
+                    fallbackLang = "swe",
+                    subtitles =
+                        listOf(
+                            subtitle(0, "eng", default = true, codec = "PGSSUB", text = false),
+                            subtitle(1, "eng", sdh = true, codec = "subrip"),
+                            subtitle(2, "swe", codec = "subrip"),
+                            subtitle(3, "eng", codec = "subrip"),
+                        ),
+                ),
+                // No English without SDH, so Swedish SRT without SDH
+                TestInput(
+                    expectedIndex = 2,
+                    userSubtitleMode = SubtitlePlaybackMode.ALWAYS,
+                    fallbackLang = "swe",
+                    subtitles =
+                        listOf(
+                            subtitle(0, "eng", sdh = true, codec = "subrip"),
+                            subtitle(1, "swe", codec = "PGSSUB", text = false),
+                            subtitle(2, "swe", codec = "subrip"),
+                        ),
+                ),
+                // Only English SDH and Swedish SDH: English SDH
+                TestInput(
+                    expectedIndex = 1,
+                    userSubtitleMode = SubtitlePlaybackMode.ALWAYS,
+                    fallbackLang = "swe",
+                    subtitles =
+                        listOf(
+                            subtitle(0, "swe", sdh = true, codec = "subrip"),
+                            subtitle(1, "eng", sdh = true, codec = "subrip"),
+                        ),
+                ),
+                // Neither language present: still shows subtitles
+                TestInput(
+                    expectedIndex = 1,
+                    userSubtitleMode = SubtitlePlaybackMode.ALWAYS,
+                    fallbackLang = "swe",
+                    subtitles =
+                        listOf(
+                            subtitle(0, "fre", forced = true),
+                            subtitle(1, "fre"),
+                        ),
+                ),
+                // Real language match beats an unknown-language track listed first
+                TestInput(
+                    expectedIndex = 1,
+                    userSubtitleMode = SubtitlePlaybackMode.ALWAYS,
+                    subtitles =
+                        listOf(
+                            subtitle(0, null, default = true, external = true),
+                            subtitle(1, "eng"),
+                        ),
+                ),
+                // Two letter fallback language matches three letter track language
+                TestInput(
+                    expectedIndex = 1,
+                    userSubtitleMode = SubtitlePlaybackMode.ALWAYS,
+                    fallbackLang = "sv",
+                    subtitles =
+                        listOf(
+                            subtitle(0, "fre"),
+                            subtitle(1, "swe"),
+                        ),
+                ),
+                // Signs track is not picked as full subtitles
+                TestInput(
+                    expectedIndex = 1,
+                    userSubtitleMode = SubtitlePlaybackMode.ALWAYS,
+                    subtitles =
+                        listOf(
+                            subtitle(0, "eng", default = true, title = "Signs & Songs"),
+                            subtitle(1, "eng"),
+                        ),
+                ),
+            )
+    }
+}
+
 data class TestInput(
     val expectedIndex: Int?,
     val userSubtitleMode: SubtitlePlaybackMode?,
@@ -939,6 +1035,7 @@ data class TestInput(
     val appAudioLang: String = UserProfileSettings.USE_USER_PROFILE,
     val appSubtitleLang: String = UserProfileSettings.USE_USER_PROFILE,
     val appSubtitleMode: SubtitleModePreference = SubtitleModePreference.USE_USER_PROFILE,
+    val fallbackLang: String? = null,
 ) {
     override fun toString(): String = "test(mode=$userSubtitleMode, subtitles=${subtitles.map { it.toShortString() }})"
 }
@@ -986,6 +1083,7 @@ private fun runTest(input: TestInput) {
                         subtitleMode = input.appSubtitleMode,
                     ),
                 ),
+            fallbackLanguage = input.fallbackLang,
         )
     Assert.assertEquals(input.expectedIndex, result.stream?.index)
 }
@@ -998,9 +1096,12 @@ fun subtitle(
     sdh: Boolean = false,
     external: Boolean = false,
     title: String? = null,
+    codec: String? = null,
+    text: Boolean = true,
 ): MediaStream =
     MediaStream(
         type = MediaStreamType.SUBTITLE,
+        codec = codec,
         language = lang,
         isDefault = default,
         isForced = forced,
@@ -1008,7 +1109,7 @@ fun subtitle(
         isInterlaced = false,
         index = index,
         isExternal = external,
-        isTextSubtitleStream = true,
+        isTextSubtitleStream = text,
         supportsExternalStream = true,
         title = title,
     )
