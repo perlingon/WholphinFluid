@@ -370,7 +370,7 @@ fun PlaybackDialog(
                 onSelectChoice = { _, choice ->
                     onPlaybackActionClick.invoke(PlaybackAction.ChangeBitrate(choice.data))
                 },
-                gravity = leftGravity,
+                gravity = rightGravity,
             )
         }
     }
