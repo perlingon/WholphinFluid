@@ -17,6 +17,7 @@ import com.github.damontecres.wholphin.services.StreamChoiceService
 import com.github.damontecres.wholphin.services.ThemeSongPlayer
 import com.github.damontecres.wholphin.services.UserPreferencesService
 import com.github.damontecres.wholphin.services.deleteItem
+import com.github.damontecres.wholphin.ui.ItemRowFields
 import com.github.damontecres.wholphin.ui.launchDefault
 import com.github.damontecres.wholphin.ui.launchIO
 import com.github.damontecres.wholphin.ui.nav.Destination
@@ -37,8 +38,10 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.jellyfin.sdk.api.client.ApiClient
+import org.jellyfin.sdk.api.client.extensions.libraryApi
 import org.jellyfin.sdk.api.client.extensions.userLibraryApi
 import org.jellyfin.sdk.model.api.MediaStreamType
+import org.jellyfin.sdk.model.api.request.GetSimilarItemsRequest
 import timber.log.Timber
 import java.util.UUID
 
@@ -115,6 +118,7 @@ class EpisodeViewModel
                         )
                     }
                     backdropService.submit(item)
+                    item.data.seriesId?.let { loadSimilar(it) }
                 } catch (ex: CancellationException) {
                     throw ex
                 } catch (ex: Exception) {
@@ -122,6 +126,33 @@ class EpisodeViewModel
                     _state.update { it.copy(episode = DataLoadingState.Error(ex)) }
                 }
             }
+
+        /**
+         * The series' similar titles, as on the series page
+         */
+        private fun loadSimilar(seriesId: UUID) {
+            if (state.value.similar.isNotEmpty()) return
+            viewModelScope.launchIO {
+                try {
+                    val similar =
+                        api.libraryApi
+                            .getSimilarItems(
+                                GetSimilarItemsRequest(
+                                    userId = serverRepository.currentUser?.id,
+                                    itemId = seriesId,
+                                    fields = ItemRowFields,
+                                    limit = 25,
+                                ),
+                            ).content.items
+                            .map { BaseItem(it, true) }
+                    _state.update { it.copy(similar = similar) }
+                } catch (ex: CancellationException) {
+                    throw ex
+                } catch (ex: Exception) {
+                    Timber.e(ex, "Error getting similar items for series %s", seriesId)
+                }
+            }
+        }
 
         fun setWatched(
             itemId: UUID,
@@ -216,4 +247,5 @@ class EpisodeViewModel
 data class EpisodeState(
     val episode: DataLoadingState<BaseItem> = DataLoadingState.Pending,
     val chosenStreams: ChosenStreams? = null,
+    val similar: List<BaseItem> = emptyList(),
 )

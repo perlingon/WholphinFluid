@@ -593,6 +593,16 @@ fun PreferencesContent(
                                     )
                                 }
 
+                                AppPreference.SwitchAccount -> {
+                                    ClickPreference(
+                                        title = stringResource(pref.title),
+                                        onClick = { viewModel.switchAccount() },
+                                        modifier = focusModifier,
+                                        onLongClick = null,
+                                        interactionSource = interactionSource,
+                                    )
+                                }
+
                                 AppPreference.UserInterfaceLanguage -> {
                                     val locale =
                                         remember(currentUser?.uiLanguage) {

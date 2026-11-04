@@ -107,7 +107,14 @@ fun ExpandablePlayButtons(
 
     LazyRow(
         horizontalArrangement = Arrangement.spacedBy(Spacing.md),
-        contentPadding = PaddingValues(Spacing.sm),
+        // The first button lines up with the title
+        contentPadding =
+            PaddingValues(
+                start = HeaderUtils.startPadding,
+                end = Spacing.sm,
+                top = Spacing.sm,
+                bottom = Spacing.sm,
+            ),
         modifier =
             modifier
                 .focusGroup()

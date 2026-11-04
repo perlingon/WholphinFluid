@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.relocation.BringIntoViewRequester
@@ -45,12 +46,16 @@ import com.github.damontecres.wholphin.ui.cards.SeasonCard
 import com.github.damontecres.wholphin.ui.components.ContextMenu
 import com.github.damontecres.wholphin.ui.components.ContextMenuActions
 import com.github.damontecres.wholphin.ui.components.ContextMenuDialog
+import com.github.damontecres.wholphin.ui.components.DetailRowsGroup
 import com.github.damontecres.wholphin.ui.components.ErrorMessage
 import com.github.damontecres.wholphin.ui.components.ExpandablePlayButtons
 import com.github.damontecres.wholphin.ui.components.HeaderUtils
+import com.github.damontecres.wholphin.ui.components.InCollectionsRow
 import com.github.damontecres.wholphin.ui.components.LoadingPage
 import com.github.damontecres.wholphin.ui.components.Optional
 import com.github.damontecres.wholphin.ui.components.PersonContextActions
+import com.github.damontecres.wholphin.ui.components.bleedToScreenEdges
+import com.github.damontecres.wholphin.ui.components.pageSidePadding
 import com.github.damontecres.wholphin.ui.data.AddPlaylistViewModel
 import com.github.damontecres.wholphin.ui.data.ChooseVersionParams
 import com.github.damontecres.wholphin.ui.data.ItemDetailsDialog
@@ -61,6 +66,7 @@ import com.github.damontecres.wholphin.ui.discover.DiscoverRowData
 import com.github.damontecres.wholphin.ui.letNotEmpty
 import com.github.damontecres.wholphin.ui.nav.Destination
 import com.github.damontecres.wholphin.ui.rememberInt
+import com.github.damontecres.wholphin.ui.theme.FluidLayout
 import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.ui.util.ResStringProvider
 import com.github.damontecres.wholphin.util.DataLoadingState
@@ -323,15 +329,20 @@ fun MovieDetailsContent(
     Box(modifier = modifier) {
         LazyColumn(
             verticalArrangement = Arrangement.spacedBy(Spacing.md),
-            contentPadding = PaddingValues(bottom = Spacing.sm),
-            modifier = Modifier.fillMaxSize(),
+            // The rows' dark background reaches the bottom of the screen
+            contentPadding = PaddingValues(bottom = 0.dp),
+            // Full width, so the row panel reaches the screen's edges
+            modifier = Modifier.fillMaxSize().bleedToScreenEdges(),
         ) {
             item {
+                // Logo, details and buttons are never taller than the sharp backdrop image
                 Column(
                     verticalArrangement = Arrangement.spacedBy(0.dp),
                     modifier =
                         Modifier
                             .fillMaxWidth()
+                            .pageSidePadding()
+                            .heightIn(max = FluidLayout.backdropImageHeight())
                             .bringIntoViewRequester(bringIntoViewRequester),
                 ) {
                     MovieDetailsHeader(
@@ -343,6 +354,8 @@ fun MovieDetailsContent(
                         modifier =
                             Modifier
                                 .fillMaxWidth()
+                                // Gives way to the buttons when there isn't room for both
+                                .weight(1f, fill = false)
                                 .padding(top = HeaderUtils.topPadding, bottom = Spacing.md),
                     )
                     ExpandablePlayButtons(
@@ -388,113 +401,110 @@ fun MovieDetailsContent(
                     )
                 }
             }
-            state.people.letNotEmpty { people ->
-                item {
-                    PersonRow(
-                        people = people,
-                        onClick = {
-                            position = PEOPLE_ROW
-                            onClickPerson.invoke(it)
-                        },
-                        onLongClick = { index, person ->
-                            position = PEOPLE_ROW
-                            onLongClickPerson.invoke(index, person)
-                        },
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .focusRequester(focusRequesters[PEOPLE_ROW]),
-                    )
-                }
-            }
-            state.chapters.letNotEmpty { chapters ->
-                item {
-                    ChapterRow(
-                        chapters = chapters,
-                        onClick = {
-                            position = CHAPTER_ROW
-                            playOnClick.invoke(it.position)
-                        },
-                        onLongClick = {},
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .focusRequester(focusRequesters[CHAPTER_ROW]),
-                    )
-                }
-            }
-            state.extras.letNotEmpty { extras ->
-                item {
-                    ExtrasRow(
-                        extras = extras,
-                        onClickItem = { index, item ->
-                            position = EXTRAS_ROW
-                            onClickExtra.invoke(index, item)
-                        },
-                        onLongClickItem = { _, _ -> },
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .focusRequester(focusRequesters[EXTRAS_ROW]),
-                    )
-                }
-            }
-            state.similar.letNotEmpty { similar ->
-                item {
-                    val imageHeight =
-                        remember(movie.type) {
-                            if (movie.type == BaseItemKind.MOVIE) {
-                                Cards.height2x3
-                            } else {
-                                Cards.heightEpisode
+            // Everything below the buttons, together on a dark background
+            item {
+                DetailRowsGroup {
+                    state.people.letNotEmpty { people ->
+                        PersonRow(
+                            people = people,
+                            onClick = {
+                                position = PEOPLE_ROW
+                                onClickPerson.invoke(it)
+                            },
+                            onLongClick = { index, person ->
+                                position = PEOPLE_ROW
+                                onLongClickPerson.invoke(index, person)
+                            },
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .focusRequester(focusRequesters[PEOPLE_ROW]),
+                        )
+                    }
+                    state.chapters.letNotEmpty { chapters ->
+                        ChapterRow(
+                            chapters = chapters,
+                            onClick = {
+                                position = CHAPTER_ROW
+                                playOnClick.invoke(it.position)
+                            },
+                            onLongClick = {},
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .focusRequester(focusRequesters[CHAPTER_ROW]),
+                        )
+                    }
+                    state.extras.letNotEmpty { extras ->
+                        ExtrasRow(
+                            extras = extras,
+                            onClickItem = { index, item ->
+                                position = EXTRAS_ROW
+                                onClickExtra.invoke(index, item)
+                            },
+                            onLongClickItem = { _, _ -> },
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .focusRequester(focusRequesters[EXTRAS_ROW]),
+                        )
+                    }
+                    // The collections it's in, below the cast and above similar titles
+                    InCollectionsRow(movie.id, Modifier.fillMaxWidth())
+                    state.similar.letNotEmpty { similar ->
+                        val imageHeight =
+                            remember(movie.type) {
+                                if (movie.type == BaseItemKind.MOVIE) {
+                                    Cards.height2x3
+                                } else {
+                                    Cards.heightEpisode
+                                }
                             }
-                        }
-                    ItemRow(
-                        title = stringResource(R.string.more_like_this),
-                        items = similar,
-                        onClickItem = { index, item ->
-                            position = SIMILAR_ROW
-                            onClickItem.invoke(index, item)
-                        },
-                        onLongClickItem = { index, similar ->
-                            position = SIMILAR_ROW
-                            onLongClickSimilar.invoke(index, similar)
-                        },
-                        cardContent = { index, item, mod, onClick, onLongClick ->
-                            SeasonCard(
-                                item = item,
-                                onClick = onClick,
-                                onLongClick = onLongClick,
-                                modifier = mod,
-                                showImageOverlay = true,
-                                imageHeight = imageHeight,
-                                imageWidth = Dp.Unspecified,
-                            )
-                        },
-                        modifier =
-                            Modifier
-                                .fillMaxWidth()
-                                .focusRequester(focusRequesters[SIMILAR_ROW]),
-                    )
-                }
-            }
-            state.discovered.letNotEmpty { discovered ->
-                item {
-                    DiscoverRow(
-                        row =
-                            DiscoverRowData(
-                                ResStringProvider(R.string.discover),
-                                DataLoadingState.Success(discovered),
-                                type = DiscoverRequestType.UNKNOWN,
-                            ),
-                        onClickItem = { index: Int, item: DiscoverItem ->
-                            position = DISCOVER_ROW
-                            onClickDiscover.invoke(index, item)
-                        },
-                        onLongClickItem = { _, _ -> },
-                        onCardFocus = {},
-                        focusRequester = focusRequesters[DISCOVER_ROW],
-                    )
+                        ItemRow(
+                            title = stringResource(R.string.more_like_this),
+                            items = similar,
+                            onClickItem = { index, item ->
+                                position = SIMILAR_ROW
+                                onClickItem.invoke(index, item)
+                            },
+                            onLongClickItem = { index, similar ->
+                                position = SIMILAR_ROW
+                                onLongClickSimilar.invoke(index, similar)
+                            },
+                            cardContent = { index, item, mod, onClick, onLongClick ->
+                                SeasonCard(
+                                    item = item,
+                                    onClick = onClick,
+                                    onLongClick = onLongClick,
+                                    modifier = mod,
+                                    showImageOverlay = true,
+                                    imageHeight = imageHeight,
+                                    imageWidth = Dp.Unspecified,
+                                )
+                            },
+                            modifier =
+                                Modifier
+                                    .fillMaxWidth()
+                                    .focusRequester(focusRequesters[SIMILAR_ROW]),
+                        )
+                    }
+                    state.discovered.letNotEmpty { discovered ->
+                        DiscoverRow(
+                            row =
+                                DiscoverRowData(
+                                    ResStringProvider(R.string.discover),
+                                    DataLoadingState.Success(discovered),
+                                    type = DiscoverRequestType.UNKNOWN,
+                                ),
+                            onClickItem = { index: Int, item: DiscoverItem ->
+                                position = DISCOVER_ROW
+                                onClickDiscover.invoke(index, item)
+                            },
+                            onLongClickItem = { _, _ -> },
+                            onCardFocus = {},
+                            focusRequester = focusRequesters[DISCOVER_ROW],
+                        )
+                    }
                 }
             }
         }

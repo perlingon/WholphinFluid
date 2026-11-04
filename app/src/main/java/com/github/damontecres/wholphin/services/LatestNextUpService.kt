@@ -91,7 +91,6 @@ class LatestNextUpService
                 GetNextUpRequest(
                     userId = userId,
                     fields = SlimItemFields,
-                    imageTypeLimit = 1,
                     parentId = null,
                     limit = limit,
                     enableResumable = enableResumable,

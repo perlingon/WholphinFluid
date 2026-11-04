@@ -21,20 +21,21 @@
 
 package com.github.damontecres.wholphin.ui.nav
 
-import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.VisibilityThreshold
-import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateIntOffsetAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -44,9 +45,12 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.FocusState
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.layout
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.DrawerState
 import androidx.tv.material3.DrawerValue
@@ -101,18 +105,35 @@ private fun DrawerSheet(
         initializationComplete = true
     }
 
+    // There is no collapsed "mini" drawer: when closed, the whole drawer slides out past the left
+    // edge of the screen. It stays laid out there, so pressing left from a page still reaches it.
+    // The drawer is wider than one column while it has a submenu, so slide it out by its full width
+    val density = LocalDensity.current
+    var sheetWidth by remember { mutableIntStateOf(0) }
+    val slide by animateIntOffsetAsState(
+        targetValue =
+            IntOffset(
+                x =
+                    if (drawerState.currentValue == DrawerValue.Open) {
+                        0
+                    } else {
+                        -maxOf(sheetWidth, with(density) { ExpandedDrawerItemWidth.roundToPx() })
+                    },
+                y = 0,
+            ),
+        animationSpec =
+            spring(
+                stiffness = DrawerAnimationStiffness,
+                visibilityThreshold = IntOffset.VisibilityThreshold,
+            ),
+        label = "drawerSlide",
+    )
     val internalModifier =
         Modifier
+            .offset { slide }
+            .onSizeChanged { sheetWidth = it.width }
             .focusRequester(focusRequester)
-            .animateContentSize(
-                animationSpec =
-                    spring(
-                        stiffness = DrawerAnimationStiffness,
-                        visibilityThreshold = IntSize.VisibilityThreshold,
-                    ),
-            ).fillMaxHeight()
-            // adding passed-in modifier here to ensure animateContentSize is called before other
-            // size based modifiers.
+            .fillMaxHeight()
             .then(modifier)
             .onFocusChanged {
                 focusState = it
@@ -133,8 +154,12 @@ internal class NavigationDrawerScopeImpl(
     override val hasFocus: Boolean,
 ) : NavigationDrawerScope
 
-internal val CollapsedDrawerItemWidth = 64.dp
+// Space a closed drawer takes up beside the page: none, since a closed drawer is hidden
+internal val CollapsedDrawerItemWidth = 0.dp
 internal val ExpandedDrawerItemWidth = 224.dp
+
+// The menus' height, as a part of the screen's height; they're centred vertically
+internal const val DrawerHeightFraction = .75f
 internal val DrawerIconSize = 24.dp
 internal val DrawerIconPadding = (ListItemDefaults.IconSize - DrawerIconSize) / 2
 internal val DrawerAnimationStiffness = Spring.StiffnessMedium
@@ -143,27 +168,19 @@ internal val DrawerAnimationStiffness = Spring.StiffnessMedium
 internal fun NavigationDrawerScope.NavigationDrawerItem(
     selected: Boolean,
     onClick: () -> Unit,
-    leadingContent: @Composable () -> Unit,
     modifier: Modifier = Modifier,
+    leadingContent: (@Composable () -> Unit)? = null,
     enabled: Boolean = true,
     onLongClick: (() -> Unit)? = null,
     supportingContent: (@Composable () -> Unit)? = null,
     trailingContent: (@Composable () -> Unit)? = null,
     tonalElevation: Dp = NavigationDrawerItemDefaults.NavigationDrawerItemElevation,
-    colors: NavigationDrawerItemColors = NavigationDrawerItemDefaults.colors(),
+    colors: NavigationDrawerItemColors = navDrawerItemColors(),
     interactionSource: MutableInteractionSource? = null,
     content: @Composable () -> Unit,
 ) {
-    val animatedWidth by
-        animateDpAsState(
-            targetValue =
-                if (hasFocus) {
-                    ExpandedDrawerItemWidth
-                } else {
-                    CollapsedDrawerItemWidth
-                },
-            label = "NavigationDrawerItem width open/closed state of the drawer item",
-        )
+    // Items keep their full width; the drawer as a whole slides in and out (see DrawerSheet)
+    val itemWidth = ExpandedDrawerItemWidth
     val navDrawerItemHeight =
         if (supportingContent == null) {
             NavigationDrawerItemDefaults.ContainerHeightOneLine
@@ -175,19 +192,22 @@ internal fun NavigationDrawerScope.NavigationDrawerItem(
         selected = selected,
         onClick = onClick,
         headlineContent = content,
-        leadingContent = {
-            Box(
-                Modifier
-                    .padding(horizontal = DrawerIconPadding)
-                    .size(DrawerIconSize),
-            ) { leadingContent() }
-        },
+        leadingContent =
+            leadingContent?.let {
+                {
+                    Box(
+                        Modifier
+                            .padding(horizontal = DrawerIconPadding)
+                            .size(DrawerIconSize),
+                    ) { it() }
+                }
+            },
         trailingContent = trailingContent,
         supportingContent = supportingContent,
         modifier =
             modifier
                 .layout { measurable, constraints ->
-                    val width = animatedWidth.roundToPx()
+                    val width = itemWidth.roundToPx()
                     val height = navDrawerItemHeight.roundToPx()
                     val placeable =
                         measurable.measure(
@@ -208,6 +228,21 @@ internal fun NavigationDrawerScope.NavigationDrawerItem(
         interactionSource = interactionSource,
     )
 }
+
+/**
+ * Nav drawer items have no background of their own, not even when focused: the focused and
+ * current items only change their text colour (see [navItemColor])
+ */
+@Composable
+internal fun navDrawerItemColors(containerColor: Color = Color.Transparent) =
+    NavigationDrawerItemDefaults.colors(
+        containerColor = containerColor,
+        focusedContainerColor = containerColor,
+        pressedContainerColor = containerColor,
+        selectedContainerColor = containerColor,
+        focusedSelectedContainerColor = containerColor,
+        pressedSelectedContainerColor = containerColor,
+    )
 
 @Composable
 private fun NavigationDrawerItemColors.toToggleableListItemColors(doesNavigationDrawerHaveFocus: Boolean) =

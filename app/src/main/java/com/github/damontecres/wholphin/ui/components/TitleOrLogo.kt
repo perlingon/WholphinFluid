@@ -1,5 +1,7 @@
 package com.github.damontecres.wholphin.ui.components
 
+import android.graphics.Bitmap
+import android.os.Build
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.heightIn
@@ -20,6 +22,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
+import coil3.BitmapImage
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import coil3.request.transformations
@@ -27,6 +30,8 @@ import com.github.damontecres.wholphin.data.model.BaseItem
 import com.github.damontecres.wholphin.ui.CoilTrimTransformation
 import com.github.damontecres.wholphin.ui.LocalImageUrlService
 import com.github.damontecres.wholphin.ui.logCoilError
+import com.github.damontecres.wholphin.ui.nav.BackdropContrast
+import com.github.damontecres.wholphin.ui.nav.OnBackdropHeader
 import org.jellyfin.sdk.model.api.BaseItemKind
 import org.jellyfin.sdk.model.api.ImageType
 import kotlin.math.roundToInt
@@ -38,65 +43,86 @@ fun TitleOrLogo(
     showLogo: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    var imageError by remember { mutableStateOf(false) }
-    // The logo keeps its own shape within these two limits: a wide logo is stopped by the
-    // width, a tall or square one by the height
-    val logoMaxWidth = 260.dp
-    val logoMaxHeight = 85.dp
-    // Width to height of the logo, known once it has loaded
-    var logoAspect by remember(logoImageUrl) { mutableStateOf<Float?>(null) }
-    Box(
-        modifier = modifier.heightIn(max = logoMaxHeight),
-    ) {
-        if (showLogo && logoImageUrl != null && !imageError) {
-            val context = LocalContext.current
-            val density = LocalDensity.current
-            // Empty see-through space around the logo is cut away first, so the size limits
-            // apply to the logo itself. The logo is loaded at twice the size of the box, because
-            // after trimming a logo with a wide empty border it is stretched to fill the box
-            // again; loaded only at the box's size, it would come out blurry
-            val logoRequest =
-                remember(logoImageUrl, density) {
-                    with(density) {
-                        ImageRequest
-                            .Builder(context)
-                            .data(logoImageUrl)
-                            .size(
-                                (logoMaxWidth.toPx() * 2).roundToInt(),
-                                (logoMaxHeight.toPx() * 2).roundToInt(),
-                            ).transformations(CoilTrimTransformation())
-                            .build()
-                    }
-                }
-            AsyncImage(
-                model = logoRequest,
-                contentDescription = title,
-                contentScale = ContentScale.Fit,
-                onError = {
-                    logCoilError(logoImageUrl, it.result)
-                    imageError = true
-                },
-                onSuccess = {
-                    val image = it.result.image
-                    if (image.width > 0 && image.height > 0) {
-                        logoAspect = image.width.toFloat() / image.height
-                    }
-                },
-                modifier =
-                    logoAspect.let { aspect ->
-                        if (aspect != null) {
-                            // As wide as the height limit allows, but never past the width limit
-                            val width = minOf(logoMaxWidth, logoMaxHeight * aspect)
-                            Modifier.size(width, width / aspect)
-                        } else {
-                            Modifier
-                                .widthIn(max = logoMaxWidth)
-                                .heightIn(max = logoMaxHeight)
+    OnBackdropHeader {
+        var imageError by remember { mutableStateOf(false) }
+        // The logo keeps its own shape within these two limits: a wide logo is stopped by the
+        // width, a tall or square one by the height
+        val logoMaxWidth = 260.dp
+        val logoMaxHeight = 85.dp
+        // Width to height of the logo, known once it has loaded
+        var logoAspect by remember(logoImageUrl) { mutableStateOf<Float?>(null) }
+        // Whether the logo is monochrome and how light it is, known once it has loaded. A light
+        // monochrome logo is inverted when the backdrop behind the header is light (the same
+        // switch that turns the header text dark); coloured logos are left alone
+        var logoTone by remember(logoImageUrl) { mutableStateOf(LogoTones.get(logoImageUrl)) }
+        Box(
+            modifier = modifier.heightIn(max = logoMaxHeight),
+        ) {
+            if (showLogo && logoImageUrl != null && !imageError) {
+                val context = LocalContext.current
+                val density = LocalDensity.current
+                // Empty see-through space around the logo is cut away first, so the size limits
+                // apply to the logo itself. The logo is loaded at twice the size of the box, because
+                // after trimming a logo with a wide empty border it is stretched to fill the box
+                // again; loaded only at the box's size, it would come out blurry
+                val logoRequest =
+                    remember(logoImageUrl, density) {
+                        with(density) {
+                            ImageRequest
+                                .Builder(context)
+                                .data(logoImageUrl)
+                                .size(
+                                    (logoMaxWidth.toPx() * 2).roundToInt(),
+                                    (logoMaxHeight.toPx() * 2).roundToInt(),
+                                ).transformations(
+                                    CoilTrimTransformation(),
+                                    LogoToneTransformation(logoImageUrl),
+                                )
+                                .build()
                         }
+                    }
+                AsyncImage(
+                    model = logoRequest,
+                    contentDescription = title,
+                    contentScale = ContentScale.Fit,
+                    colorFilter = LogoTones.filterFor(logoTone, BackdropContrast.headerIsLight),
+                    onError = {
+                        logCoilError(logoImageUrl, it.result)
+                        imageError = true
                     },
-            )
-        } else {
-            Title(title, Modifier)
+                    onSuccess = {
+                        val image = it.result.image
+                        if (image.width > 0 && image.height > 0) {
+                            logoAspect = image.width.toFloat() / image.height
+                        }
+                        // Usually worked out while loading (LogoToneTransformation). When the logo
+                        // came straight from the memory cache, it is worked out here instead
+                        logoTone = LogoTones.get(logoImageUrl)
+                            ?: (image as? BitmapImage)
+                                ?.bitmap
+                                ?.takeIf { bitmap ->
+                                    Build.VERSION.SDK_INT < Build.VERSION_CODES.O ||
+                                        bitmap.config != Bitmap.Config.HARDWARE
+                                }
+                                ?.let(LogoTones::analyse)
+                                ?.also { tone -> LogoTones.put(logoImageUrl, tone) }
+                    },
+                    modifier =
+                        logoAspect.let { aspect ->
+                            if (aspect != null) {
+                                // As wide as the height limit allows, but never past the width limit
+                                val width = minOf(logoMaxWidth, logoMaxHeight * aspect)
+                                Modifier.size(width, width / aspect)
+                            } else {
+                                Modifier
+                                    .widthIn(max = logoMaxWidth)
+                                    .heightIn(max = logoMaxHeight)
+                            }
+                        },
+                )
+            } else {
+                Title(title, Modifier)
+            }
         }
     }
 }

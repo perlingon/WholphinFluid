@@ -21,6 +21,7 @@ import com.github.damontecres.wholphin.ui.util.ResProviderStringProvider
 import com.github.damontecres.wholphin.ui.util.ResStringProvider
 import com.github.damontecres.wholphin.ui.util.StringProvider
 import com.github.damontecres.wholphin.ui.util.StringStringProvider
+import com.github.damontecres.wholphin.ui.util.libraryRowTitle
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
@@ -417,7 +418,7 @@ class HomeSettingsService
                                     HomeRowConfigDisplay(
                                         id = id++,
                                         title =
-                                            ResArgStringProvider(
+                                            libraryRowTitle(
                                                 R.string.recently_added_in,
                                                 library.name ?: "",
                                             ),
@@ -587,7 +588,7 @@ class HomeSettingsService
                         if (stringRes == null) {
                             StringStringProvider(it)
                         } else {
-                            ResArgStringProvider(stringRes, it)
+                            libraryRowTitle(stringRes, it)
                         }
                     } ?: default
             } catch (ex: Exception) {
@@ -662,7 +663,7 @@ class UnsupportedHomeSettingsVersionException(
 ) : Exception("Unsupported version $unsupportedVersion, max supported is $maxSupportedVersion")
 
 fun getRecentlyAddedTitle(name: String?): StringProvider =
-    name?.let { ResArgStringProvider(R.string.recently_added_in, it) }
+    name?.let { libraryRowTitle(R.string.recently_added_in, it) }
         ?: ResStringProvider(R.string.recently_added)
 
 fun viewOptionsForCollectionType(collectionType: CollectionType?): HomeRowViewOptions =

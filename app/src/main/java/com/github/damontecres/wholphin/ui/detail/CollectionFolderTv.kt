@@ -11,7 +11,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.focusRequester
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
-import com.github.damontecres.wholphin.R
 import com.github.damontecres.wholphin.data.filter.DefaultTvFilterOptions
 import com.github.damontecres.wholphin.data.model.BaseItem
 import com.github.damontecres.wholphin.data.model.CollectionFolderFilter
@@ -28,6 +27,7 @@ import com.github.damontecres.wholphin.ui.components.TabbedPage
 import com.github.damontecres.wholphin.ui.components.ViewOptionsPoster
 import com.github.damontecres.wholphin.ui.data.SeriesSortOptions
 import com.github.damontecres.wholphin.ui.nav.Destination
+import com.github.damontecres.wholphin.ui.nav.TvLibraryTabs
 import dagger.hilt.android.lifecycle.HiltViewModel
 import org.jellyfin.sdk.model.api.BaseItemKind
 import org.jellyfin.sdk.model.api.CollectionType
@@ -48,14 +48,7 @@ fun CollectionFolderTv(
     viewModel: CollectionFolderTvViewModel = hiltViewModel(),
 ) {
     val tabs =
-        remember {
-            listOf(
-                TabDetails(R.string.recommended),
-                TabDetails(R.string.library),
-                TabDetails(R.string.genres),
-                TabDetails(R.string.studios),
-            )
-        }
+        remember { TvLibraryTabs.map { TabDetails(it) } }
     val onClickItem =
         remember {
             { position: Int, item: BaseItem ->

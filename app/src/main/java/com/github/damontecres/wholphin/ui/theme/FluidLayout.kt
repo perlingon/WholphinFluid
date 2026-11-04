@@ -107,8 +107,17 @@ object FluidLayout {
         val vh = configuration.screenHeightDp.dp
         val widthMin = vw * 0.3f
         val widthTarget = vh * 1.4f
-        val widthMax = vw * 0.51f
+        val widthMax = vw * 0.48f
         return widthTarget.coerceIn(widthMin, widthMax)
+    }
+
+    /**
+     * Height of the sharp backdrop image: its width at 16:9, as drawn in Backdrop
+     */
+    @Composable
+    fun backdropImageHeight(): Dp {
+        val vh = LocalConfiguration.current.screenHeightDp.dp
+        return (backdropImageWidth() / (16f / 9f)).coerceAtMost(vh * 1.8f)
     }
 
     /**

@@ -2,9 +2,11 @@
 
 package com.github.damontecres.wholphin.ui.nav
 
+import android.graphics.Bitmap
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
@@ -14,10 +16,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
@@ -32,8 +36,9 @@ import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.ImageShader
 import androidx.compose.ui.graphics.ShaderBrush
-import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.TileMode
+import androidx.compose.ui.graphics.asAndroidBitmap
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.drawscope.translate
@@ -47,23 +52,33 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import androidx.core.graphics.drawable.toBitmap
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.tv.material3.MaterialTheme
 import coil3.annotation.ExperimentalCoilApi
+import coil3.asDrawable
 import coil3.compose.AsyncImage
 import coil3.compose.useExistingImageAsPlaceholder
+import coil3.imageLoader
 import coil3.request.ImageRequest
+import coil3.request.SuccessResult
+import coil3.request.allowHardware
+import coil3.request.bitmapConfig
 import coil3.request.transitionFactory
 import com.github.damontecres.wholphin.preferences.BackdropStyle
 import com.github.damontecres.wholphin.services.BackdropResult
 import com.github.damontecres.wholphin.services.ExtractedColors
 import com.github.damontecres.wholphin.ui.CrossFadeFactory
+import com.github.damontecres.wholphin.ui.components.BackdropGlows
+import com.github.damontecres.wholphin.ui.components.BackdropImageAway
 import com.github.damontecres.wholphin.ui.theme.FluidLayout
 import com.github.damontecres.wholphin.ui.theme.LocalFluidTheme
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlin.math.max
 import kotlin.math.roundToInt
 import kotlin.math.sqrt
@@ -156,7 +171,7 @@ fun Backdrop(
     // Brightest a glow colour may be, 0 to 1 (1 = no cap). Brighter colours are darkened down
     // to this, keeping their hue and saturation, so a white or yellow poster cannot wash the
     // background out
-    val glowMaxBrightness = 0.7f
+    val glowMaxBrightness = 0.9f
     // Darkest a glow colour may be, 0 to 1 (0 = no cap). Darker colours are lifted up to this,
     // keeping their hue and saturation, so a near-black poster still gives a hint of colour
     val glowMinBrightness = 0.05f
@@ -179,6 +194,13 @@ fun Backdrop(
     val glowPrimary = animPrimary.intensified()
     val glowSecondary = animSecondary.intensified()
     val glowTertiary = animTertiary.intensified()
+    // Shared with the row panel on details pages, which draws a darker copy of the glows
+    SideEffect {
+        BackdropGlows.primary = if (showGlows) glowPrimary else Color.Transparent
+        BackdropGlows.secondary = if (showGlows) glowSecondary else Color.Transparent
+        BackdropGlows.tertiary = if (showGlows) glowTertiary else Color.Transparent
+    }
+
     // Paints the theme background and the colour glows in the given colours. Kept as a function
     // so the same drawing serves the live layers and the baked background image
     fun glowPainter(
@@ -289,31 +311,32 @@ fun Backdrop(
                             // right reflection
                             Tile(
                                 reflects = ImageEdge.RIGHT,
-                                left = 0.72f,
-                                top = -0.02f,
-                                skewY = -5f,
-                                width = 0.4f,
+                                left = 0.66f,
+                                top = -0.3f,
+                                skewY = -20f,
+                                width = 0.45f,
                                 height = 0.69f,
-                                stretch = Stretch(StretchEdge.LEFT, 4f),
+                                stretch = Stretch(StretchEdge.LEFT, 5f),
                                 flip = true,
-                                resolution = 240,
-                                smooth = 0.005f,
+                                flipVertical = false,
+                                resolution = 340,
+                                smooth = 0.0005f,
                                 feather = Feather(0f, 0.01f, 0.1f, 0.1f),
-                                layers = listOf(BlendMode.Softlight to 1f),
+                                layers = listOf(BlendMode.Overlay to 1f),
                             ),
                             Tile(
                                 reflects = ImageEdge.RIGHT,
-                                left = 0.803f,
-                                top = 0.3f,
+                                left = 0.703f,
+                                top = 0.26f,
                                 width = 0.4f,
                                 height = 0.5f,
                                 stretch = Stretch(StretchEdge.LEFT, 4f),
                                 flip = true,
                                 flipVertical = false,
                                 resolution = 240,
-                                smooth = 0.005f,
+                                smooth = 0.02f,
                                 feather = Feather(0.14f, 0.01f, 0.5f, 0.1f),
-                                layers = listOf(BlendMode.SrcOver to 0.5f),
+                                layers = listOf(BlendMode.SrcOver to 0.9f),
                             ),
                             // left reflection
                             Tile(
@@ -327,7 +350,7 @@ fun Backdrop(
                                 flipVertical = true,
                                 resolution = 50,
                                 smooth = 0f,
-                                feather = Feather(0f,0.1f,0.32f,1f),
+                                feather = Feather(0f, 0.1f, 0.32f, 1f),
                                 layers = listOf(BlendMode.SrcOver to 1f),
                             ),
                             Tile(
@@ -336,7 +359,7 @@ fun Backdrop(
                                 top = -0.035f,
                                 skewY = 3.41f,
                                 stretch = Stretch(StretchEdge.RIGHT, 6.3f),
-                                feather = Feather(0f,0.02f,0.07f,0f),
+                                feather = Feather(0f, 0.02f, 0.07f, 0f),
                                 width = 0.7f,
                                 height = 0.7f,
                                 flip = true,
@@ -368,9 +391,9 @@ fun Backdrop(
                                 stretch = Stretch(StretchEdge.BOTTOM, 0.9f),
                                 flipVertical = true,
                                 resolution = 50,
-                                smooth = 0f,
-                                feather = Feather(0.32f,0.2f,0.12f,0.2f),
-                                layers = listOf(BlendMode.SrcOver to 1f),
+                                smooth = 0.01f,
+                                feather = Feather(0.32f, 0.2f, 0.12f, 0.2f),
+                                layers = listOf(BlendMode.Overlay to 1f),
                             ),
                             Tile(
                                 reflects = ImageEdge.LEFT,
@@ -383,9 +406,9 @@ fun Backdrop(
                                 stretch = Stretch(StretchEdge.BOTTOM, 0.9f),
                                 flipVertical = false,
                                 resolution = 50,
-                                smooth = 0f,
-                                feather = Feather(0.32f,0.2f,0.12f,0.2f),
-                                layers = listOf(BlendMode.SrcOver to 0.6f),
+                                smooth = 0.01f,
+                                feather = Feather(0.32f, 0.2f, 0.12f, 0.2f),
+                                layers = listOf(BlendMode.Overlay to 0.8f),
                             ),
                             // bottom reflection
                             Tile(
@@ -399,13 +422,13 @@ fun Backdrop(
                                 stretch = Stretch(StretchEdge.TOP, 1.7f),
                                 resolution = 120,
                                 smooth = 0.001f,
-                                feather = Feather(0.2f, 0.5f,0f,0.5f,),
+                                feather = Feather(0.2f, 0.5f, 0f, 0.5f),
                                 layers = listOf(BlendMode.SrcOver to 1f),
                             ),
                             Tile(
                                 reflects = ImageEdge.BOTTOM,
                                 left = 0.22f,
-                                top = 0.6f,
+                                top = 0.45f,
                                 width = 0.58f,
                                 height = 0.42f,
                                 flip = false,
@@ -414,7 +437,7 @@ fun Backdrop(
                                 resolution = 120,
                                 rotation = 5f,
                                 smooth = 0.01f,
-                                feather = Feather(0.1f, 0.3f,0.8f,0.5f,),
+                                feather = Feather(0.1f, 0.3f, 0.8f, 0.5f),
                                 layers = listOf(BlendMode.Screen to 1f),
                             ),
                             Tile(
@@ -429,10 +452,10 @@ fun Backdrop(
                                 stretch = Stretch(StretchEdge.TOP, 2.2f),
                                 resolution = 120,
                                 smooth = 0.01f,
-                                feather = Feather(0.05f, 0.3f,0.6f,0.3f,),
+                                feather = Feather(0.05f, 0.3f, 0.6f, 0.3f),
                                 layers = listOf(BlendMode.SrcOver to 1f),
                             ),
-                        )
+                        ),
                     )
                 }
             // Soft edges on the mirror tiles: how far in from each side they fade out, as a share
@@ -441,6 +464,7 @@ fun Backdrop(
             // Feather(top and bottom, left and right) or Feather(top, right, bottom, left), as
             // the tile appears on screen. A tile can set its own with feather = Feather(…)
             val mirrorFeather = Feather(0.2f)
+
             fun List<Tile>.withFeather() = map { if (it.feather == null) it.copy(feather = mirrorFeather) else it }
 
             // The main tile: on its own, with its own blend modes, drawn over the mirror tiles
@@ -453,7 +477,7 @@ fun Backdrop(
                     height = 1.3f,
                     skewY = 12f,
                     stretch = Stretch(StretchEdge.LEFT, 1f),
-                    feather = Feather(0f, 0.6f,0.3f,0.23f,),
+                    feather = Feather(0f, 0.6f, 0.3f, 0.23f),
                     flip = false,
                     flipVertical = false,
                     resolution = 200,
@@ -462,7 +486,7 @@ fun Backdrop(
                         listOf(
                             BlendMode.Multiply to 0.1f,
                             BlendMode.Softlight to 0.2f,
-                            BlendMode.Screen to 0.1f
+                            BlendMode.Screen to 0.1f,
                         ),
                     // When an edge of the image is flat, it is drawn at this share of the above,
                     // so it does not wash out the flat edge colour
@@ -538,10 +562,10 @@ fun Backdrop(
                         listOf(
                             0f to 0f,
                             0.27f to 0f,
-                            0.65f to 0.55f,
-                            1f to 0.88f,
+                            0.65f to 0.5f,
+                            1f to 0.7f,
                         ),
-                    blendMode = BlendMode.Multiply,
+                    blendMode = BlendMode.Overlay,
                 )
             val vignettes =
                 if (showVignettes) {
@@ -549,6 +573,7 @@ fun Backdrop(
                 } else {
                     emptyList()
                 }
+
             // Draws the vignette for a screen of the given size. origin is where the area being
             // drawn into sits on that screen, so a smaller layer (the sharp image) gets the part
             // of the vignette that falls on it
@@ -617,7 +642,7 @@ fun Backdrop(
                 val groupSmooth = 0f
                 // How the blurred mirror tiles are blended onto the glows, bottom to top, as blend
                 // mode to opacity, and the opacity of the group as a whole
-                val groupLayers = listOf(BlendMode.Overlay to 1f, BlendMode.Softlight to 0.9f, BlendMode.SrcOver to 0.6f)
+                val groupLayers = listOf(BlendMode.Overlay to 1f, BlendMode.Softlight to 0.9f, BlendMode.SrcOver to 0.9f)
                 val groupOpacity = 1f
                 // Rounded fade around the group: an ellipse on the screen, solid in the middle and
                 // fading out towards its rim on every side; outside it the group is left out.
@@ -627,14 +652,14 @@ fun Backdrop(
                 val groupFade =
                     listOf(
                         0f to 1f,
-                        0.3f to 1f,
-                        0.32f to 0.7f,
-                        0.48f to 0.05f,
-                        1f to 0.05f,
+                        0.28f to 0.9f,
+                        0.32f to 0.67f,
+                        0.6f to 0.2f,
+                        1f to 0.1f,
                     )
                 // Centre of the ellipse, as shares of the screen's width and height, measured from
                 // the inner edge (the side with the rows and text)
-                val groupFadeCenterX = 0.65f
+                val groupFadeCenterX = 1f
                 val groupFadeCenterY = 0.3f
                 // Size of the ellipse from its centre to its rim, as shares of the screen's width
                 // and height. 0.5f, 0.5f with the centre in the middle just touches the screen's edges
@@ -673,6 +698,7 @@ fun Backdrop(
                     }
                 }
                 val bakeHeight = (bakeWidth * (maxHeight / maxWidth)).toInt().coerceAtLeast(1)
+
                 // The baked version uses the colours the glows are heading for, not the animated
                 // ones, so it is composed once per backdrop instead of on every animation frame
                 fun targetGlow(color: Color) = color.takeOrElse { Color.Transparent }.intensified()
@@ -788,6 +814,66 @@ fun Backdrop(
                     }
                 }
 
+                // Text on a light backdrop turns almost black (see BackdropContrast). Each area is
+                // checked on the background being shown, and for the clock also on the top right
+                // corner of the sharp image. Tuning values, kept local so Live Edit picks them up.
+                // Areas are shares of the screen: left, top, right, bottom
+                val headerArea = listOf(0f, 0.08f, 0.5f, 0.55f)
+                val rowsArea = listOf(0f, 0.55f, 0.5f, 0.95f)
+                val clockArea = listOf(0.82f, 0f, 1f, 0.12f)
+                // Share of an area's pixels that may be lighter than the level it is judged by:
+                // 0.8f = judged by its lightest fifth, so a bright patch behind the text counts
+                val contrastPercentile = 0.8f
+                // Relative luminance (0 = black, 1 = white) above which text turns dark, and below
+                // which it turns white again. The gap keeps it from flipping back and forth
+                val darkTextAbove = 0.32f
+                val whiteTextBelow = 0.26f
+                val contrastBackground = shownBackground.value
+                val contrastImageUrl = shownImageUrl.value
+                LaunchedEffect(contrastBackground, contrastImageUrl) {
+                    if (contrastBackground == null) {
+                        BackdropContrast.reset()
+                        return@LaunchedEffect
+                    }
+                    withContext(Dispatchers.Default) {
+                        val background = contrastBackground.asAndroidBitmap()
+
+                        fun level(area: List<Float>) = areaLuminance(background, area[0], area[1], area[2], area[3], contrastPercentile)
+
+                        fun isLight(
+                            luminance: Float,
+                            wasLight: Boolean,
+                        ) = if (wasLight) luminance > whiteTextBelow else luminance > darkTextAbove
+                        val header = level(headerArea)
+                        val rows = level(rowsArea)
+                        // The image's own top right corner, where it reaches the top of the screen
+                        val imageCorner =
+                            contrastImageUrl?.let { url ->
+                                val request =
+                                    ImageRequest
+                                        .Builder(context)
+                                        .data(url)
+                                        .size(320, 180)
+                                        .allowHardware(false)
+                                        .bitmapConfig(Bitmap.Config.ARGB_8888)
+                                        .build()
+                                (context.imageLoader.execute(request) as? SuccessResult)
+                                    ?.image
+                                    ?.asDrawable(context.resources)
+                                    ?.toBitmap(config = Bitmap.Config.ARGB_8888)
+                                    ?.let { areaLuminance(it, 0.75f, 0f, 1f, 0.15f, contrastPercentile) }
+                            } ?: 0f
+                        val clock = max(level(clockArea), imageCorner)
+                        withContext(Dispatchers.Main) {
+                            BackdropContrast.headerIsLight = isLight(header, BackdropContrast.headerIsLight)
+                            BackdropContrast.rowsIsLight = isLight(rows, BackdropContrast.rowsIsLight)
+                            BackdropContrast.clockIsLight = isLight(clock, BackdropContrast.clockIsLight)
+                        }
+                    }
+                }
+                // Kept in its own file: an onDispose here breaks Live Edit for all of Backdrop.kt
+                ResetBackdropContrastOnLeave()
+
                 // Runs the change from one backdrop to the next. It restarts whenever the
                 // backdrop or its background changes, and picks up from however dark it is
                 LaunchedEffect(backdrop.itemId, backdrop.imageUrl, backdrop.colorsPending, baked) {
@@ -852,6 +938,19 @@ fun Backdrop(
                     }
                     RegisterBackdropBaker(prebake)
                 }
+                // While focus is in the rows below a details page's buttons (see DetailRowsGroup)
+                // the background fades over to a blurrier copy of itself, made once per background.
+                // Tuning values, kept local so Live Edit picks them up
+                val awayBlur = 0.02f // extra blur, as a share of the screen's width
+                val awayBlurDuration = 500 // ms
+                // Read through a state, so a new value from Live Edit reaches the content below
+                // even where it would otherwise keep the old one
+                val awayBlurShare by rememberUpdatedState(awayBlur)
+                val awayBlurAmount by animateFloatAsState(
+                    if (BackdropImageAway.away) 1f else 0f,
+                    animationSpec = tween(awayBlurDuration),
+                    label = "backdrop_background_blur",
+                )
                 Crossfade(
                     targetState = shownBackground.value,
                     animationSpec = tween(fadeIn.inWholeMilliseconds.toInt()),
@@ -864,6 +963,30 @@ fun Backdrop(
                             contentScale = ContentScale.FillBounds,
                             modifier = Modifier.fillMaxSize(),
                         )
+                        val blurRadius = (image.width * awayBlurShare).roundToInt()
+                        val blurred by produceState<ImageBitmap?>(null, image, blurRadius) {
+                            value =
+                                if (blurRadius < 1) {
+                                    null
+                                } else {
+                                    withContext(Dispatchers.Default) {
+                                        val copy = image.asAndroidBitmap().copy(Bitmap.Config.ARGB_8888, true)
+                                        boxBlur(copy, blurRadius)
+                                        copy.asImageBitmap()
+                                    }
+                                }
+                        }
+                        blurred?.let { blurredImage ->
+                            if (awayBlurAmount > 0f) {
+                                Image(
+                                    bitmap = blurredImage,
+                                    contentDescription = null,
+                                    contentScale = ContentScale.FillBounds,
+                                    alpha = awayBlurAmount,
+                                    modifier = Modifier.fillMaxSize(),
+                                )
+                            }
+                        }
                     } else if (showGlows) {
                         // Until the first image is ready, show the plain glows
                         Box(modifier = Modifier.fillMaxSize().drawBehind(drawGlows))
@@ -883,6 +1006,18 @@ fun Backdrop(
                             if (dip.value > 0f) drawRect(color = dipColor, alpha = dip.value.coerceIn(0f, 1f))
                         },
             )
+            // How the sharp image gets out of the way of the rows below a details page's buttons
+            // (see DetailRowsGroup). Tuning values, kept local so Live Edit picks them up
+            val imageAwayDuration = 320 // ms
+            val imageAwayLift = 0.05f // how far it moves up, as a share of its height
+            // Read through a state when drawing, so a new value from Live Edit is used straight away
+            val imageAwayLiftShare = rememberUpdatedState(imageAwayLift)
+            val imageAway =
+                animateFloatAsState(
+                    if (BackdropImageAway.away) 1f else 0f,
+                    animationSpec = tween(imageAwayDuration, easing = androidx.compose.animation.core.EaseOut),
+                    label = "backdrop_image_away",
+                )
             AsyncImage(
                 model =
                     ImageRequest
@@ -902,21 +1037,15 @@ fun Backdrop(
                         .align(Alignment.TopEnd)
                         .padding(end = imageEdgeMargin)
                         .size(imageWidth, imageHeight)
-                        .graphicsLayer(
-                            compositingStrategy = CompositingStrategy.Offscreen,
-                            // Development switch, see BackdropDebug
-                            alpha = if (BackdropDebug.hideImage) 0f else 1f,
-                        ).drawWithContent {
+                        .graphicsLayer {
+                            compositingStrategy = CompositingStrategy.Offscreen
+                            // Out of the way while focus is in the rows below a details page's
+                            // buttons: faded out and moved up. Development switch, see BackdropDebug
+                            alpha = if (BackdropDebug.hideImage) 0f else 1f - imageAway.value
+                            translationY = -imageAway.value * size.height * imageAwayLiftShare.value
+                        }.drawWithContent {
                             val start = if (isRtl) size.width else 0f
                             drawContent()
-                            if (drawerIsOpen) {
-                                drawRect(
-                                    brush = SolidColor(Color.Black),
-                                    alpha = .75f,
-                                    // Only darken the image itself, not the empty box before it loads
-                                    blendMode = BlendMode.SrcAtop,
-                                )
-                            }
                             // The same vignette as on the background, continued over the image.
                             // SrcAtop darkens only the image itself, not the empty box around it
                             vignette(
@@ -964,10 +1093,10 @@ fun Backdrop(
                             // Vertical fade, measured from the top of the image to the bottom
                             val verticalFade =
                                 listOf(
-                                    0f   to 1f,
+                                    0f to 1f,
                                     0.75f to 1f,
-                                    0.96f to 0.7f,
-                                    1f   to 0f,
+                                    1f to 0.7f,
+                                    1f to 0f,
                                 )
 
                             fun List<Pair<Float, Float>>.asMask() =
@@ -979,15 +1108,6 @@ fun Backdrop(
                                         colorStops = horizontalFade.asMask(),
                                         startX = start,
                                         endX = size.width - start,
-                                    ),
-                                blendMode = BlendMode.DstIn,
-                            )
-                            drawRect(
-                                brush =
-                                    Brush.verticalGradient(
-                                        colorStops = verticalFade.asMask(),
-                                        startY = 0f,
-                                        endY = size.height,
                                     ),
                                 blendMode = BlendMode.DstIn,
                             )
@@ -1143,9 +1263,9 @@ fun Backdrop(
             // Film grain over everything: the baked background and the sharp image.
             // It has to be drawn at full screen resolution, so it is its own layer on top and
             // cannot be part of the small baked image
-            val grainOpacity = 0.4f // strength: 0 = none
-            val grainSize = 0.25f // size of one grain in screen pixels: higher = coarser
-            val grainContrast = 0.2f // range of greys: 0 = all neutral (no grain), 1 = black to white
+            val grainOpacity = 0.3f // strength: 0 = none
+            val grainSize = 0.28f // size of one grain in screen pixels: higher = coarser
+            val grainContrast = 0.35f // range of greys: 0 = all neutral (no grain), 1 = black to white
             // how much the grain gathers into uneven patches: 0 = evenly fine, 1 = all patches
             val grainClumping = 0.45f
             val grainBlendMode = BlendMode.Softlight
@@ -1182,13 +1302,13 @@ fun Backdrop(
                                 val shift = grainShift.value
                                 scale(scaleX = grain, scaleY = grain, pivot = Offset.Zero) {
                                     translate(left = -shift.x, top = -shift.y) {
-                                    drawRect(
-                                        brush = grainBrush,
-                                        topLeft = shift,
-                                        size = Size(size.width / grain, size.height / grain),
-                                        alpha = grainOpacity.coerceIn(0f, 1f),
-                                        blendMode = grainBlendMode,
-                                    )
+                                        drawRect(
+                                            brush = grainBrush,
+                                            topLeft = shift,
+                                            size = Size(size.width / grain, size.height / grain),
+                                            alpha = grainOpacity.coerceIn(0f, 1f),
+                                            blendMode = grainBlendMode,
+                                        )
                                     }
                                 }
                             }
@@ -1196,6 +1316,22 @@ fun Backdrop(
             )
         }
     }
+    // While the nav drawer is open the whole backdrop darkens, background and image together, so
+    // the menu stands out. How dark: 0 = not at all, 1 = fully black
+    val drawerDimDepth = 0.6f
+    val drawerDim by animateFloatAsState(
+        targetValue = if (drawerIsOpen) drawerDimDepth else 0f,
+        animationSpec = tween(300),
+        label = "drawerDim",
+    )
+    Box(
+        modifier =
+            modifier
+                .fillMaxSize()
+                .drawBehind {
+                    if (drawerDim > 0f) drawRect(color = Color.Black, alpha = drawerDim.coerceIn(0f, 1f))
+                },
+    )
 }
 
 /**

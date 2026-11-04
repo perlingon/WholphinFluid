@@ -23,6 +23,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -72,7 +73,9 @@ import com.github.damontecres.wholphin.ui.detail.CardGridItem
 import com.github.damontecres.wholphin.ui.detail.GridItemDetails
 import com.github.damontecres.wholphin.ui.detail.livetv.ProgramDialog
 import com.github.damontecres.wholphin.ui.nav.Destination
+import com.github.damontecres.wholphin.ui.nav.rememberDrawerSubmenu
 import com.github.damontecres.wholphin.ui.onMain
+import com.github.damontecres.wholphin.ui.theme.FluidLayout
 import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.ui.titleStringRes
 import com.github.damontecres.wholphin.ui.tryRequestFocus
@@ -196,6 +199,30 @@ fun SearchPage(
         seerrActive && state.discoverEnabled && query.isNotBlank() && showHeader && combinedMode
     val isLibraryTab = selectedTab == 0
 
+    // Results are only shown once a whole search is done: until then the previous search's
+    // results stay, or a single "Searching…" if there are none, so the layout doesn't jump about as
+    // each type's results come in
+    val discoverIncluded = seerrActive && state.discoverEnabled
+    val searchDone =
+        state.includedSearchableTypes.none {
+            state.results.getOrDefault(it, SearchResult.Searching) is SearchResult.Searching
+        } &&
+            !(discoverIncluded && state.seerrResults is SearchResult.Searching)
+    var shownResults by remember { mutableStateOf<ShownSearchResults?>(null) }
+    if (searchDone) {
+        // The results map is updated in place as each type finishes, so keep a copy
+        val done = ShownSearchResults(state.results.toMap(), state.seerrResults)
+        if (done != shownResults) SideEffect { shownResults = done }
+    }
+    var shownCombined by remember { mutableStateOf<SearchResult?>(null) }
+    if (state.combinedResults !is SearchResult.Searching && state.combinedResults != shownCombined) {
+        SideEffect { shownCombined = state.combinedResults }
+    }
+    val shownCombinedResults =
+        state.combinedResults.takeIf { it !is SearchResult.Searching } ?: shownCombined ?: SearchResult.Searching
+    val shownSeerrResults =
+        state.seerrResults.takeIf { it !is SearchResult.Searching } ?: shownResults?.seerr ?: SearchResult.Searching
+
     LaunchedEffect(seerrActive, query) {
         if (!seerrActive || query.isBlank()) {
             selectedTab = 0
@@ -255,6 +282,23 @@ fun SearchPage(
                 }
             }
         }
+
+    // Beside the nav drawer, the tabs are a submenu in the drawer instead of a row on the page
+    val tabsInDrawer =
+        rememberDrawerSubmenu(
+            tabs = tabs,
+            selectedIndex = selectedTab,
+            onSelect = {
+                selectedTab = it
+                val row =
+                    when (it) {
+                        0 -> COMBINED_ROW
+                        else -> SEERR_ROW
+                    }
+                setPosition(RowColumn(row, 0))
+            },
+            enabled = seerrActive && state.discoverEnabled && query.isNotBlank() && combinedMode,
+        )
 
     Column(
         modifier = modifier.fillMaxSize(),
@@ -342,7 +386,7 @@ fun SearchPage(
             }
         }
         AnimatedVisibility(
-            visible = showTabs,
+            visible = showTabs && !tabsInDrawer,
             enter = expandVertically(),
             exit = shrinkVertically(),
         ) {
@@ -376,7 +420,7 @@ fun SearchPage(
             when {
                 isLibraryTab && combinedMode -> {
                     SearchCombinedResults(
-                        result = state.combinedResults,
+                        result = shownCombinedResults,
                         focusRequester = focusRequesters[COMBINED_ROW],
                         onClickItem = onClickItem,
                         onLongClickItem = { index, item ->
@@ -392,7 +436,7 @@ fun SearchPage(
 
                 !isLibraryTab && combinedMode -> {
                     SearchCombinedResults(
-                        result = state.seerrResults,
+                        result = shownSeerrResults,
                         focusRequester = focusRequesters[SEERR_ROW],
                         onClickItem = onClickItem,
                         onLongClickItem = { _, _ -> },
@@ -402,6 +446,11 @@ fun SearchPage(
                         positionCallback = positionCallback,
                         modifier = Modifier.fillMaxSize(),
                     )
+                }
+
+                // Until a first search is done, one "Searching…" instead of a row for each type
+                isLibraryTab && !searchDone && shownResults == null -> {
+                    SearchingMessage(Modifier.fillMaxSize())
                 }
 
                 isLibraryTab -> {
@@ -418,7 +467,8 @@ fun SearchPage(
                     ) {
                         itemsIndexed(state.includedSearchableTypes) { index, type ->
                             val rowIndex = RESULTS_START + index
-                            val result = state.results.getOrDefault(type, SearchResult.Searching)
+                            val shown = if (searchDone) state.results else shownResults?.results
+                            val result = shown?.get(type) ?: SearchResult.NoQuery
                             val focusRequester =
                                 remember(state.includedSearchableTypes.size) {
                                     focusRequesters.getOrNull(rowIndex) ?: FocusRequester()
@@ -454,7 +504,7 @@ fun SearchPage(
                             item {
                                 SearchRowResult(
                                     title = R.string.discover,
-                                    result = state.seerrResults,
+                                    result = if (searchDone) state.seerrResults else shownResults?.seerr ?: SearchResult.NoQuery,
                                     rowIndex = SEERR_ROW,
                                     position = position,
                                     focusRequester = focusRequesters[SEERR_ROW],
@@ -552,11 +602,7 @@ fun SearchCombinedResults(
         SearchResult.NoQuery -> {}
 
         SearchResult.Searching -> {
-            SearchResultPlaceholder(
-                title = stringResource(R.string.results),
-                message = stringResource(R.string.searching),
-                modifier = modifier.padding(Spacing.md),
-            )
+            SearchingMessage(modifier)
         }
 
         is SearchResult.Error -> {
@@ -750,6 +796,23 @@ fun SearchRowResult(
     }
 }
 
+/**
+ * "Searching…" in the middle of the results area, while a search is running
+ */
+@Composable
+fun SearchingMessage(modifier: Modifier = Modifier) {
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = modifier,
+    ) {
+        Text(
+            text = stringResource(R.string.searching),
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onBackground,
+        )
+    }
+}
+
 @Composable
 fun SearchResultPlaceholder(
     title: String,
@@ -761,15 +824,19 @@ fun SearchResultPlaceholder(
         verticalArrangement = Arrangement.spacedBy(Spacing.sm),
         modifier = modifier.padding(bottom = Spacing.xl),
     ) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.titleLarge,
-            color = MaterialTheme.colorScheme.onBackground,
-        )
+        // Like a row's title, and the row's content, at the left margin
+        ItemRowTitle(title)
         Text(
             text = message,
             style = MaterialTheme.typography.titleMedium,
             color = messageColor,
+            modifier = Modifier.padding(start = FluidLayout.headlineInset()),
         )
     }
 }
+
+// The results of a finished search, kept on screen while the next one runs
+private data class ShownSearchResults(
+    val results: Map<BaseItemKind, SearchResult>,
+    val seerr: SearchResult,
+)

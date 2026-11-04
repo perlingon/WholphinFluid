@@ -119,6 +119,10 @@ class SeriesViewModel
 
         val position = MutableStateFlow(SeriesOverviewPosition(0, 0))
 
+        // The season shown on the season overview, which has its own backdrop
+        @Volatile
+        private var currentSeasonNumber: Int? = null
+
         init {
             viewModelScope.launchIO {
                 Timber.v("Start")
@@ -141,7 +145,8 @@ class SeriesViewModel
                         _state.update { it.copy(canDeleteSeries = canDelete) }
                     }
                 }
-                backdropService.submit(series)
+                currentSeasonNumber = seasonEpisodeIds?.seasonNumber
+                submitBackdrop(series)
 
                 val seasonsDeferred = getSeasons(series, seasonEpisodeIds?.seasonNumber)
 
@@ -157,6 +162,10 @@ class SeriesViewModel
                                 )
                             } else {
                                 seasonsDeferred.await().firstOrNull()?.let {
+                                    if (currentSeasonNumber != it.indexNumber) {
+                                        currentSeasonNumber = it.indexNumber
+                                        submitBackdrop(series)
+                                    }
                                     loadEpisodesInternal(
                                         it.id,
                                         it.indexNumber,
@@ -167,7 +176,16 @@ class SeriesViewModel
                             }
                         }
                     } else {
-                        CompletableDeferred(value = EpisodeList.Loading)
+                        // A series with only one season lists that season's episodes on its page
+                        // instead of the season
+                        viewModelScope.async(WholphinDispatchers.IO) {
+                            seasonsDeferred
+                                .await()
+                                .takeIf { it.size == 1 }
+                                ?.firstOrNull()
+                                ?.let { loadEpisodesInternal(it.id, it.indexNumber, null, null) }
+                                ?: EpisodeList.Loading
+                        }
                     }
                 val (seasons, episodes) =
                     try {
@@ -220,7 +238,26 @@ class SeriesViewModel
                         trailers = remoteTrailers,
                     )
                 }
+                // With the seasons known, the season overview can use the season's own backdrop
+                if (seriesPageType == SeriesPageType.OVERVIEW) submitBackdrop(series)
 
+                // Similar series, on the series page and the season overview
+                if (state.value.similar.isEmpty()) {
+                    viewModelScope.launchIO {
+                        val similar =
+                            api.libraryApi
+                                .getSimilarItems(
+                                    GetSimilarItemsRequest(
+                                        userId = serverRepository.currentUser?.id,
+                                        itemId = seriesId,
+                                        fields = ItemRowFields,
+                                        limit = 25,
+                                    ),
+                                ).content.items
+                                .map { BaseItem(it, true) }
+                        _state.update { it.copy(similar = similar) }
+                    }
+                }
                 if (seriesPageType == SeriesPageType.DETAILS) {
                     viewModelScope.launchIO {
                         trailerService.getLocalTrailers(series).letNotEmpty { localTrailers ->
@@ -234,22 +271,6 @@ class SeriesViewModel
                     viewModelScope.launchIO {
                         val extras = extrasService.getExtras(series.id)
                         _state.update { it.copy(extras = extras) }
-                    }
-                    if (state.value.similar.isEmpty()) {
-                        viewModelScope.launchIO {
-                            val similar =
-                                api.libraryApi
-                                    .getSimilarItems(
-                                        GetSimilarItemsRequest(
-                                            userId = serverRepository.currentUser?.id,
-                                            itemId = seriesId,
-                                            fields = ItemRowFields,
-                                            limit = 25,
-                                        ),
-                                    ).content.items
-                                    .map { BaseItem(it, true) }
-                            _state.update { it.copy(similar = similar) }
-                        }
                     }
                     viewModelScope.launchIO {
                         val results = seerrService.similar(series).orEmpty()
@@ -291,9 +312,26 @@ class SeriesViewModel
             }
         }
 
+        private suspend fun submitBackdrop(series: BaseItem) {
+            if (seriesPageType == SeriesPageType.OVERVIEW) {
+                // The season's own backdrop if it has one, otherwise one of the series'
+                val season =
+                    state.value.seasons
+                        .firstOrNull { it?.indexNumber == currentSeasonNumber }
+                        ?.takeIf { !it.data.backdropImageTags.isNullOrEmpty() }
+                if (season != null) {
+                    backdropService.submit(season)
+                } else {
+                    backdropService.submitSeason(series, currentSeasonNumber)
+                }
+            } else {
+                backdropService.submit(series)
+            }
+        }
+
         fun onResumePage() {
             state.value.series.successValue?.let { item ->
-                viewModelScope.launchDefault { backdropService.submit(item) }
+                viewModelScope.launchDefault { submitBackdrop(item) }
                 viewModelScope.launchDefault {
                     themeSongPlayer.playThemeFor(seriesId)
                 }
@@ -402,6 +440,12 @@ class SeriesViewModel
             seasonId: UUID,
             seasonNum: Int?,
         ) {
+            if (currentSeasonNumber != seasonNum) {
+                currentSeasonNumber = seasonNum
+                state.value.series.successValue?.let { series ->
+                    viewModelScope.launchDefault { submitBackdrop(series) }
+                }
+            }
             val currentEpisodes = (state.value.episodes as? EpisodeList.Success)
             if (currentEpisodes == null || currentEpisodes.seasonId != seasonId) {
                 _state.update {
@@ -501,7 +545,7 @@ class SeriesViewModel
             }
             // Kind of hack to ensure the backdrop is reloaded if needed
             state.value.series.successValue
-                ?.let { backdropService.submit(it) }
+                ?.let { submitBackdrop(it) }
         }
 
         /**
