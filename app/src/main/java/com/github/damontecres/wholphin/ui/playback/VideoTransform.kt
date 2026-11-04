@@ -100,16 +100,18 @@ class VideoTransformStore(
         transform: VideoTransform,
     ) {
         if (itemId.isNullOrBlank()) return
-        prefs.edit().apply {
-            if (transform.isIdentity) {
-                remove(itemId)
-            } else {
-                putString(
-                    itemId,
-                    "${transform.zoom};${transform.pixelRatio};${transform.shiftX};${transform.shiftY}",
-                )
-            }
-        }.apply()
+        prefs
+            .edit()
+            .apply {
+                if (transform.isIdentity) {
+                    remove(itemId)
+                } else {
+                    putString(
+                        itemId,
+                        "${transform.zoom};${transform.pixelRatio};${transform.shiftX};${transform.shiftY}",
+                    )
+                }
+            }.apply()
     }
 }
 
@@ -144,8 +146,6 @@ fun VideoTransform.adjustZoom(steps: Int) = copy(zoom = zoom.step(steps * VideoT
 fun VideoTransform.adjustRatio(steps: Int) =
     copy(pixelRatio = pixelRatio.step(steps * VideoTransform.RATIO_STEP, VideoTransform.RATIO_RANGE))
 
-fun VideoTransform.adjustShiftX(steps: Int) =
-    copy(shiftX = shiftX.step(steps * VideoTransform.SHIFT_STEP, VideoTransform.SHIFT_RANGE))
+fun VideoTransform.adjustShiftX(steps: Int) = copy(shiftX = shiftX.step(steps * VideoTransform.SHIFT_STEP, VideoTransform.SHIFT_RANGE))
 
-fun VideoTransform.adjustShiftY(steps: Int) =
-    copy(shiftY = shiftY.step(steps * VideoTransform.SHIFT_STEP, VideoTransform.SHIFT_RANGE))
+fun VideoTransform.adjustShiftY(steps: Int) = copy(shiftY = shiftY.step(steps * VideoTransform.SHIFT_STEP, VideoTransform.SHIFT_RANGE))

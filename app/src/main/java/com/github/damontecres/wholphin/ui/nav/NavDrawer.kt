@@ -542,8 +542,7 @@ fun NavDrawer(
                                 clipRect(right = (ExpandedDrawerItemWidth + SubmenuParentPeek).toPx()) {
                                     this@drawWithContent.drawContent()
                                 }
-                            }
-                            .onFocusChanged { drawerHasFocus = it.hasFocus }
+                            }.onFocusChanged { drawerHasFocus = it.hasFocus }
                             .focusProperties {
                                 onEnter = {
                                     // Pressing left from the page opens the submenu if there is one,
@@ -956,13 +955,20 @@ private val DrawerSubmenu.firstFocusTab get() = tabs.getOrNull(selectedIndex) ?:
 val NavDrawerItem.hasSubmenu: Boolean
     get() =
         when (this) {
-            NavDrawerItem.Discover -> true
-            is ServerNavDrawerItem ->
+            NavDrawerItem.Discover -> {
+                true
+            }
+
+            is ServerNavDrawerItem -> {
                 type == CollectionType.MOVIES ||
                     type == CollectionType.TVSHOWS ||
                     type == CollectionType.MUSIC ||
                     type == CollectionType.LIVETV
-            else -> false
+            }
+
+            else -> {
+                false
+            }
         }
 
 /**
@@ -993,9 +999,13 @@ fun navItemColor(
                 }
             }
 
-            selected -> MaterialTheme.colorScheme.onSurface
+            selected -> {
+                MaterialTheme.colorScheme.onSurface
+            }
 
-            else -> MaterialTheme.colorScheme.onSurface.copy(alpha = NavItemUnselectedAlpha)
+            else -> {
+                MaterialTheme.colorScheme.onSurface.copy(alpha = NavItemUnselectedAlpha)
+            }
         }
     return if (drawerOpen) color else color.copy(alpha = color.alpha * .5f)
 }
