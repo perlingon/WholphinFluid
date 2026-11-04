@@ -1,5 +1,7 @@
 package com.github.damontecres.wholphin.ui.components
 
+import android.graphics.Bitmap
+import android.os.Build
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.heightIn
@@ -20,6 +22,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.tv.material3.MaterialTheme
 import androidx.tv.material3.Text
+import coil3.BitmapImage
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import coil3.request.transformations
@@ -27,6 +30,7 @@ import com.github.damontecres.wholphin.data.model.BaseItem
 import com.github.damontecres.wholphin.ui.CoilTrimTransformation
 import com.github.damontecres.wholphin.ui.LocalImageUrlService
 import com.github.damontecres.wholphin.ui.logCoilError
+import com.github.damontecres.wholphin.ui.nav.BackdropContrast
 import com.github.damontecres.wholphin.ui.nav.OnBackdropHeader
 import org.jellyfin.sdk.model.api.BaseItemKind
 import org.jellyfin.sdk.model.api.ImageType
@@ -47,6 +51,10 @@ fun TitleOrLogo(
         val logoMaxHeight = 85.dp
         // Width to height of the logo, known once it has loaded
         var logoAspect by remember(logoImageUrl) { mutableStateOf<Float?>(null) }
+        // Whether the logo is monochrome and how light it is, known once it has loaded. A light
+        // monochrome logo is inverted when the backdrop behind the header is light (the same
+        // switch that turns the header text dark); coloured logos are left alone
+        var logoTone by remember(logoImageUrl) { mutableStateOf(LogoTones.get(logoImageUrl)) }
         Box(
             modifier = modifier.heightIn(max = logoMaxHeight),
         ) {
@@ -66,7 +74,10 @@ fun TitleOrLogo(
                                 .size(
                                     (logoMaxWidth.toPx() * 2).roundToInt(),
                                     (logoMaxHeight.toPx() * 2).roundToInt(),
-                                ).transformations(CoilTrimTransformation())
+                                ).transformations(
+                                    CoilTrimTransformation(),
+                                    LogoToneTransformation(logoImageUrl),
+                                )
                                 .build()
                         }
                     }
@@ -74,6 +85,7 @@ fun TitleOrLogo(
                     model = logoRequest,
                     contentDescription = title,
                     contentScale = ContentScale.Fit,
+                    colorFilter = LogoTones.filterFor(logoTone, BackdropContrast.headerIsLight),
                     onError = {
                         logCoilError(logoImageUrl, it.result)
                         imageError = true
@@ -83,6 +95,17 @@ fun TitleOrLogo(
                         if (image.width > 0 && image.height > 0) {
                             logoAspect = image.width.toFloat() / image.height
                         }
+                        // Usually worked out while loading (LogoToneTransformation). When the logo
+                        // came straight from the memory cache, it is worked out here instead
+                        logoTone = LogoTones.get(logoImageUrl)
+                            ?: (image as? BitmapImage)
+                                ?.bitmap
+                                ?.takeIf { bitmap ->
+                                    Build.VERSION.SDK_INT < Build.VERSION_CODES.O ||
+                                        bitmap.config != Bitmap.Config.HARDWARE
+                                }
+                                ?.let(LogoTones::analyse)
+                                ?.also { tone -> LogoTones.put(logoImageUrl, tone) }
                     },
                     modifier =
                         logoAspect.let { aspect ->
