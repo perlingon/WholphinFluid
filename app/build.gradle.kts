@@ -55,8 +55,11 @@ val gitTags =
 
 val gitDescribe =
     providers
-        .exec { commandLine("git", "describe", "--tags", "--long", "--match=v*") }
-        .standardOutput.asText
+        .exec {
+            commandLine("git", "describe", "--tags", "--long", "--match=v*")
+            // No v* tags (e.g. a CI checkout of the fork) makes git exit 128; fall back to 0.0.0
+            isIgnoreExitValue = true
+        }.standardOutput.asText
         .getOrElse("v0.0.0")
 
 // Time of the last commit instead of the current time, so a rebuild without code changes
@@ -359,6 +362,7 @@ dependencies {
     implementation(libs.androidx.media3.ui)
     implementation(libs.androidx.media3.ui.compose)
     implementation(libs.ass.media)
+    implementation(libs.exoplayerhdrutils)
 
     implementation(libs.coil.core)
     implementation(libs.coil.compose)

@@ -384,7 +384,11 @@ fun QueueRowOverlay(
                                 Icon(
                                     painter =
                                         painterResource(
-                                            if (playPauseState.showPlay) R.drawable.baseline_play_arrow_24 else R.drawable.baseline_pause_24,
+                                            if (playPauseState.showPlay) {
+                                                R.drawable.baseline_play_arrow_24
+                                            } else {
+                                                R.drawable.baseline_pause_24
+                                            },
                                         ),
                                     contentDescription = null,
                                     tint = Color.White,

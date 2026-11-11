@@ -8,7 +8,7 @@ class TestMedia3SubtitleOverride {
     @Test
     fun test() {
         // This tests whether the class and field names exist
-        Media3SubtitleOverride(2f)
+        Media3SubtitleOverride(2f, 2f, 2f)
         Assert.assertTrue(Media3SubtitleOverride.Companion.initialized)
     }
 }

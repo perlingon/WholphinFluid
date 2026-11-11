@@ -77,8 +77,7 @@ fun TitleOrLogo(
                                 ).transformations(
                                     CoilTrimTransformation(),
                                     LogoToneTransformation(logoImageUrl),
-                                )
-                                .build()
+                                ).build()
                         }
                     }
                 AsyncImage(
@@ -103,8 +102,7 @@ fun TitleOrLogo(
                                 ?.takeIf { bitmap ->
                                     Build.VERSION.SDK_INT < Build.VERSION_CODES.O ||
                                         bitmap.config != Bitmap.Config.HARDWARE
-                                }
-                                ?.let(LogoTones::analyse)
+                                }?.let(LogoTones::analyse)
                                 ?.also { tone -> LogoTones.put(logoImageUrl, tone) }
                     },
                     modifier =

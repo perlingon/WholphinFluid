@@ -90,7 +90,6 @@ fun FavoritesPage(
     }
 }
 
-
 /**
  * All favourites on one page, grouped under a heading per type (Movies, Shows, Episodes...), the
  * way grouped collections are shown

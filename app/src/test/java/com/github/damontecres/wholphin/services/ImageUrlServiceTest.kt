@@ -153,18 +153,19 @@ class ImageUrlServiceTest {
     }
 
     @Test
-    fun `Episode backdrop uses parent backdrop tag only if from series`() {
+    fun `Episode backdrop uses the closest parent with a backdrop`() {
         assertImage(
             imageUrlService.getItemImageUrl(BaseItem(episode(parentBackdropItemId = seriesId)), ImageType.BACKDROP),
             seriesId,
             ImageType.BACKDROP,
             "parentBackdrop0",
         )
+        // The fork shows a season's own backdrop when it has one
         assertImage(
             imageUrlService.getItemImageUrl(BaseItem(episode(parentBackdropItemId = seasonId)), ImageType.BACKDROP),
-            seriesId,
+            seasonId,
             ImageType.BACKDROP,
-            null,
+            "parentBackdrop0",
         )
     }
 

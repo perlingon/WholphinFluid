@@ -122,7 +122,8 @@ fun DiscoverItemRow(
         LazyRow(
             state = state,
             horizontalArrangement = Arrangement.spacedBy(horizontalPadding),
-            contentPadding = PaddingValues(
+            contentPadding =
+                PaddingValues(
                     // The first card lines up with the headlines; the rest scroll full width
                     start = FluidLayout.rowStart(horizontalPadding),
                     end = horizontalPadding,

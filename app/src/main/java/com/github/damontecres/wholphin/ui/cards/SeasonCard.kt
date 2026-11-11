@@ -190,7 +190,11 @@ fun SeasonCard(
                     outlineColor.isSpecified && focusedOutlineColor.isSpecified -> {
                         CardDefaults.border(
                             border = Border(BorderStroke(2.dp, outlineColor), shape = RoundedCornerShape(8.dp)),
-                            focusedBorder = Border(BorderStroke(focusedOutlineWidth, focusedOutlineColor), shape = RoundedCornerShape(8.dp)),
+                            focusedBorder =
+                                Border(
+                                    BorderStroke(focusedOutlineWidth, focusedOutlineColor),
+                                    shape = RoundedCornerShape(8.dp),
+                                ),
                         )
                     }
 
@@ -207,7 +211,11 @@ fun SeasonCard(
 
                     focusedOutlineColor.isSpecified -> {
                         CardDefaults.border(
-                            focusedBorder = Border(BorderStroke(focusedOutlineWidth, focusedOutlineColor), shape = RoundedCornerShape(8.dp)),
+                            focusedBorder =
+                                Border(
+                                    BorderStroke(focusedOutlineWidth, focusedOutlineColor),
+                                    shape = RoundedCornerShape(8.dp),
+                                ),
                         )
                     }
 

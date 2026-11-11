@@ -106,8 +106,15 @@ class CollectionGridViewModel
                 try {
                     // A collection's own details are in the saved tree, a library's need one call
                     val item =
-                        collectionTreeService.get().entry(itemId)?.dto?.let { BaseItem(it, false) }
-                            ?: api.userLibraryApi.getItem(itemId = itemId).content.let { BaseItem(it, false) }
+                        collectionTreeService
+                            .get()
+                            .entry(itemId)
+                            ?.dto
+                            ?.let { BaseItem(it, false) }
+                            ?: api.userLibraryApi
+                                .getItem(itemId = itemId)
+                                .content
+                                .let { BaseItem(it, false) }
                     show(item)
                     collectionTreeService.refreshIfOlderThan(CollectionTreeService.PAGE_REFRESH_AGE)
                     // Show changes when the tree is rebuilt in the background
@@ -150,7 +157,12 @@ class CollectionGridViewModel
             }
             val directIds =
                 if (contentsMode) {
-                    collectionTreeService.entry(itemId)?.children.orEmpty().map { it.id }.toSet()
+                    collectionTreeService
+                        .entry(itemId)
+                        ?.children
+                        .orEmpty()
+                        .map { it.id }
+                        .toSet()
                 } else {
                     emptySet()
                 }

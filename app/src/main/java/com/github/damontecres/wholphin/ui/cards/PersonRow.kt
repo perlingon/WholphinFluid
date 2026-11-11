@@ -55,7 +55,8 @@ fun PersonRow(
         LazyRow(
             state = rememberLazyListState(),
             horizontalArrangement = Arrangement.spacedBy(Spacing.md),
-            contentPadding = PaddingValues(
+            contentPadding =
+                PaddingValues(
                     // The first card lines up with the headlines; the rest scroll full width
                     start = FluidLayout.rowStart(Spacing.sm),
                     end = Spacing.sm,
@@ -111,7 +112,8 @@ fun DiscoverPersonRow(
         LazyRow(
             state = rememberLazyListState(),
             horizontalArrangement = Arrangement.spacedBy(Spacing.md),
-            contentPadding = PaddingValues(
+            contentPadding =
+                PaddingValues(
                     // The first card lines up with the headlines; the rest scroll full width
                     start = FluidLayout.rowStart(Spacing.sm),
                     end = Spacing.sm,
