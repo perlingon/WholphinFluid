@@ -35,8 +35,8 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import org.jellyfin.sdk.api.client.ApiClient
+import org.jellyfin.sdk.api.client.extensions.libraryApi
 import org.jellyfin.sdk.api.client.extensions.userApi
-import org.jellyfin.sdk.api.client.extensions.userLibraryApi
 import org.jellyfin.sdk.model.UUID
 import org.jellyfin.sdk.model.api.CollectionType
 import timber.log.Timber
@@ -579,7 +579,7 @@ class HomeSettingsService
             default: StringProvider = StringStringProvider(""),
         ): StringProvider =
             try {
-                api.userLibraryApi
+                api.libraryApi
                     .getItem(
                         userId = serverRepository.currentUser?.id,
                         itemId = itemId,

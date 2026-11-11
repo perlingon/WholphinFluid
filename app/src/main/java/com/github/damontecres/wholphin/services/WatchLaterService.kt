@@ -9,7 +9,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.jellyfin.sdk.api.client.ApiClient
-import org.jellyfin.sdk.api.client.extensions.playlistsApi
+import org.jellyfin.sdk.api.client.extensions.playlistApi
 import org.jellyfin.sdk.model.api.BaseItemKind
 import org.jellyfin.sdk.model.api.request.GetPlaylistItemsRequest
 import timber.log.Timber
@@ -87,7 +87,7 @@ class WatchLaterService
         ): Boolean {
             val userId = serverRepository.currentUser?.id
             val items =
-                api.playlistsApi
+                api.playlistApi
                     .getPlaylistItems(GetPlaylistItemsRequest(playlistId = playlistId, userId = userId))
                     .content.items
             return items.any { it.id == itemId }

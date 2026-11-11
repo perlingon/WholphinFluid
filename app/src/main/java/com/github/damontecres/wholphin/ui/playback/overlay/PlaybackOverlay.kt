@@ -93,7 +93,7 @@ import kotlinx.coroutines.delay
 import org.jellyfin.sdk.model.api.BaseItemKind
 import org.jellyfin.sdk.model.api.ImageType
 import org.jellyfin.sdk.model.api.MediaSegmentDto
-import org.jellyfin.sdk.model.api.TrickplayInfo
+import org.jellyfin.sdk.model.api.TrickplayInfoDto
 import kotlin.time.Duration
 
 /**
@@ -126,7 +126,7 @@ fun PlaybackOverlay(
     seriesEpisodes: List<BaseItem>,
     onClickEpisode: (BaseItem) -> Unit,
     modifier: Modifier = Modifier,
-    trickplayInfo: TrickplayInfo? = null,
+    trickplayInfo: TrickplayInfoDto? = null,
     trickplayUrlFor: (Int) -> String? = { null },
     onClickPlaylist: (BaseItem) -> Unit = {},
     videoAspectRatio: Float? = null,
