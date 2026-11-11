@@ -17,13 +17,13 @@ import com.github.damontecres.wholphin.R
 import com.github.damontecres.wholphin.ui.formatDuration
 import com.github.damontecres.wholphin.ui.theme.Spacing
 import kotlinx.coroutines.delay
-import org.jellyfin.sdk.model.api.TrickplayInfo
+import org.jellyfin.sdk.model.api.TrickplayInfoDto
 import kotlin.time.Duration.Companion.seconds
 
 @Composable
 fun TrickplayPreview(
     seekProgressMs: Long,
-    trickplayInfo: TrickplayInfo?,
+    trickplayInfo: TrickplayInfoDto?,
     trickplayUrlFor: (Int) -> String?,
     modifier: Modifier = Modifier,
     totalJumpMs: Long = 0L,

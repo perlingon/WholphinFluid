@@ -62,7 +62,7 @@ import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.update
 import org.jellyfin.sdk.api.client.ApiClient
-import org.jellyfin.sdk.api.client.extensions.userLibraryApi
+import org.jellyfin.sdk.api.client.extensions.libraryApi
 import org.jellyfin.sdk.model.api.BaseItemDto
 import org.jellyfin.sdk.model.api.BaseItemKind
 import org.jellyfin.sdk.model.api.ImageType
@@ -111,7 +111,7 @@ class CollectionGridViewModel
                             .entry(itemId)
                             ?.dto
                             ?.let { BaseItem(it, false) }
-                            ?: api.userLibraryApi
+                            ?: api.libraryApi
                                 .getItem(itemId = itemId)
                                 .content
                                 .let { BaseItem(it, false) }

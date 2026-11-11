@@ -96,7 +96,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.jellyfin.sdk.api.client.ApiClient
 import org.jellyfin.sdk.api.client.extensions.libraryApi
-import org.jellyfin.sdk.api.client.extensions.userLibraryApi
 import org.jellyfin.sdk.model.api.BaseItemKind
 import org.jellyfin.sdk.model.api.CollectionType
 import org.jellyfin.sdk.model.api.ImageType
@@ -168,7 +167,7 @@ class CollectionFolderViewModel
                 try {
                     val item =
                         itemId.toUUIDOrNull()?.let {
-                            api.userLibraryApi
+                            api.libraryApi
                                 .getItem(it)
                                 .content
                                 .let(::BaseItem)
@@ -265,7 +264,12 @@ class CollectionFolderViewModel
                 api.libraryApi
                     .getAncestors(item.id, user.id)
                     .content
-                    .firstNotNullOfOrNull { ancestor -> libraryDisplayInfoDao.getItem(user, ancestor.id) }
+                    .firstNotNullOfOrNull { ancestor ->
+                        libraryDisplayInfoDao.getItem(
+                            user,
+                            ancestor.id,
+                        )
+                    }
             } catch (ex: Exception) {
                 Timber.w(ex, "Error getting ancestors for %s", item.id)
                 null

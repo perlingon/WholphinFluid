@@ -56,7 +56,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import org.jellyfin.sdk.api.client.ApiClient
-import org.jellyfin.sdk.api.client.extensions.userLibraryApi
+import org.jellyfin.sdk.api.client.extensions.libraryApi
 import org.jellyfin.sdk.model.api.ImageType
 import java.util.UUID
 
@@ -94,7 +94,7 @@ class SongViewModel
             viewModelScope.launchIO {
                 try {
                     val song =
-                        api.userLibraryApi
+                        api.libraryApi
                             .getItem(itemId = itemId)
                             .content
                             .let { BaseItem(it, false) }

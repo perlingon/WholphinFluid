@@ -35,7 +35,7 @@ import coil3.compose.rememberAsyncImagePainter
 import coil3.request.ImageRequest
 import com.github.damontecres.wholphin.ui.isNotNullOrBlank
 import com.github.damontecres.wholphin.ui.theme.Spacing
-import org.jellyfin.sdk.model.api.TrickplayInfo
+import org.jellyfin.sdk.model.api.TrickplayInfoDto
 
 fun Modifier.offsetByPercent(
     xPercentage: Float,
@@ -87,7 +87,7 @@ fun Modifier.offsetByPercent(
 fun SeekPreviewImage(
     previewImageUrl: String,
     seekProgressMs: Long,
-    trickPlayInfo: TrickplayInfo,
+    trickPlayInfo: TrickplayInfoDto,
     modifier: Modifier = Modifier,
     jumpText: String? = null,
     jumpAlpha: Float = 1f,
