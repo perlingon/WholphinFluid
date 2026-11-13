@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.offset
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
@@ -1035,7 +1036,7 @@ fun Backdrop(
                 modifier =
                     Modifier
                         .align(Alignment.TopEnd)
-                        .padding(end = imageEdgeMargin)
+                        .offset(x = -imageEdgeMargin)
                         .size(imageWidth, imageHeight)
                         .graphicsLayer {
                             compositingStrategy = CompositingStrategy.Offscreen

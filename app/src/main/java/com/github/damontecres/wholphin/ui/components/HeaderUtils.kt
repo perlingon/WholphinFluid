@@ -10,7 +10,7 @@ import androidx.compose.ui.unit.dp
 import com.github.damontecres.wholphin.ui.theme.FluidLayout
 
 object HeaderUtils {
-    val topPadding = 48.dp
+    val topPadding = 58.dp
     val bottomPadding = 32.dp
 
     // Left indent of the title and details on every page; follows the screen's shape
@@ -22,7 +22,7 @@ object HeaderUtils {
         @Composable
         get() = PaddingValues(top = topPadding, bottom = bottomPadding, start = startPadding)
 
-    val height = 180.dp
+    val height = 196.dp
 
     val logoHeight = 60.dp
 

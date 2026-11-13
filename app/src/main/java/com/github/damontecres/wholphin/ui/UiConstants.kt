@@ -91,7 +91,7 @@ val PhotoItemFields =
 val ProgramItemFields = DetailItemFields + listOf(ItemFields.CHANNEL_INFO)
 
 object Cards {
-    const val HEIGHT_2X3_DP = 172
+    const val HEIGHT_2X3_DP = 164
     val height2x3 = HEIGHT_2X3_DP.dp
     const val HEIGHT_EPISODE = 128
     const val HEIGHT_LIVE_TV = 96

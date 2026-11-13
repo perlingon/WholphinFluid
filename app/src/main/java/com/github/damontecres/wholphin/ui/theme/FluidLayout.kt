@@ -63,7 +63,7 @@ object FluidLayout {
     fun leftMargin(): Dp {
         val vw = LocalConfiguration.current.screenWidthDp.dp
         val leftShare = 0.3f
-        val leftMin = vw * 0f
+        val leftMin = vw * 0.045f
         val leftMax = vw * 0.2f
         return (extraWidth() * leftShare).coerceIn(leftMin, leftMax)
     }
@@ -75,9 +75,10 @@ object FluidLayout {
     fun rightMargin(): Dp {
         val vw = LocalConfiguration.current.screenWidthDp.dp
         val rightShare = 0.2f
-        val rightMin = vw * -0.4f
+        val rightMin = vw * -0.6f
         val rightMax = vw * 0.33f
-        return (extraWidth() * rightShare).coerceIn(rightMin, rightMax)
+        val pushRight = vw * 0.04f
+        return (extraWidth() * rightShare - pushRight).coerceIn(rightMin, rightMax)
     }
 
     /**
@@ -106,8 +107,8 @@ object FluidLayout {
         val vw = configuration.screenWidthDp.dp
         val vh = configuration.screenHeightDp.dp
         val widthMin = vw * 0.3f
-        val widthTarget = vh * 1.4f
-        val widthMax = vw * 0.48f
+        val widthTarget = vh * 1.6f
+        val widthMax = vw * 0.66f
         return widthTarget.coerceIn(widthMin, widthMax)
     }
 

@@ -74,6 +74,7 @@ import com.github.damontecres.wholphin.ui.components.LoadingPage
 import com.github.damontecres.wholphin.ui.components.QuickDetails
 import com.github.damontecres.wholphin.ui.components.TitleOrLogo
 import com.github.damontecres.wholphin.ui.components.rememberLogoUrl
+import com.github.damontecres.wholphin.ui.components.bleedToScreenEdges
 import com.github.damontecres.wholphin.ui.data.AddPlaylistViewModel
 import com.github.damontecres.wholphin.ui.data.ItemDetailsDialog
 import com.github.damontecres.wholphin.ui.data.ItemDetailsDialogInfo
@@ -101,6 +102,7 @@ import org.jellyfin.sdk.model.api.BaseItemKind
 import timber.log.Timber
 import java.util.UUID
 import kotlin.time.Duration
+
 
 @Composable
 fun HomePage(
@@ -391,6 +393,7 @@ fun HomePageContent(
                         ),
                     modifier =
                         Modifier
+                            .bleedToScreenEdges()
                             .focusRestorer(),
                 ) {
                     itemsIndexed(homeRows) { rowIndex, row ->
