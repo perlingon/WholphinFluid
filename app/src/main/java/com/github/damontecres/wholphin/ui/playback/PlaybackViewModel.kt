@@ -1177,6 +1177,9 @@ class PlaybackViewModel
             }
 
         override fun onPlaybackStateChanged(playbackState: Int) {
+            if (playbackState == Player.STATE_READY) {
+                maybeRemuxUnseekableDirectPlay()
+            }
             if (playbackState == Player.STATE_ENDED) {
                 Timber.v("Playback state is STATE_ENDED")
                 viewModelScope.launchDefault {
@@ -1215,6 +1218,51 @@ class PlaybackViewModel
                             navigationManager.goBack()
                         }
                     }
+                }
+            }
+        }
+
+        /** The item that was already switched from direct play to a remux because it could not be seeked */
+        private var unseekableFallbackItemId: UUID? = null
+
+        /**
+         * ExoPlayer marks some direct played files as unseekable, for example a Matroska file whose
+         * Cues it cannot find (its SeekHead points to a second SeekHead, which media3 does not
+         * follow). Every seek then restarts playback from the beginning. The server's remux to HLS is
+         * seekable, so switch to it once per item, at the current position.
+         */
+        private fun maybeRemuxUnseekableDirectPlay() {
+            val currentPlayback = state.value.currentPlayback ?: return
+            if (currentPlayback.playMethod != PlayMethod.DIRECT_PLAY ||
+                currentPlayback.backend != PlayerBackend.EXO_PLAYER ||
+                currentItem !is PlaylistItem.Media ||
+                player.isCurrentMediaItemSeekable ||
+                player.isCurrentMediaItemLive ||
+                player.duration == C.TIME_UNSET ||
+                unseekableFallbackItemId == currentPlayback.item.id
+            ) {
+                return
+            }
+            unseekableFallbackItemId = currentPlayback.item.id
+            val positionMs = player.currentPosition
+            Timber.w(
+                "Direct play of %s is not seekable, switching to a remux at %s ms",
+                currentPlayback.item.id,
+                positionMs,
+            )
+            viewModelScope.launch(WholphinDispatchers.Main + ExceptionHandler()) {
+                changeStreams(
+                    item = currentItem.item,
+                    sourceId = currentPlayback.mediaSourceInfo.id,
+                    audioIndex = currentPlayback.audioIndex,
+                    subtitleIndex = currentPlayback.subtitleIndex,
+                    positionMs = positionMs,
+                    enableDirectPlay = false,
+                    enableDirectStream = true,
+                )
+                withContext(WholphinDispatchers.Main) {
+                    player.prepare()
+                    player.play()
                 }
             }
         }
