@@ -65,8 +65,7 @@ class SubtitleDelayRenderersFactory(
                 metadataRendererOutput,
             )?.withSubtitleDelay()
 
-    private fun Renderer.withSubtitleDelay(): Renderer =
-        if (trackType == C.TRACK_TYPE_TEXT) SubtitleDelayRenderer(this) else this
+    private fun Renderer.withSubtitleDelay(): Renderer = if (trackType == C.TRACK_TYPE_TEXT) SubtitleDelayRenderer(this) else this
 }
 
 /**

@@ -47,7 +47,7 @@ val MAX_SUBTITLE_DELAY = 2.minutes
  */
 private fun delayStep(repeatCount: Int): Duration =
     when {
-        repeatCount < 8 -> 50.milliseconds
+        repeatCount < 8 -> 10.milliseconds
         repeatCount < 24 -> 250.milliseconds
         repeatCount < 48 -> 1.seconds
         else -> 5.seconds
