@@ -708,6 +708,9 @@ class PlaybackViewModel
         ): Unit =
             withContext(WholphinDispatchers.IO) {
                 val itemId = item.id
+                // An item that could not be seeked during direct play stays on the remux, e.g.
+                // when the audio or subtitle track changes, or it would restart from 0:00
+                val allowDirectPlay = enableDirectPlay && itemId != unseekableFallbackItemId
 
                 trackChangeListener?.let { onMain { player.removeListener(it) } }
                 trackChangeListener = null
@@ -715,7 +718,7 @@ class PlaybackViewModel
                 state.value.currentPlayback?.let { currentPlayback ->
                     if (currentPlayback.item.id == item.id &&
                         currentPlayback.playMethod == PlayMethod.DIRECT_PLAY &&
-                        enableDirectPlay &&
+                        allowDirectPlay &&
                         state.value.maxBitrate == maxBitrate
                     ) {
                         val wasSuccessful =
@@ -733,7 +736,7 @@ class PlaybackViewModel
                     itemId,
                     audioIndex,
                     subtitleIndex,
-                    enableDirectPlay,
+                    allowDirectPlay,
                     enableDirectStream,
                     positionMs,
                     maxBitrate,
@@ -761,7 +764,7 @@ class PlaybackViewModel
                                 mediaSourceId = sourceId,
                                 alwaysBurnInSubtitleWhenTranscoding = false,
                                 maxStreamingBitrate = maxBitrate.toInt(),
-                                enableDirectPlay = enableDirectPlay,
+                                enableDirectPlay = allowDirectPlay,
                                 enableDirectStream = enableDirectStream,
                                 allowVideoStreamCopy = enableDirectStream,
                                 allowAudioStreamCopy = enableDirectStream,
@@ -913,6 +916,7 @@ class PlaybackViewModel
                                 currentPlayback = playback,
                             )
                         }
+                        requestedStartPositionMs = positionMs
                         player.setMediaItem(
                             mediaItem,
                             positionMs,
@@ -1177,6 +1181,9 @@ class PlaybackViewModel
             }
 
         override fun onPlaybackStateChanged(playbackState: Int) {
+            if (playbackState == Player.STATE_READY) {
+                maybeRemuxUnseekableDirectPlay()
+            }
             if (playbackState == Player.STATE_ENDED) {
                 Timber.v("Playback state is STATE_ENDED")
                 viewModelScope.launchDefault {
@@ -1215,6 +1222,59 @@ class PlaybackViewModel
                             navigationManager.goBack()
                         }
                     }
+                }
+            }
+        }
+
+        /** The item that was already switched from direct play to a remux because it could not be seeked */
+        private var unseekableFallbackItemId: UUID? = null
+
+        /** Where the current media item was asked to start, e.g. a resume point or a chapter */
+        private var requestedStartPositionMs: Long = C.TIME_UNSET
+
+        /**
+         * ExoPlayer marks some direct played files as unseekable, for example a Matroska file whose
+         * Cues it cannot find (its SeekHead points to a second SeekHead, which media3 does not
+         * follow). Every seek then restarts playback from the beginning. The server's remux to HLS is
+         * seekable, so switch to it once per item, at the current position.
+         */
+        private fun maybeRemuxUnseekableDirectPlay() {
+            val currentPlayback = state.value.currentPlayback ?: return
+            if (currentPlayback.playMethod != PlayMethod.DIRECT_PLAY ||
+                currentPlayback.backend != PlayerBackend.EXO_PLAYER ||
+                currentItem !is PlaylistItem.Media ||
+                player.isCurrentMediaItemSeekable ||
+                player.isCurrentMediaItemLive ||
+                player.duration == C.TIME_UNSET ||
+                unseekableFallbackItemId == currentPlayback.item.id
+            ) {
+                return
+            }
+            unseekableFallbackItemId = currentPlayback.item.id
+            // An unseekable file ignores the start position and plays from 0, so a resume point or
+            // chapter start the player could not reach is still the place to start the remux
+            val positionMs =
+                requestedStartPositionMs
+                    .takeIf { it > 0 && player.currentPosition < it }
+                    ?: player.currentPosition
+            Timber.w(
+                "Direct play of %s is not seekable, switching to a remux at %s ms",
+                currentPlayback.item.id,
+                positionMs,
+            )
+            viewModelScope.launch(WholphinDispatchers.Main + ExceptionHandler()) {
+                changeStreams(
+                    item = currentItem.item,
+                    sourceId = currentPlayback.mediaSourceInfo.id,
+                    audioIndex = currentPlayback.audioIndex,
+                    subtitleIndex = currentPlayback.subtitleIndex,
+                    positionMs = positionMs,
+                    enableDirectPlay = false,
+                    enableDirectStream = true,
+                )
+                withContext(WholphinDispatchers.Main) {
+                    player.prepare()
+                    player.play()
                 }
             }
         }

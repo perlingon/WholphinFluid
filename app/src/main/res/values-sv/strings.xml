@@ -488,6 +488,8 @@
     <string name="show_lyrics">Visa låttexter</string>
     <string name="sort">Sortera</string>
     <string name="subtitle_delay">Undertextfördröjning</string>
+    <string name="subtitle_delay_earlier">Tidigare</string>
+    <string name="subtitle_delay_later">Senare</string>
     <string name="artists">Artister</string>
     <string name="start_after">Starta efter</string>
     <string name="apply_all_rows">Tillämpa på alla rader</string>

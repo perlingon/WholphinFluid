@@ -7,6 +7,7 @@ import com.github.damontecres.wholphin.data.model.Chapter
 import com.github.damontecres.wholphin.ui.isNotNullOrBlank
 import org.jellyfin.sdk.model.api.BaseItemKind
 import org.jellyfin.sdk.model.api.MediaSourceInfo
+import org.jellyfin.sdk.model.api.MediaStream
 import org.jellyfin.sdk.model.api.MediaStreamType
 import org.jellyfin.sdk.model.api.TrickplayInfoDto
 import org.jellyfin.sdk.model.extensions.ticks
@@ -39,13 +40,14 @@ internal fun PlaybackViewModel.getSubtitleStreams(mediaSource: MediaSourceInfo):
             ?.subtitleLanguagePreference
     return mediaSource.mediaStreams
         ?.filter { it.type == MediaStreamType.SUBTITLE }
-        .let {
-            if (subtitleLanguagePreference.isNotNullOrBlank()) {
-                it?.sortedByDescending { it.language != null && subtitleLanguagePreference == it.language }
-            } else {
-                it
-            }
-        }?.map {
+        // Preferred language first, and within it regular tracks before SDH ones
+        ?.sortedWith(
+            compareByDescending<MediaStream> {
+                subtitleLanguagePreference.isNotNullOrBlank() &&
+                    it.language != null &&
+                    subtitleLanguagePreference == it.language
+            }.thenBy { it.isHearingImpaired },
+        )?.map {
             // TODO should use a string provider instead
             SimpleMediaStream.from(context.resources, it, true)
         }.orEmpty()

@@ -28,6 +28,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -102,6 +103,7 @@ import com.github.damontecres.wholphin.ui.theme.FluidLayout
 import com.github.damontecres.wholphin.ui.theme.Spacing
 import com.github.damontecres.wholphin.ui.tryRequestFocus
 import com.github.damontecres.wholphin.util.ExceptionHandler
+import com.github.damontecres.wholphin.util.ExoSubtitleDelay
 import com.github.damontecres.wholphin.util.LoadingState
 import com.github.damontecres.wholphin.util.stripEmbeddedFormatting
 import io.github.peerless2012.ass.media.widget.AssSubtitleView
@@ -203,9 +205,12 @@ fun PlaybackPageContent(
     LaunchedEffect(playbackSpeed) { player.setPlaybackSpeed(playbackSpeed) }
 
     LaunchedEffect(state.currentPlayback?.subtitleDelay) {
-        (player as? MpvPlayer)?.subtitleDelay =
-            state.currentPlayback?.subtitleDelay ?: Duration.ZERO
+        val subtitleDelay = state.currentPlayback?.subtitleDelay ?: Duration.ZERO
+        (player as? MpvPlayer)?.subtitleDelay = subtitleDelay
+        ExoSubtitleDelay.delayUs = subtitleDelay.inWholeMicroseconds
     }
+    // Don't carry the delay over to the next video played with another player
+    DisposableEffect(Unit) { onDispose { ExoSubtitleDelay.delayUs = 0L } }
 
     var editingSubtitleStyle by remember { mutableStateOf<SubtitlePreferences?>(null) }
     val presentationState = rememberPresentationState(player, false)
@@ -931,7 +936,7 @@ fun PlaybackPageContent(
                     videoTransform = it
                     videoTransformStore.put(currentMediaId, it)
                 },
-                enableSubtitleDelay = player is MpvPlayer,
+                enableSubtitleDelay = true,
                 enableVideoScale = videoAdjustEnabled,
             )
         }
