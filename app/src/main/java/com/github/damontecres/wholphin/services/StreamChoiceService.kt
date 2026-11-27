@@ -340,7 +340,9 @@ class StreamChoiceService
                 val candidates =
                     candidates
                         .sortedWith(
-                            compareByDescending<MediaStream> { it.isExternal }
+                            // SDH tracks go after regular ones, so a regular track is picked when both fit
+                            compareBy<MediaStream> { it.isHearingImpaired }
+                                .thenByDescending { it.isExternal }
                                 .thenByDescending { it.isDefault }
                                 .thenByDescending {
                                     !it.isForced && it.language.equals(subtitleLanguage, true)
