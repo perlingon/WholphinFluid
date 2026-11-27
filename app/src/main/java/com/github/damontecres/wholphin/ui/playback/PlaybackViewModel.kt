@@ -913,6 +913,7 @@ class PlaybackViewModel
                                 currentPlayback = playback,
                             )
                         }
+                        requestedStartPositionMs = positionMs
                         player.setMediaItem(
                             mediaItem,
                             positionMs,
@@ -1225,6 +1226,9 @@ class PlaybackViewModel
         /** The item that was already switched from direct play to a remux because it could not be seeked */
         private var unseekableFallbackItemId: UUID? = null
 
+        /** Where the current media item was asked to start, e.g. a resume point or a chapter */
+        private var requestedStartPositionMs: Long = C.TIME_UNSET
+
         /**
          * ExoPlayer marks some direct played files as unseekable, for example a Matroska file whose
          * Cues it cannot find (its SeekHead points to a second SeekHead, which media3 does not
@@ -1244,7 +1248,12 @@ class PlaybackViewModel
                 return
             }
             unseekableFallbackItemId = currentPlayback.item.id
-            val positionMs = player.currentPosition
+            // An unseekable file ignores the start position and plays from 0, so a resume point or
+            // chapter start the player could not reach is still the place to start the remux
+            val positionMs =
+                requestedStartPositionMs
+                    .takeIf { it > 0 && player.currentPosition < it }
+                    ?: player.currentPosition
             Timber.w(
                 "Direct play of %s is not seekable, switching to a remux at %s ms",
                 currentPlayback.item.id,
