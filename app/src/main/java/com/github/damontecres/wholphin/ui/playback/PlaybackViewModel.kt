@@ -708,6 +708,9 @@ class PlaybackViewModel
         ): Unit =
             withContext(WholphinDispatchers.IO) {
                 val itemId = item.id
+                // An item that could not be seeked during direct play stays on the remux, e.g.
+                // when the audio or subtitle track changes, or it would restart from 0:00
+                val allowDirectPlay = enableDirectPlay && itemId != unseekableFallbackItemId
 
                 trackChangeListener?.let { onMain { player.removeListener(it) } }
                 trackChangeListener = null
@@ -715,7 +718,7 @@ class PlaybackViewModel
                 state.value.currentPlayback?.let { currentPlayback ->
                     if (currentPlayback.item.id == item.id &&
                         currentPlayback.playMethod == PlayMethod.DIRECT_PLAY &&
-                        enableDirectPlay &&
+                        allowDirectPlay &&
                         state.value.maxBitrate == maxBitrate
                     ) {
                         val wasSuccessful =
@@ -733,7 +736,7 @@ class PlaybackViewModel
                     itemId,
                     audioIndex,
                     subtitleIndex,
-                    enableDirectPlay,
+                    allowDirectPlay,
                     enableDirectStream,
                     positionMs,
                     maxBitrate,
@@ -761,7 +764,7 @@ class PlaybackViewModel
                                 mediaSourceId = sourceId,
                                 alwaysBurnInSubtitleWhenTranscoding = false,
                                 maxStreamingBitrate = maxBitrate.toInt(),
-                                enableDirectPlay = enableDirectPlay,
+                                enableDirectPlay = allowDirectPlay,
                                 enableDirectStream = enableDirectStream,
                                 allowVideoStreamCopy = enableDirectStream,
                                 allowAudioStreamCopy = enableDirectStream,
