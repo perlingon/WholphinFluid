@@ -41,6 +41,7 @@ import com.github.damontecres.wholphin.util.DolbyVisionProfile7Conversion
 import com.github.damontecres.wholphin.util.DolbyVisionProfile7ExtractorsFactory
 import com.github.damontecres.wholphin.util.DolbyVisionProfile7Filter
 import com.github.damontecres.wholphin.util.Hdr10PlusMaskingFilter
+import com.github.damontecres.wholphin.util.SubtitleDelayRenderersFactory
 import com.github.damontecres.wholphin.util.WholphinDispatchers
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
@@ -180,7 +181,8 @@ class PlayerFactory
                         ExoPlayer
                             .Builder(context)
                             .setMediaSourceFactory(mediaSourceFactory)
-                            .setRenderersFactory(renderersFactory)
+                            // Outermost, so libass's subtitle renderer gets the delay too
+                            .setRenderersFactory(SubtitleDelayRenderersFactory(renderersFactory))
                             .setTrackSelector(trackSelector)
                             .build()
                             .apply {

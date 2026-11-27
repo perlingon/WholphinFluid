@@ -141,6 +141,10 @@ fun PlaybackDialog(
                 onSelectStyle = {
                     onClickPlaybackDialogType.invoke(PlaybackDialogType.SUBTITLE_STYLE)
                 },
+                subtitleDelay = settings.subtitleDelay.takeIf { enableSubtitleDelay },
+                onSelectDelay = {
+                    onClickPlaybackDialogType.invoke(PlaybackDialogType.SUBTITLE_DELAY)
+                },
                 gravity = rightGravity,
             )
         }
@@ -198,7 +202,7 @@ fun PlaybackDialog(
                             BottomDialogItem(
                                 data = PlaybackDialogType.SUBTITLE_DELAY,
                                 headline = stringResource(R.string.subtitle_delay),
-                                supporting = settings.subtitleDelay.toString(),
+                                supporting = formatSubtitleDelay(settings.subtitleDelay),
                             ),
                         )
                     }
@@ -386,6 +390,8 @@ fun SubtitleChoiceBottomDialog(
     gravity: Int,
     hasDownloadPermission: Boolean,
     currentChoice: Int? = null,
+    subtitleDelay: Duration? = null,
+    onSelectDelay: () -> Unit = {},
 ) {
     // Items above the tracks: None and the divider
     val numberBefore = 2
@@ -529,6 +535,21 @@ fun SubtitleChoiceBottomDialog(
                         },
                         supportingContent = {},
                     )
+                }
+                if (subtitleDelay != null) {
+                    item {
+                        ListItem(
+                            selected = false,
+                            onClick = onSelectDelay,
+                            leadingContent = {},
+                            headlineContent = {
+                                Text(
+                                    text = stringResource(R.string.subtitle_delay),
+                                )
+                            },
+                            supportingContent = { Text(formatSubtitleDelay(subtitleDelay)) },
+                        )
+                    }
                 }
                 item {
                     val interactionSource = remember { MutableInteractionSource() }
